@@ -398,6 +398,7 @@ static THD_FUNCTION(gimbal_thread, p)
      * yaw_theta2: angle between yaw encoder current value and yaw encoder value at max moment of inertia point
      */
     float yaw_theta1 = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
+    gimbal.pitch_angle_enc = yaw_theta1;
 
     gimbal.motor[GIMBAL_PITCH]._speed = gimbal._pIMU->gyroData[Y];
     gimbal.motor[GIMBAL_YAW]._speed = pGyro->angle_vel * cosf(yaw_theta1) -

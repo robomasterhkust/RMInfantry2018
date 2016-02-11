@@ -112,6 +112,7 @@ int main(void)
   can_processInit();
   RC_init();
   barrelHeatLimitControl_init();
+  hostComm_init();
 
   gimbal_init();
   feeder_init();

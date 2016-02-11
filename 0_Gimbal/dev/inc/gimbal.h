@@ -93,6 +93,8 @@ typedef struct{
   float yaw_atti_cmd;
   float pitch_atti_cmd;
 
+  float pitch_angle_enc;
+  
   float chassis_yaw;
   float d_yaw;
 

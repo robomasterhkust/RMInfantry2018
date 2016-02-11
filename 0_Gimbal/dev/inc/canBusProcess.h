@@ -64,7 +64,6 @@ typedef struct{
   uint16_t currentHeatValue;
 } BarrelStatus_canStruct;
 
-
 typedef struct {
     double py;
     double pz;

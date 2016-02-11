@@ -15,6 +15,7 @@
 #include "params.h"
 #include "sdlog.h"
 #include "exti.h"
+#include "host_comm.h"
 
 #include "mpu6500.h"
 #include "ist8310.h"

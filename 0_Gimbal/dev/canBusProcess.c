@@ -9,7 +9,8 @@
 
 #include "barrelStatus.h"
 #include "canBusProcess.h"
-#include "halconf.h"
+#include "host_comm.h"
+#include "host_comm_id.h"
 
 static volatile GimbalEncoder_canStruct gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile BarrelStatus_canStruct chassis_send_barrel;
@@ -150,8 +151,8 @@ static void can_processEncoderMessage(const CANRxFrame *const rxmsg) {
   case CAN_CHASSIS_SEND_BARREL_ID:
     can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
     break;
-  case CAN_NVIDIA_TX2_BOARD_ID:
-    can_process_ros_command(&ros_msg, rxmsg);
+  case CAN_HOST_SYNC_H2G_ID:
+    hostComm_sync(rxmsg);
     break;
   case CAN_RUNE:
     can_process_rune(&rune_can, rxmsg);
