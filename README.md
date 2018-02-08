@@ -1,4 +1,4 @@
-# RMdInfantry2018
+# RM Infantry 2018
 
 ## Note
 This repo is established for integration of RM infantry embedded programs, and should be kept organized.
