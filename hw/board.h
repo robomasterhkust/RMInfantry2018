@@ -364,8 +364,8 @@
                                      PIN_PUPDR_FLOATING(GPIOA_PIN15))
 #define VAL_GPIOA_ODR               (PIN_ODR_HIGH(GPIOA_TIM2_CH1) |           \
                                      PIN_ODR_HIGH(GPIOA_TIM2_CH2) |             \
-                                     PIN_ODR_HIGH(GPIOA_LED_Y) |             \
-                                     PIN_ODR_HIGH(GPIOA_LED_B) |             \
+                                     PIN_ODR_LOW(GPIOA_LED_Y) |             \
+                                     PIN_ODR_LOW(GPIOA_LED_B) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN4) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN5) |              \
                                      PIN_ODR_HIGH(GPIOA_PIN6) |              \
@@ -381,6 +381,8 @@
 
 #define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_TIM2_CH1, 1U) |        \
                                      PIN_AFIO_AF(GPIOA_TIM2_CH2, 1U) |          \
+                                     PIN_AFIO_AF(GPIOA_LED_Y, 0U) |             \
+                                     PIN_AFIO_AF(GPIOA_LED_B, 0U) |             \
                                      PIN_AFIO_AF(GPIOA_PIN4, 0U) |          \
                                      PIN_AFIO_AF(GPIOA_PIN5, 0U) |           \
                                      PIN_AFIO_AF(GPIOA_PIN6, 0U) |           \
@@ -852,7 +854,7 @@
                                      PIN_AFIO_AF(GPIOE_SPI4_ADIS_NSS, 5U) |          \
                                      PIN_AFIO_AF(GPIOE_SPI4_ADIS_MISO, 5U) |          \
                                      PIN_AFIO_AF(GPIOE_SPI4_ADIS_MOSI, 5U) |          \
-                                     PIN_AFIO_AF(GPIOE_LED_R, 1U))
+                                     PIN_AFIO_AF(GPIOE_LED_R, 0U))
 #define VAL_GPIOE_AFRH              (PIN_AFIO_AF(GPIOE_PIN8, 0U) |          \
                                      PIN_AFIO_AF(GPIOE_PIN9, 0U) |          \
                                      PIN_AFIO_AF(GPIOE_PIN10, 0U) |         \

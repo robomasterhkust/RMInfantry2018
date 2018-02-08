@@ -6,19 +6,20 @@
  */
 #include "ch.h"
 #include "hal.h"
+
 #include "mpu6500.h"
 #include "imu_temp.h"
 
 extern PWMDriver PWMD12;
 
 #define TEMP_THRESHOLD 62
-#define TEMPERATURE_UPDATE_PERIOD_US 1U
+#define TEMPERATURE_UPDATE_PERIOD_S 1U
 
 TPIDStruct tempPID1;
 
 static const TPIDConfigStruct tpid1_conf = {
-                                            3500.0f,   //Kp
-                                            0.075f,      //Ki
+                                            5600.0f,   //Kp
+                                            70.0f,      //Ki
                                             0.0f       //Kd
 };
 
@@ -73,7 +74,7 @@ static THD_FUNCTION(Temperature_thread, p)
 
   while(true)
   {
-    tick += S2ST(TEMPERATURE_UPDATE_PERIOD_US);
+    tick += S2ST(TEMPERATURE_UPDATE_PERIOD_S);
     if(chVTGetSystemTimeX() < tick)
       chThdSleepUntil(tick);
     else
@@ -82,7 +83,13 @@ static THD_FUNCTION(Temperature_thread, p)
       pIMU->errorCode |= IMU_LOSE_FRAME;
     }
 
-    imuGetData(pIMU);
+    if(pIMU->temperature > 88.0f)
+    {
+      pIMU->errorCode |= IMU_TEMP_ERROR;
+      tempController_kill();
+      chThdExit(MSG_OK);
+    }
+
     int PWM_Output = tempPID_Update(tempPID, pIMU);
     pwmEnableChannel(&PWMD3, 1, PWM_PERCENTAGE_TO_WIDTH(&PWMD3, PWM_Output));
   }
@@ -91,6 +98,6 @@ static THD_FUNCTION(Temperature_thread, p)
 void tempControllerInit(void){
   pwm3init();
   chThdCreateStatic(Temperature_thread_wa, sizeof(Temperature_thread_wa),
-    NORMALPRIO,
+    NORMALPRIO - 10,
                       Temperature_thread, NULL);
 }

@@ -14,16 +14,8 @@
     limitations under the License.
 */
 #include "main.h"
-#include "pwm.h"
 
 static BaseSequentialStream* chp = (BaseSequentialStream*)&SDU1;
-static const IMUConfigStruct imu1_conf =
-  {&SPID5, MPU6500_ACCEL_SCALE_8G, MPU6500_GYRO_SCALE_250, MPU6500_AXIS_REV_Z};
-
-static const magConfigStruct mag1_conf =
-  {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
-
-PIMUStruct pIMU;
 
 #define MPU6500_UPDATE_PERIOD_US 1000000U/MPU6500_UPDATE_FREQ
 static THD_WORKING_AREA(Attitude_thread_wa, 4096);
@@ -33,8 +25,31 @@ static THD_FUNCTION(Attitude_thread, p)
 
   (void)p;
 
+  PIMUStruct pIMU = imu_get();
+
+  static const IMUConfigStruct imu1_conf =
+    {&SPID5, MPU6500_ACCEL_SCALE_8G, MPU6500_GYRO_SCALE_1000, MPU6500_AXIS_REV_X};
   imuInit(pIMU, &imu1_conf);
+
+  static const magConfigStruct mag1_conf =
+    {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
   ist8310_init(&mag1_conf);
+
+  //Check temperature feedback before starting temp controller
+  imuGetData(pIMU);
+  if(pIMU->temperature > 0.0f)
+    tempControllerInit();
+  else
+    pIMU->errorCode |= IMU_TEMP_ERROR;
+
+  while(pIMU->temperature < 61.0f)
+  {
+    imuGetData(pIMU);
+    chThdSleepMilliseconds(50);
+  }
+
+  pIMU->state = IMU_STATE_READY;
+  attitude_imu_init(pIMU);
 
   uint32_t tick = chVTGetSystemTimeX();
 
@@ -49,10 +64,12 @@ static THD_FUNCTION(Attitude_thread, p)
       pIMU->errorCode |= IMU_LOSE_FRAME;
     }
 
+    if(pIMU->temperature < 55.0f || pIMU->temperature < 70.0f)
+    pIMU->errorCode |= IMU_TEMP_WARNING;
+
     imuGetData(pIMU);
     ist8310_update();
-    if(pIMU->inited == 2)
-      attitude_update(pIMU);
+    attitude_update(pIMU);
 
     if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
     {
@@ -62,6 +79,10 @@ static THD_FUNCTION(Attitude_thread, p)
     }
   }
 }
+
+#define attitude_init() (chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa), \
+                          NORMALPRIO + 5, \
+                          Attitude_thread, NULL))
 
 /*
  * Application entry point.
@@ -79,33 +100,21 @@ int main(void)
   halInit();
   chSysInit();
 
-
-  palSetPad(GPIOE, GPIOE_LED_R);
-  palSetPad(GPIOF, GPIOF_LED_G);
-  palClearPad(GPIOA, GPIOA_LED_Y);
-  palClearPad(GPIOA, GPIOA_LED_B);
-
-
+  /* Init sequence 1: central controllers, loggers*/
   shellStart();
   params_init();
-  can_processInit();
   RC_init();
-  gimbal_init();
-  //gimbal_sys_iden_init();
-  pwm_shooter_init();
-  extiinit();
-  tempControllerInit();
-  //pwm12init();
-  gyro_init();
   sdlog_init();
+  extiinit();
 
-  //tft_init(TFT_HORIZONTAL, CYAN, YELLOW, BLACK);
+  /* Init sequence 2: sensors, comm*/
+  can_processInit();
+  attitude_init();
+  gyro_init();
 
-  pIMU = imu_get();
-
-  chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
-  NORMALPRIO + 5,
-                    Attitude_thread, NULL);
+  /* Init sequence 3: actuators, display*/
+  gimbal_init();
+  pwm_shooter_init();
 
   while (true)
   {

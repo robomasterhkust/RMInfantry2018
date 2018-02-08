@@ -3,6 +3,7 @@
 
 #define MPU6500_UPDATE_FREQ                    1000U  //Read MPU @ 1000Hz
 #define IMU_USE_EULER_ANGLE
+#define IMU_ACCL_USE_LPF
 
 #include "params.h"
 /* TODO something wrong*/
@@ -47,6 +48,8 @@ typedef enum {
 typedef enum {
   IMU_OK = 0,
   IMU_CORRUPTED_Q_DATA = 1<<1,
+  IMU_TEMP_ERROR = 1<<2,
+  IMU_TEMP_WARNING = 1<<30,
   IMU_LOSE_FRAME = 1<<31
 } imu_att_error_t;
 
@@ -111,6 +114,12 @@ static const char imu_warning_messages[][IMU_WARNING_COUNT] =
   "W:IMU Reading lose frame"
 };
 
+typedef enum{
+  IMU_STATE_UNINIT = 0,
+  IMU_STATE_HEATING,
+  IMU_STATE_READY
+} imu_state_t;
+
 #define MPU6500_UPDATE_PERIOD     1000000U/MPU6500_UPDATE_FREQ
 
 typedef struct tagIMUStruct {
@@ -126,6 +135,9 @@ typedef struct tagIMUStruct {
   #ifdef  IMU_USE_EULER_ANGLE
     float euler_angle[3];      /* Euler angle of the IMU. */
     float d_euler_angle[3];    /* Euler angle changing rate of the IMU. */
+
+    int rev;
+    float prev_yaw;         /* used to detect zero-crossing */
   #else
     float dqIMU[4];         /* Attitude quaternion changing rate of the IMU. */
   #endif
@@ -139,7 +151,7 @@ typedef struct tagIMUStruct {
   float _gyro_psc;
 
   SPIDriver* _imu_spi;
-  uint8_t inited;
+  imu_state_t state;
   uint32_t errorCode;
   uint32_t _tprev;
   float dt;

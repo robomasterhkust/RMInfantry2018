@@ -17,7 +17,7 @@ uint8_t attitude_update(PIMUStruct pIMU)
 {
   float corr[3] = {0.0f, 0.0f, 0.0f};
   float spinRate = vector_norm(pIMU->gyroData, 3);
-  float accel = vector_norm(pIMU->accelData, 3);
+  float accel = vector_norm(pIMU->accelFiltered, 3);
 
   vector_normalize(pIMU->qIMU, 4);
   uint8_t i;
@@ -26,15 +26,15 @@ uint8_t attitude_update(PIMUStruct pIMU)
   {
     float accel_corr[3], norm_accel[3], v2[3];
 
-    v2[0] = 2.0f * (pIMU->qIMU[1] * pIMU->qIMU[3] - pIMU->qIMU[0] * pIMU->qIMU[2]);
-    v2[1] = 2.0f * (pIMU->qIMU[2] * pIMU->qIMU[3] + pIMU->qIMU[0] * pIMU->qIMU[1]);
-    v2[2] = pIMU->qIMU[0] * pIMU->qIMU[0] -
+    v2[X] = 2.0f * (pIMU->qIMU[1] * pIMU->qIMU[3] - pIMU->qIMU[0] * pIMU->qIMU[2]);
+    v2[Y] = 2.0f * (pIMU->qIMU[2] * pIMU->qIMU[3] + pIMU->qIMU[0] * pIMU->qIMU[1]);
+    v2[Z] = pIMU->qIMU[0] * pIMU->qIMU[0] -
             pIMU->qIMU[1] * pIMU->qIMU[1] -
             pIMU->qIMU[2] * pIMU->qIMU[2] +
             pIMU->qIMU[3] * pIMU->qIMU[3];
 
     for (i = 0; i < 3; i++)
-      norm_accel[i] = pIMU->accelData[i]/accel;
+      norm_accel[i] = pIMU->accelFiltered[i]/accel;
 
     vector3_cross(norm_accel, v2, accel_corr);
     for (i = 0; i < 3; i++)
@@ -69,11 +69,24 @@ uint8_t attitude_update(PIMUStruct pIMU)
       pIMU->qIMU[i] = q[i];
 
     #ifdef  IMU_USE_EULER_ANGLE
-      quarternion2euler(pIMU->qIMU, pIMU->euler_angle);
+      float euler_angle[3];
+      quarternion2euler(pIMU->qIMU, euler_angle);
+
+      if(euler_angle[Yaw] < -2.0f && pIMU->prev_yaw > 2.0f)
+        pIMU->rev++;
+      else if(euler_angle[Yaw] > 2.0f && pIMU->prev_yaw < -2.0f)
+        pIMU->rev--;
+
+      pIMU->euler_angle[Roll] = euler_angle[Roll];
+      pIMU->euler_angle[Pitch] = euler_angle[Pitch];
+      pIMU->euler_angle[Yaw] = pIMU->rev*2*M_PI + euler_angle[Yaw];
+
       pIMU->d_euler_angle[Pitch] = cosf(pIMU->euler_angle[Roll])*pIMU->gyroData[Y] -
         sinf(pIMU->euler_angle[Roll]) * pIMU->gyroData[Z];
       pIMU->d_euler_angle[Yaw] = (sinf(pIMU->euler_angle[Roll])*pIMU->gyroData[Y] +
         cosf(pIMU->euler_angle[Roll]) * pIMU->gyroData[Z]) / cosf(pIMU->euler_angle[Pitch]);
+
+      pIMU->prev_yaw = euler_angle[Yaw];
     #endif
 
     return IMU_OK;
@@ -86,10 +99,10 @@ uint8_t attitude_imu_init(PIMUStruct pIMU)
 {
   float rot_matrix[3][3];
 
-  float norm = vector_norm(pIMU->accelData,3);
+  float norm = vector_norm(pIMU->accelFiltered,3);
   uint8_t i;
   for (i = 0; i < 3; i++)
-    rot_matrix[2][i] = pIMU->accelData[i] / norm;
+    rot_matrix[2][i] = pIMU->accelFiltered[i] / norm;
 
   norm = sqrtf(rot_matrix[2][2]*rot_matrix[2][2] +
     rot_matrix[2][0]*rot_matrix[2][0]);
@@ -100,6 +113,10 @@ uint8_t attitude_imu_init(PIMUStruct pIMU)
 
   vector3_cross(rot_matrix[2], rot_matrix[0], rot_matrix[1]);
   rotm2quarternion(rot_matrix, pIMU->qIMU);
+
+  #ifdef  IMU_USE_EULER_ANGLE
+    pIMU->prev_yaw = 0.0f;         /* used to detect zero-crossing */
+  #endif
 
   return IMU_OK;
 }

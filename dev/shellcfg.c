@@ -90,10 +90,14 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
   PIMUStruct PIMU = imu_get();
-  PGyroStruct PGyro = gyro_get();
 
-  chprintf(chp,"Gyro: %f\r\n",PGyro->angle_vel);
-  chprintf(chp,"IMUZ: %f\r\n",PIMU->gyroData[Z]);
+  chprintf(chp,"accelData[X]: %f\r\n",PIMU->accelData[X]);
+  chprintf(chp,"accelData[Y]: %f\r\n",PIMU->accelData[Y]);
+  chprintf(chp,"accelData[Z]: %f\r\n",PIMU->accelData[Z]);
+
+  chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
+  chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
+  chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
 
 }
 
@@ -140,17 +144,27 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
   {
     if(!strcmp(argv[0], "accl"))
     {
-      pIMU->accelerometer_not_calibrated = true;
-      chThdSleepMilliseconds(10);
-      calibrate_accelerometer(pIMU);
-      chThdResume(&(pIMU->imu_Thd), MSG_OK);
+      if(pIMU->state == IMU_STATE_READY)
+      {
+        pIMU->accelerometer_not_calibrated = true;
+        chThdSleepMilliseconds(10);
+        calibrate_accelerometer(pIMU);
+        chThdResume(&(pIMU->imu_Thd), MSG_OK);
+      }
+      else
+        chprintf(chp, "IMU initialization not complete\r\n");
     }
     else if(!strcmp(argv[0], "gyro"))
     {
-      pIMU->gyroscope_not_calibrated = true;
-      chThdSleepMilliseconds(10);
-      calibrate_gyroscope(pIMU);
-      chThdResume(&(pIMU->imu_Thd), MSG_OK);
+      if(pIMU->state == IMU_STATE_READY)
+      {
+        pIMU->gyroscope_not_calibrated = true;
+        chThdSleepMilliseconds(10);
+        calibrate_gyroscope(pIMU);
+        chThdResume(&(pIMU->imu_Thd), MSG_OK);
+      }
+      else
+        chprintf(chp, "IMU initialization not complete\r\n");
     }
     else if(!strcmp(argv[0], "adi"))
     {
@@ -175,18 +189,16 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
 void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
-  uint32_t tick = chVTGetSystemTimeX();
-  tick += US2ST(5U);
 
-//  while(1){ // you can uncomment this so that it continuously send the data out.
+  while(1){ // you can uncomment this so that it continuously send the data out.
               // this is useful in tuning the Temperature PID
       PIMUStruct _pimu = imu_get();
-//      pTPIDStruct _tempPID = TPID_get();
-      chprintf(chp,"%f\n", _pimu->temperature);
-//      chprintf(chp,"Temperature: %f\f\n", _pimu->temperature);
-//      chprintf(chp,"PID_value: %i\i\n", _tempPID->PID_Value);
-//      chThdSleep(MS2ST(500));
-//  }
+      TPIDStruct* _tempPID = TPID_get();
+      chprintf(chp,"Temperature: %f\r\n", _pimu->temperature);
+      chprintf(chp,"PID_value: %d\r\n", _tempPID->PID_Value);
+
+      chThdSleepMilliseconds(500);
+  }
 }
 
 
@@ -197,9 +209,15 @@ void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
 static const ShellCommand commands[] =
 {
   {"test", cmd_test},
-  {"data", cmd_data},
   {"cal", cmd_calibrate},
   {"temp", cmd_temp},
+  {"\xEE", cmd_data},
+  #ifdef PARAMS_USE_USB
+    {"\xFD",cmd_param_scale},
+    {"\xFB",cmd_param_update},
+    {"\xFA",cmd_param_tx},
+    {"\xF9",cmd_param_rx},
+  #endif
   {NULL, NULL}
 };
 

@@ -23,13 +23,6 @@ static void pwm3pcb(PWMDriver *pwmp) {
 
 }
 
-//the name of this function means PWM 3 CHANNEL 1 CALLBACK function
-static void pwm3c1cb(PWMDriver *pwmp) {
-
-  (void)pwmp;
-
-}
-
 // These are the definitions of the PWMConfig stuctures
 // E.g. the function name means PWM 3 CONFIGURATION
 static PWMConfig pwm3cfg = {
@@ -37,7 +30,7 @@ static PWMConfig pwm3cfg = {
         100,      /* Initial PWM period 1ms.       */
         pwm3pcb,       /* Periodic call back */
         {
-                {PWM_OUTPUT_DISABLED, pwm3c1cb}, /* {<pwm_initialisation_status>, <callback function of the channel> */
+                {PWM_OUTPUT_DISABLED, NULL}, /* {<pwm_initialisation_status>, <callback function of the channel> */
                 {PWM_OUTPUT_ACTIVE_HIGH, NULL},
                 {PWM_OUTPUT_DISABLED, NULL},
                 {PWM_OUTPUT_DISABLED, NULL}

@@ -393,13 +393,10 @@ static THD_FUNCTION(gimbal_init_thread, p)
       else
         _init_score[i] = 0;
     }
-    if(_init_score[0] > GIMBAL_INIT_SCORE_FULL && _init_score[1] > GIMBAL_INIT_SCORE_FULL)
+    if(_init_score[0] > GIMBAL_INIT_SCORE_FULL &&
+       _init_score[1] > GIMBAL_INIT_SCORE_FULL &&
+       gimbal._pIMU->state == IMU_STATE_READY)
     {
-      if(gimbal._pIMU->inited == 1)
-      {
-        attitude_imu_init(gimbal._pIMU);
-        gimbal._pIMU->inited = 2;
-      }
       _wait_time++;
       if(_wait_time>200)
       {
