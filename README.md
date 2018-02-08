@@ -1,6 +1,11 @@
-# RMdevBoard_ChibiOS  
-  
-## Get Chibi up and running in Windows
+# RM Infantry 2018
+
+## Note
+This repo is established for integration of RM infantry embedded programs, and should be kept organized.
+For individual R&D projects on ChibiOS application or driver, please commit to the "RMdevBoard_ChibiOS" repo.
+
+## Appendix
+### Get Chibi up and running in Windows
 (Written by Alex Wong, tell me if I got sth wrong)  
   
 1. Downloading ChibiStudio  
@@ -61,7 +66,7 @@
   - After flashing the program, press the triangle-shaped 'Resume program excution' button  
   - The green LED on the RM board should flash on and off every 500ms if everything is correct  
   
-## Get ChibiOS up and running in Mac (CLion automatic upload)
+### Get ChibiOS up and running in Mac (CLion automatic upload)
 This installation makes use of terminal, if you are not familiar with the use of the command line tool you can follow this [tutorial](https://www.davidbaumgold.com/tutorials/command-line/) to get started with it:
  
 1. Open terminal and create a directory inside your user folder and name it GitHub with the following command
@@ -154,7 +159,7 @@ This installation makes use of terminal, if you are not familiar with the use of
     - The green LED on the RM board should flash on and off every 500ms if everything is correct
 
 
-### Install CLion with a free student license
+#### Install CLion with a free student license
  1. Go to [JetBrains website](https://www.jetbrains.com/clion/download/#section=mac) and dowload CLion
  2. Obtain a student license using [this procedure](https://www.jetbrains.com/shop/eform/students) and your connect.ust.hk email address
   
