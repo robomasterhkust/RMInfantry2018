@@ -6,7 +6,7 @@
 #define IMU_ACCL_USE_LPF
 
 #include "params.h"
-/* TODO something wrong*/
+
 typedef enum {
   X = 0U,
   Y = 1U,
@@ -117,6 +117,7 @@ static const char imu_warning_messages[][IMU_WARNING_COUNT] =
 typedef enum{
   IMU_STATE_UNINIT = 0,
   IMU_STATE_HEATING,
+  IMU_STATE_CALIBRATING,
   IMU_STATE_READY
 } imu_state_t;
 

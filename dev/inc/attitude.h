@@ -3,7 +3,7 @@
 
 #include "mpu6500.h"
 
-#define ATT_W_ACCEL     0.3f
+#define ATT_W_ACCEL     0.6f
 #define ATT_W_GYRO      0.1f
 #define GYRO_BIAS_MAX  0.05f
 

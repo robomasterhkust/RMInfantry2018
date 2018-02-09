@@ -27,4 +27,7 @@
 
 void shellStart(void);
 
+bool power_check(void);
+bool power_failure(void);
+
 #endif

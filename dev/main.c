@@ -106,9 +106,12 @@ int main(void)
   RC_init();
   sdlog_init();
   extiinit();
+  can_processInit();
+  
+  while(!power_check())
+    chThdSleepMilliseconds(100);
 
   /* Init sequence 2: sensors, comm*/
-  can_processInit();
   attitude_init();
   gyro_init();
 
@@ -118,10 +121,46 @@ int main(void)
 
   while (true)
   {
+    uint32_t error = gimbal_get_error();
 
-    chThdSleepMilliseconds(500);
+    if(power_failure())
+    {
+      /* REBOOT */
+      LEDY_ON();
+      {
+        __DSB();                              /* Ensure all outstanding memory accesses included
+                                                 buffered write are completed before reset */
+        SCB->AIRCR  = ((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
+                       (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
+                        SCB_AIRCR_SYSRESETREQ_Msk);      /* Keep priority group unchanged */
+        __DSB();                               /* Ensure completion of memory access */
+        while(1);
+      }
+    }
+    chThdSleepMilliseconds(200);
 
   }
 
   return 0;
+}
+
+/**
+  *   @brief Check whether the 24V power is on
+  */
+bool power_check(void)
+{
+  GimbalEncoder_canStruct* can = can_getGimbalMotor();
+
+  return can->updated;
+}
+
+/**
+  *   @brief  Monitor the case of a failure on 24V power, indicating the vehicle being killed
+  */
+bool power_failure(void)
+{
+  uint32_t error = gimbal_get_error();
+
+  return error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED) ==
+    (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED);
 }

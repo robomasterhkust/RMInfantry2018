@@ -7,14 +7,16 @@
 
 #define GIMBAL_CONTROL_FREQ 1000U
 #define GIMBAL_CUTOFF_FREQ    30U
-//#define GIMBAL_ENCODER_USE_SPEED
+#define GIMBAL_ENCODER_USE_SPEED
 
 #define GIMBAL_CAN  &CAND1
 #define GIMBAL_CAN_EID  0x1FF
 
-#ifdef GIMBAL_ENCODER_USE_SPEED
-  #define GIMBAL_SPEED_BUFFER_LEN      10U
-#endif
+typedef enum {
+  GIMBAL_STATE_DEAD = 0,
+  GIMBAL_STATE_INITING,
+  GIMBAL_STATE_READY
+} gimbal_state_t;
 
 typedef enum {
   GIMBAL_YAW_NOT_CONNECTED = 1<<0,
@@ -38,40 +40,37 @@ static const char gimbal_warning_messages[][GIMBAL_WARNING_COUNT] =
 };
 
 typedef struct{
+  uint8_t _wait_count;
+  float _angle;
+  float _current;
 
+  #ifdef GIMBAL_ENCODER_USE_SPEED
+    float _speed_enc;
+    int8_t _dir;
+  #endif
+
+  float _speed_cmd;
+  float _speed;
 } GimbalMotorStruct;
 
 typedef struct{
-  bool inited;
-  volatile GimbalEncoder_canStruct* _encoder_can;
-  volatile IMUStruct* _pIMU;
-
+  uint8_t state;
   uint32_t errorFlag;
 
-  /* motor status */
-  uint8_t yaw_wait_count;
-  uint8_t pitch_wait_count;
-  float yaw_angle;
-  float pitch_angle;
-  float yaw_current;
-  float pitch_current;
-    uint32_t timestamp;
+  volatile IMUStruct* _pIMU;
+  volatile GimbalEncoder_canStruct* _encoder;
 
-  #ifdef GIMBAL_ENCODER_USE_SPEED
-    float yaw_speed_enc;
-    float pitch_speed_enc;
-  #endif
+  /* motor status */
+  volatile GimbalMotorStruct motor[2];
 
   float yaw_atti_cmd;
   float pitch_atti_cmd;
-  float yaw_speed_cmd;
-  float pitch_speed_cmd;
-  float yaw_speed;
-  float pitch_speed;
 
   /*Mechanical parameters*/
-  param_t axis_init_pos[3];
+  param_t axis_init_pos[2];
   param_t axis_ff_weight[6];
+  param_t axis_ff_int[2];
+
   /*first three subparams: pitch axis accelerometer maximum in XYZ
   last three subparams: yaw axis accelerometer maximum in XYZ when pitch at maximum*/
   param_t axis_ff_accel[6];

@@ -80,7 +80,10 @@ static inline float vector3_projection(const float u[3], const float v[3])
 static inline float norm_vector3_projection(const float u[3], const float v[3])
 {
   float norm = vector_norm(v,3);
-  return (u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/(norm*norm);
+  if(norm != 0.0f)
+    return (u[0]*v[0]+u[1]*v[1]+u[2]*v[2])/(norm*norm);
+  else
+    return 0.0f;
 }
 
 

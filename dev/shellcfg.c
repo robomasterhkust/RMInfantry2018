@@ -56,8 +56,8 @@ static THD_FUNCTION(matlab_thread, p)
   float txbuf_f[16];
   BaseSequentialStream* chp = (BaseSequentialStream*)SERIAL_DATA;
 
-  PIMUStruct PIMU = imu_get();
-//  GimbalStruct* gimbal = gimbal_get();
+  PIMUStruct pIMU = imu_get();
+  GimbalStruct* gimbal = gimbal_get();
 
   uint32_t tick = chVTGetSystemTimeX();
   const uint16_t period = US2ST(1000000/HOST_TRANSMIT_FREQ);
@@ -71,14 +71,11 @@ static THD_FUNCTION(matlab_thread, p)
       tick = chVTGetSystemTimeX();
     }
 
-    txbuf_f[0] = PIMU->gyroData[X];
-    txbuf_f[1] = PIMU->gyroData[Y];
-    txbuf_f[2] = PIMU->gyroData[Z];
-    txbuf_f[3] = PIMU->euler_angle[Roll];
-    txbuf_f[4] = PIMU->euler_angle[Pitch];
-    txbuf_f[5] = PIMU->euler_angle[Yaw];
+    txbuf_f[0] = (float)(pIMU->euler_angle[Yaw]);
+    txbuf_f[1] = (float)(pIMU->euler_angle[Pitch]);
 
-    transmit_matlab(chp, NULL, txbuf_f, 0, 6);
+
+    transmit_matlab(chp, NULL, txbuf_f, 0, 2);
   }
 }
 
@@ -90,6 +87,7 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
   PIMUStruct PIMU = imu_get();
+  GimbalStruct* gimbal = gimbal_get();
 
   chprintf(chp,"accelData[X]: %f\r\n",PIMU->accelData[X]);
   chprintf(chp,"accelData[Y]: %f\r\n",PIMU->accelData[Y]);
@@ -99,6 +97,11 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
   chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
 
+  chprintf(chp,"pitch angle: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
+  chprintf(chp,"roll speed: %f\r\n",PIMU->gyroData[X]);
+  chprintf(chp,"yaw speed: %f\r\n",PIMU->gyroData[Z]);
+
+  chprintf(chp,"gimbal state: %d\r\n",gimbal->state);
 }
 
 /**
@@ -147,9 +150,14 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
       if(pIMU->state == IMU_STATE_READY)
       {
         pIMU->accelerometer_not_calibrated = true;
+
+        pIMU->state == IMU_STATE_CALIBRATING;
+
         chThdSleepMilliseconds(10);
         calibrate_accelerometer(pIMU);
         chThdResume(&(pIMU->imu_Thd), MSG_OK);
+
+        pIMU->state == IMU_STATE_READY;
       }
       else
         chprintf(chp, "IMU initialization not complete\r\n");
@@ -159,12 +167,18 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
       if(pIMU->state == IMU_STATE_READY)
       {
         pIMU->gyroscope_not_calibrated = true;
+
+        pIMU->state == IMU_STATE_CALIBRATING;
+
         chThdSleepMilliseconds(10);
         calibrate_gyroscope(pIMU);
         chThdResume(&(pIMU->imu_Thd), MSG_OK);
+
+        pIMU->state == IMU_STATE_READY;
       }
       else
         chprintf(chp, "IMU initialization not complete\r\n");
+
     }
     else if(!strcmp(argv[0], "adi"))
     {
@@ -190,17 +204,16 @@ void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
 
-  while(1){ // you can uncomment this so that it continuously send the data out.
-              // this is useful in tuning the Temperature PID
+  //while(1){ // you can uncomment this so that it continuously send the data out.
+  //            // this is useful in tuning the Temperature PID
       PIMUStruct _pimu = imu_get();
       TPIDStruct* _tempPID = TPID_get();
       chprintf(chp,"Temperature: %f\r\n", _pimu->temperature);
       chprintf(chp,"PID_value: %d\r\n", _tempPID->PID_Value);
 
       chThdSleepMilliseconds(500);
-  }
+  //}
 }
-
 
 /**
  * @brief array of shell commands, put the corresponding command and functions below

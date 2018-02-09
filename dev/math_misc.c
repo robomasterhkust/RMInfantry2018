@@ -4,7 +4,8 @@
 void lpfilter_init(lpfilterStruct* const lp,
   const float sample_freq, const float cutoff_freq)
 {
-  lp->data[0] = lp->data[1] = 0.0f;
+  lp->data[0] = 0.0f;
+  lp->data[1] = 0.0f;
 
   float fr = sample_freq / cutoff_freq;
   float ohm = tanf(M_PI / fr);

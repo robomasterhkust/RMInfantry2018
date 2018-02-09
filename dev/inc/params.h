@@ -30,7 +30,6 @@
   void cmd_param_tx(BaseSequentialStream * chp, int argc, char *argv[]);
 #endif
 
-
 #define PARAMS_NUM_MAX        32U
 typedef float param_t, *p_param_t;
 typedef const char*     param_name_t;
