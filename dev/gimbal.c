@@ -10,6 +10,8 @@
 #include "attitude.h"
 #include "math_misc.h"
 
+#include "dbus.h"
+
 #define GIMBAL_IQ_MAX 7000
 
 static pi_controller_t _yaw_vel;
@@ -25,6 +27,7 @@ static pid_controller_t _pitch_pos;
 
 static lpfilterStruct lp_angle[2];
 static GimbalStruct gimbal;
+static RC_Ctl_t* rc;
 
 static thread_reference_t gimbal_thread_handler = NULL;
 static thread_reference_t gimbal_init_thread_handler = NULL;
@@ -44,6 +47,49 @@ static void gimbal_kill(void)
   gimbal.yaw_iq_output = 0;
   gimbal.pitch_iq_output = 0;
   gimbal_canUpdate();
+}
+
+static void gimbal_getInput(float* const input_z, float* const input_y)
+{
+  const float max_input_z = 8.0f, max_input_y = 4.0f;
+
+  *input_z = mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_z, max_input_z);
+  *input_y = -mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_y, max_input_y);
+}
+
+static void gimbal_attiCmd(float input_z, float input_y, const float dt)
+{
+  input_z *= dt;
+  input_y *= dt;
+
+  float pitch = gimbal.pitch_atti_cmd;
+  float roll = gimbal._pIMU->euler_angle[Roll];
+  float yaw = gimbal.yaw_atti_cmd;
+
+  float tanpitch = tanf(pitch);
+  float tantheta = tanf(input_y);
+
+  gimbal.yaw_atti_cmd = atan2f(sinf(yaw + input_z) - tanpitch * tantheta * sinf(yaw),
+                               cosf(yaw + input_z) - tanpitch * tantheta * cosf(yaw));
+
+  gimbal.pitch_atti_cmd = asinf(cosf(pitch)*cosf(yaw)*sinf(input_y) + cosf(input_y)*sinf(pitch));
+}
+
+static void gimbal_checkLimit(void)
+{
+  if(gimbal.motor[GIMBAL_YAW]._angle < gimbal.axis_limit[0])
+    gimbal.state |= GIMBAL_YAW_AT_LOW_LIMIT;
+  else if(gimbal.motor[GIMBAL_YAW]._angle > gimbal.axis_limit[1])
+    gimbal.state |= GIMBAL_YAW_AT_UP_LIMIT;
+  else
+    gimbal.state &= ~(GIMBAL_YAW_AT_UP_LIMIT | GIMBAL_YAW_AT_LOW_LIMIT);
+
+  if(gimbal.motor[GIMBAL_PITCH]._angle < gimbal.axis_limit[2])
+    gimbal.state |= GIMBAL_PITCH_AT_LOW_LIMIT;
+  else if(gimbal.motor[GIMBAL_PITCH]._angle > gimbal.axis_limit[3])
+    gimbal.state |= GIMBAL_PITCH_AT_UP_LIMIT;
+  else
+    gimbal.state &= ~(GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT);
 }
 
 #ifdef GIMBAL_ENCODER_USE_SPEED
@@ -230,6 +276,8 @@ static THD_FUNCTION(gimbal_thread, p)
   float pitch_atti_out,yaw_atti_out;
   float sinroll, cosroll, cospitch;
 
+  float input_z = 0.0f, input_y = 0.0f;
+
   systime_t tick = chVTGetSystemTimeX();
   while(!chThdShouldTerminateX())
   {
@@ -245,12 +293,30 @@ static THD_FUNCTION(gimbal_thread, p)
     gimbal_encoderUpdate(&gimbal.motor[GIMBAL_YAW], GIMBAL_YAW);
     gimbal_encoderUpdate(&gimbal.motor[GIMBAL_PITCH], GIMBAL_PITCH);
 
+    gimbal.d_yaw = gimbal.motor[GIMBAL_YAW]._angle - gimbal.axis_init_pos[GIMBAL_YAW];
+
     gimbal_getSpeed();
+    gimbal_checkLimit();
+
+    gimbal_getInput(&input_z, &input_y);
+
+    if(gimbal.state & GIMBAL_YAW_AT_UP_LIMIT && input_z > 0.0f)
+      input_z = 0.0f;
+    if(gimbal.state & GIMBAL_YAW_AT_LOW_LIMIT && input_z < 0.0f)
+      input_z = 0.0f;
+
+    if(gimbal.state & GIMBAL_PITCH_AT_UP_LIMIT && input_y > 0.0f)
+      input_y = 0.0f;
+    if(gimbal.state & GIMBAL_PITCH_AT_LOW_LIMIT && input_y < 0.0f)
+      input_y = 0.0f;
+
+    gimbal_attiCmd(input_z, input_y, 0.001);
 
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
                                       gimbal._pIMU->euler_angle[Yaw],
                                       gimbal._pIMU->d_euler_angle[Yaw]);
+
     pitch_atti_out = gimbal_controlAttitude(&_pitch_atti,
                                       gimbal.pitch_atti_cmd,
                                       gimbal._pIMU->euler_angle[Pitch],
@@ -268,10 +334,16 @@ static THD_FUNCTION(gimbal_thread, p)
     cospitch = cosf(gimbal._pIMU->euler_angle[Pitch]);
 
     //TODO Yaw mixer is not aligned
-    gimbal.motor[GIMBAL_YAW]._speed_cmd = -sinroll * pitch_atti_out + cospitch * cosroll * yaw_atti_out;
+    if(gimbal.state & (GIMBAL_YAW_AT_UP_LIMIT | GIMBAL_YAW_AT_LOW_LIMIT))
+      gimbal.motor[GIMBAL_YAW]._speed_cmd = -gimbal.motor[GIMBAL_YAW]._speed_enc * 0.5f;
+    else
+      gimbal.motor[GIMBAL_YAW]._speed_cmd = -sinroll * pitch_atti_out + cospitch * cosroll * yaw_atti_out;
   //  if(cosf(yaw_theta1) != 0.0f)
   //    gimbal.motor[GIMBAL_YAW]._speed_cmd /= cosf(yaw_theta1);
-    gimbal.motor[GIMBAL_PITCH]._speed_cmd = cosroll * pitch_atti_out + cospitch * sinroll * yaw_atti_out;
+    if(gimbal.state & (GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT))
+      gimbal.motor[GIMBAL_PITCH]._speed_cmd = -gimbal.motor[GIMBAL_PITCH]._speed_enc * 0.5f;
+    else
+      gimbal.motor[GIMBAL_PITCH]._speed_cmd = cosroll * pitch_atti_out + cospitch * sinroll * yaw_atti_out;
 
     gimbal.yaw_iq_cmd = gimbal_controlSpeed(&_yaw_vel, &gimbal.motor[GIMBAL_YAW]);
     gimbal.pitch_iq_cmd = gimbal_controlSpeed(&_pitch_vel, &gimbal.motor[GIMBAL_PITCH]);
@@ -418,6 +490,8 @@ const char yaw_pos_name[] =   "Gimbal Yaw Pos";
 const char pitch_pos_name[] = "Gimbal Pitch Pos";
 
 const char ff_int_name[] = "Gimbal FF Int";
+const char limit_name[] = "Gimbal axis limit";
+const char limit_subname[] = "Yaw_min Yaw_max Pitch_min Pitch_max";
 
 /*
  *  @brief      Initialize the gimbal motor driver
@@ -430,6 +504,7 @@ void gimbal_init(void)
   memset(&gimbal, 0 ,sizeof(GimbalStruct));
 
   gimbal._pIMU = imu_get();
+  rc = RC_get();
   gimbal._encoder = can_getGimbalMotor();
   chThdSleepMilliseconds(3);
 
@@ -448,6 +523,7 @@ void gimbal_init(void)
   params_set(gimbal.axis_ff_weight, 2, 6, axis_ff_name,   subname_ff,      PARAM_PUBLIC);
   params_set(gimbal.axis_ff_accel,  6, 6, accl_name,      subname_accl,    PARAM_PUBLIC);
   params_set(gimbal.axis_ff_int,  9, 2, ff_int_name,    subname_axis,    PARAM_PUBLIC);
+  params_set(gimbal.axis_limit,  10, 4, limit_name,    limit_subname,    PARAM_PUBLIC);
 
   params_set(&_yaw_pos,   3, 3, yaw_pos_name,   subname_PID,   PARAM_PUBLIC);
   params_set(&_pitch_pos, 4, 3, pitch_pos_name, subname_PID,   PARAM_PUBLIC);

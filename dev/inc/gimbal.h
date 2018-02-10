@@ -15,7 +15,11 @@
 typedef enum {
   GIMBAL_STATE_DEAD = 0,
   GIMBAL_STATE_INITING,
-  GIMBAL_STATE_READY
+  GIMBAL_STATE_READY,
+  GIMBAL_YAW_AT_UP_LIMIT = 1 << 7,
+  GIMBAL_YAW_AT_LOW_LIMIT = 1 << 6,
+  GIMBAL_PITCH_AT_UP_LIMIT = 1 << 5,
+  GIMBAL_PITCH_AT_LOW_LIMIT = 1 << 4,
 } gimbal_state_t;
 
 typedef enum {
@@ -66,10 +70,14 @@ typedef struct{
   float yaw_atti_cmd;
   float pitch_atti_cmd;
 
+  float chassis_yaw;
+  float d_yaw;
+
   /*Mechanical parameters*/
   param_t axis_init_pos[2];
   param_t axis_ff_weight[6];
   param_t axis_ff_int[2];
+  param_t axis_limit[4];
 
   /*first three subparams: pitch axis accelerometer maximum in XYZ
   last three subparams: yaw axis accelerometer maximum in XYZ when pitch at maximum*/
