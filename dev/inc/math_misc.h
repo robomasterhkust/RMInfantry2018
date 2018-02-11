@@ -13,7 +13,7 @@
  *
  * Data structure for a IIR second-order sections form filter
  * b_0 + b_1 * z^-1 + b_2 * z^-2
- * -----------------------------
+ * -------------------------------
  *   1 + a_1 * z^-1 + a_2 * z^-2
  */
 typedef struct {

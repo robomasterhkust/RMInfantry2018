@@ -107,13 +107,13 @@ int main(void)
   sdlog_init();
   extiinit();
   can_processInit();
-  
-  while(!power_check())
-    chThdSleepMilliseconds(100);
 
   /* Init sequence 2: sensors, comm*/
   attitude_init();
   gyro_init();
+
+  while(!power_check())
+    chThdSleepMilliseconds(100);
 
   /* Init sequence 3: actuators, display*/
   gimbal_init();

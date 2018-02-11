@@ -12,10 +12,14 @@
 #define GIMBAL_CAN  &CAND1
 #define GIMBAL_CAN_EID  0x1FF
 
+#define GIMBAL_YAW_GEAR 0.667f
+
 typedef enum {
   GIMBAL_STATE_DEAD = 0,
   GIMBAL_STATE_INITING,
   GIMBAL_STATE_READY,
+  GIMBAL_STATE_FALLOFF,               //The vehicle is turned over
+  GIMBAL_STATE_180DEG_TRANSITION,     //Reserved for sentry gimbal
   GIMBAL_YAW_AT_UP_LIMIT = 1 << 7,
   GIMBAL_YAW_AT_LOW_LIMIT = 1 << 6,
   GIMBAL_PITCH_AT_UP_LIMIT = 1 << 5,
@@ -75,7 +79,7 @@ typedef struct{
 
   /*Mechanical parameters*/
   param_t axis_init_pos[2];
-  param_t axis_ff_weight[6];
+  param_t axis_ff_ext[6];
   param_t axis_ff_int[2];
   param_t axis_limit[4];
 

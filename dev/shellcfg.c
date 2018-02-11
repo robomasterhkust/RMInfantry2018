@@ -88,18 +88,19 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   (void) argc,argv;
   PIMUStruct PIMU = imu_get();
   GimbalStruct* gimbal = gimbal_get();
-
-  chprintf(chp,"accelData[X]: %f\r\n",PIMU->accelData[X]);
-  chprintf(chp,"accelData[Y]: %f\r\n",PIMU->accelData[Y]);
-  chprintf(chp,"accelData[Z]: %f\r\n",PIMU->accelData[Z]);
+  RC_Ctl_t* rc = RC_get();
 
   chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
   chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
   chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
 
-  chprintf(chp,"pitch angle: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
-  chprintf(chp,"roll speed: %f\r\n",PIMU->gyroData[X]);
-  chprintf(chp,"yaw speed: %f\r\n",PIMU->gyroData[Z]);
+  chprintf(chp,"pitch speed: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed);
+  chprintf(chp,"pitch speed enc: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
+  chprintf(chp,"yaw speed: %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
+  chprintf(chp,"yaw speed enc: %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
+
+  chprintf(chp,"RC2: %d\r\n",rc->rc.channel2);
+  chprintf(chp,"RC3: %d\r\n",rc->rc.channel3);
 
   chprintf(chp,"gimbal state: %d\r\n",gimbal->state);
 }
