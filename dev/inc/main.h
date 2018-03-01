@@ -21,6 +21,7 @@
 #include "calibrate_sensor.h"
 
 #include "gimbal.h"
+#include "shoot.h"
 
 #include "exti.h"
 #include "imu_temp.h"
