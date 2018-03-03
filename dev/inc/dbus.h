@@ -9,6 +9,10 @@
 
 #define UART_DBUS                     &UARTD1
 
+#define RC_S_UP  		1U
+#define RC_S_MIDDLE 3U
+#define RC_S_DOWN		2U
+
 typedef union{
 		struct{
 			uint16_t channel0;

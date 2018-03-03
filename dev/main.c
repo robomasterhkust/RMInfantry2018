@@ -113,11 +113,11 @@ int main(void)
   gyro_init();
 
   while(!power_check())
-    chThdSleepMilliseconds(100);
+    chThdSleepMilliseconds(200);
 
   /* Init sequence 3: actuators, display*/
   gimbal_init();
-  pwm_shooter_init();
+  shooter_init();
 
   while (true)
   {
@@ -127,6 +127,7 @@ int main(void)
     {
       /* REBOOT */
       LEDY_ON();
+      chThdSleepMilliseconds(500);
       {
         __DSB();                              /* Ensure all outstanding memory accesses included
                                                  buffered write are completed before reset */
@@ -134,7 +135,7 @@ int main(void)
                        (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
                         SCB_AIRCR_SYSRESETREQ_Msk);      /* Keep priority group unchanged */
         __DSB();                               /* Ensure completion of memory access */
-        while(1);
+        while(true);
       }
     }
     chThdSleepMilliseconds(200);
