@@ -18,6 +18,22 @@ static uint8_t rx_start_flag = 1;
 typedef bool dbus_error_t;
 static dbus_error_t rxflag = false;
 
+static void rcStructInit(void)
+{
+    RC_Ctl.rc.channel0 = 1024;
+    RC_Ctl.rc.channel1 = 1024;
+    RC_Ctl.rc.channel2 = 1024;
+    RC_Ctl.rc.channel3 = 1024;
+    RC_Ctl.rc.s1 =0;
+    RC_Ctl.rc.s2 = 0;
+    RC_Ctl.mouse.LEFT=0;
+    RC_Ctl.mouse.RIGHT =0;
+    RC_Ctl.mouse.x=0;
+    RC_Ctl.mouse.y=0;
+    RC_Ctl.mouse.z=0;
+    RC_Ctl.keyboard.key_code=0;
+}
+
 /*
  * @brief get error code: rx_flag
  * @status: true = connected
@@ -53,13 +69,11 @@ static void decryptDBUS(void)
  */
 static void rxend(UARTDriver *uartp) {
 
-  if(rx_start_flag)
-  {
+  if (rx_start_flag) {
     chSysLockFromISR();
     chThdResumeI(&uart_dbus_thread_handler, MSG_OK);
     chSysUnlockFromISR();
-  }
-  else
+  } else
     rx_start_flag = 1;
 }
 
@@ -67,11 +81,11 @@ static void rxend(UARTDriver *uartp) {
  * UART driver configuration structure.
  */
 static UARTConfig uart_cfg = {
-  NULL,NULL,rxend,NULL,NULL,
-  100000,
-  USART_CR1_PCE,
-  0,
-  0
+        NULL, NULL, rxend, NULL, NULL,
+        100000,
+        USART_CR1_PCE,
+        0,
+        0
 };
 
 #define  DBUS_INIT_WAIT_TIME_MS      4U
@@ -91,8 +105,7 @@ static THD_FUNCTION(uart_dbus_thread, p)
   systime_t timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
   uint32_t count = 0;
 
-  while(!chThdShouldTerminateX())
-  {
+  while (!chThdShouldTerminateX()) {
     uartStopReceive(UART_DBUS);
     uartStartReceive(UART_DBUS, DBUS_BUFFER_SIZE, rxbuf);
 
@@ -100,19 +113,15 @@ static THD_FUNCTION(uart_dbus_thread, p)
     rxmsg = chThdSuspendTimeoutS(&uart_dbus_thread_handler, timeout);
     chSysUnlock();
 
-    if(rxmsg == MSG_OK)
-    {
-      if(!rxflag)
-      {
+    if (rxmsg == MSG_OK) {
+      if (!rxflag) {
         timeout = MS2ST(DBUS_WAIT_TIME_MS);
         rxflag = true;
-      }
-      else
+      } else
         decryptDBUS();
-    }
-    else
-    {
+    } else {
       rxflag = false;
+      rcStructInit();
       timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
     }
 
@@ -130,22 +139,6 @@ static THD_FUNCTION(uart_dbus_thread, p)
 RC_Ctl_t* RC_get(void)
 {
   return &RC_Ctl;
-}
-
-static void rcStructInit(void)
-{
-  RC_Ctl.rc.channel0 = 1024;
-  RC_Ctl.rc.channel1 = 1024;
-  RC_Ctl.rc.channel2 = 1024;
-  RC_Ctl.rc.channel3 = 1024;
-  RC_Ctl.rc.s1 =0;
-  RC_Ctl.rc.s2 = 0;
-  RC_Ctl.mouse.LEFT=0;
-  RC_Ctl.mouse.RIGHT =0;
-  RC_Ctl.mouse.x=0;
-  RC_Ctl.mouse.y=0;
-  RC_Ctl.mouse.z=0;
-  RC_Ctl.keyboard.key_code=0;
 }
 
 /**

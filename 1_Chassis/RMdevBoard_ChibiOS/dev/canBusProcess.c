@@ -263,4 +263,3 @@ void can_processInit(void)
 
   chThdSleepMilliseconds(20);
 }
-
