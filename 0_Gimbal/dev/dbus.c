@@ -142,7 +142,7 @@ static void RC_reset(void)
 }
 
 #ifdef RC_INFANTRY_HERO
-void RC_txCan(CANDriver *const CANx, const uint16_t SID)
+static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
 {
   CANTxFrame txmsg;
   dbus_tx_canStruct txCan;
@@ -220,6 +220,10 @@ static THD_FUNCTION(uart_dbus_thread, p)
       RC_reset();
       timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
     }
+
+    #ifdef RC_INFANTRY_HERO
+      RC_txCan(DBUS_CAN, CAN_DBUS_ID);
+    #endif
 
     //Control the flashing of green LED // Shift to Error.c
     if(!(count % 25))

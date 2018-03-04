@@ -112,14 +112,15 @@ int main(void)
   /* Init sequence 1: central controllers, loggers*/
   shellStart();
   params_init();
-  RC_init();
-  sdlog_init();
-  extiinit();
-  can_processInit();
+
+  //sdlog_init();
+  //extiinit();
 
   /* Init sequence 2: sensors, comm*/
   attitude_init();
   gyro_init();
+  can_processInit();
+  RC_init();
 
   while(!power_check())
     chThdSleepMilliseconds(200);

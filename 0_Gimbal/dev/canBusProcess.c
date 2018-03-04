@@ -190,4 +190,6 @@ void can_processInit(void)
                     can_rx, (void *)&CAND1);
   chThdCreateStatic(can_rx2_wa, sizeof(can_rx2_wa), NORMALPRIO + 7,
                     can_rx, (void *)&CAND2);
+
+  chThdSleepMilliseconds(200);
 }
