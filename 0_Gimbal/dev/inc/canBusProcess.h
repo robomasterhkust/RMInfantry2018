@@ -15,6 +15,8 @@
 
 #define CAN_DBUS_ID                                 0x001
 
+#define CAN_ENCODER_RANGE           8192            // 0x2000
+
 typedef enum
 {
   GIMBAL_YAW = 0,
@@ -39,6 +41,7 @@ typedef struct {
   uint8_t temperature;
 
   int32_t round_count;
+  int32_t total_ecd;
   float radian_angle; // Continuous
 
   bool updated;

@@ -38,7 +38,6 @@ volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
   return chassis_encoder;
 }
 
-#define CAN_ENCODER_RANGE           8192            // 0x2000
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
 static inline void can_processChassisEncoder
   (volatile ChassisEncoder_canStruct* cm, const CANRxFrame* const rxmsg)
@@ -55,8 +54,8 @@ static inline void can_processChassisEncoder
   if      (cm->raw_angle - prev_angle >  CAN_ENCODER_RANGE / 2) cm->round_count--;
   else if (cm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2) cm->round_count++;
 
-  cm->radian_angle = ((float)cm->round_count * CAN_ENCODER_RANGE + cm->raw_angle)
-                      * CAN_ENCODER_RADIAN_RATIO;
+  cm->total_ecd = cm->round_count * CAN_ENCODER_RANGE + cm->raw_angle;
+  cm->radian_angle = cm->total_ecd * CAN_ENCODER_RADIAN_RATIO;
 
   chSysUnlock();
 }
