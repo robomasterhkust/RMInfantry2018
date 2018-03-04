@@ -130,7 +130,7 @@ CSRC = $(STARTUPSRC) \
        main.c shellcfg.c flash.c sdlog.c\
        mpu6500.c attitude.c ist8310.c adis16265.c math_misc.c \
        canBusProcess.c dbus.c gimbal.c params.c usbcfg.c \
-       calibrate_sensor.c shoot_pwm.c \
+       calibrate_sensor.c shoot_pwm.c feeder.c\
        exti.c imu_temp.c
 
 

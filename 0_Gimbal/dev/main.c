@@ -127,6 +127,7 @@ int main(void)
   /* Init sequence 3: actuators, display*/
   gimbal_init();
   shooter_init();
+  feederInit();
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
@@ -154,7 +155,7 @@ int main(void)
         while(true);
       }*/
     }
-    
+
     chThdSleepMilliseconds(200);
   }
 

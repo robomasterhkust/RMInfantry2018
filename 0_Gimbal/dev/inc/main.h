@@ -22,6 +22,7 @@
 
 #include "gimbal.h"
 #include "shoot.h"
+#include "feeder.h"
 
 #include "exti.h"
 #include "imu_temp.h"
