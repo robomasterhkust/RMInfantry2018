@@ -95,20 +95,41 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
   chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
   chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
-
-  chprintf(chp,"pitch speed: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed);
-  chprintf(chp,"pitch speed enc: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
-  chprintf(chp,"yaw speed: %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
-  chprintf(chp,"yaw speed enc: %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
-
-  chprintf(chp,"RC2: %d\r\n",rc->rc.channel2);
-  chprintf(chp,"RC3: %d\r\n",rc->rc.channel3);
-
-  chprintf(chp,"GM: %d\r\n",gm->raw_angle);
-  chprintf(chp,"GM: %f\r\n",gm->radian_angle);
-
-  chprintf(chp,"gimbal state: %d\r\n",gimbal->state);
 }
+
+void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
+{
+  (void) argc,argv;
+
+  mavlink_attitude_t* attitude = mavlinkComm_attitude_subscribe();
+
+
+  mavlinkComm_t* comm = mavlinkComm_get();
+  float pitchSpeed = 0.0f, yawSpeed = 0.0f;
+
+  uint8_t i;
+  for (i = 0; i < 100; i++)
+  {
+    if(mavlinkComm_attitude_check())
+    {
+      chSysLock();
+      pitchSpeed = attitude->pitchspeed;
+      yawSpeed = attitude->yawspeed;
+      chSysUnlock();
+
+      chprintf(chp,"MAVpitchCmd: %f\r\n",pitchSpeed);
+      chprintf(chp,"MAVyawCmd: %f\r\n",yawSpeed);
+    }
+    else
+    {
+      pitchSpeed = 0.0f;
+      yawSpeed = 0.0f;
+    }
+
+    chThdSleepMilliseconds(100);
+  }
+}
+
 
 /**
  * @brief Start the data tramsmission to matlab
@@ -228,6 +249,7 @@ void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
 static const ShellCommand commands[] =
 {
   {"test", cmd_test},
+  {"mavlink", cmd_mavlink},
   {"cal", cmd_calibrate},
   {"temp", cmd_temp},
   {"\xEE", cmd_data},

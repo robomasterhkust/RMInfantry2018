@@ -12,6 +12,11 @@
 
 #include "dbus.h"
 
+#ifdef GIMBAL_USE_MAVLINK_CMD
+  #include "mavlink_comm.h"
+  mavlink_attitude_t* mavlink_attitude;
+#endif
+
 #define GIMBAL_IQ_MAX 8000
 
 static pi_controller_t _yaw_vel;
@@ -42,7 +47,7 @@ uint32_t gimbal_get_error(void)
   return gimbal.errorFlag;
 }
 
-static void gimbal_kill(void)
+void gimbal_kill(void)
 {
   gimbal.yaw_iq_output = 0;
   gimbal.pitch_iq_output = 0;
@@ -50,12 +55,33 @@ static void gimbal_kill(void)
   gimbal.state = GIMBAL_STATE_UNINIT;
 }
 
+#define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
   float rc_input_z = 0.0f, rc_input_y = 0.0f;         //RC input
   float cv_input_z = 0.0f, cv_input_y = 0.0f;         //CV input
 
   const float max_input_z = 12.0f, max_input_y = 8.0f;
+  static uint16_t cv_wait_count;
+
+  #ifdef GIMBAL_USE_MAVLINK_CMD
+    if(mavlinkComm_attitude_check())
+    {
+      chSysLock();
+      cv_input_z = mavlink_attitude->yawspeed;
+      cv_input_y = mavlink_attitude->pitchspeed;
+      chSysUnlock();
+    }
+    else
+      cv_wait_count++;
+  #endif
+
+  if(cv_wait_count > (uint16_t)(GIMBAL_CV_CMD_TIMEOUT/dt))
+  {
+    cv_input_z = 0.0f;
+    cv_input_y = 0.0f;
+    cv_wait_count = 0;
+  }
 
   rc_input_z = -mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_z, max_input_z);
   rc_input_y = -mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_y, max_input_y);
@@ -323,7 +349,7 @@ static THD_FUNCTION(gimbal_thread, p)
 
     gimbal_checkLimit();
 
-    gimbal_attiCmd(0.001, yaw_theta1);
+    gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
 
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
@@ -573,6 +599,10 @@ void gimbal_init(void)
 
   params_set(&_yaw_atti,     7, 3, _yaw_atti_name,   subname_PID,      PARAM_PUBLIC);
   params_set(&_pitch_atti,   8, 3, _pitch_atti_name, subname_PID,      PARAM_PUBLIC);
+
+  #ifdef GIMBAL_USE_MAVLINK_CMD
+    mavlink_attitude = mavlinkComm_attitude_subscribe();
+  #endif
 
   chThdCreateStatic(gimbal_init_thread_wa, sizeof(gimbal_init_thread_wa),
                     NORMALPRIO - 5, gimbal_init_thread, NULL);

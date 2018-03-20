@@ -132,7 +132,7 @@ int main(void) {
   {
 
     chThdSleepMilliseconds(500);
-    LEDR_TOGGLE();
+    LEDG_TOGGLE();
 
   }
 

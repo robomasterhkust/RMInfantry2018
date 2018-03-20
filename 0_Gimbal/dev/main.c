@@ -121,6 +121,7 @@ int main(void)
   gyro_init();
   can_processInit();
   RC_init();
+  mavlinkComm_init();
 
   while(!power_check())
     chThdSleepMilliseconds(200);
@@ -156,6 +157,8 @@ int main(void)
         while(true);
       }*/
     }
+    else
+      gimbal_kill();
 
     chThdSleepMilliseconds(200);
   }
