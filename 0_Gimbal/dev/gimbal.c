@@ -58,15 +58,16 @@ void gimbal_kill(void)
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
-  float rc_input_z = 0.0f, rc_input_y = 0.0f;         //RC input
-  float cv_input_z = 0.0f, cv_input_y = 0.0f;         //CV input
+  static uint16_t cv_wait_count = 0;
+  float           rc_input_z = 0.0f, rc_input_y = 0.0f;     //RC input
+  static float    cv_input_z = 0.0f, cv_input_y = 0.0f;     //CV input
 
-  const float max_input_z = 12.0f, max_input_y = 8.0f;
-  static uint16_t cv_wait_count;
+  const float max_input_z = 2.0f, max_input_y = 2.0f;
 
   #ifdef GIMBAL_USE_MAVLINK_CMD
     if(mavlinkComm_attitude_check())
     {
+      cv_wait_count = 0;
       chSysLock();
       cv_input_z = mavlink_attitude->yawspeed;
       cv_input_y = mavlink_attitude->pitchspeed;
@@ -74,14 +75,14 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
     }
     else
       cv_wait_count++;
-  #endif
 
-  if(cv_wait_count > (uint16_t)(GIMBAL_CV_CMD_TIMEOUT/dt))
-  {
-    cv_input_z = 0.0f;
-    cv_input_y = 0.0f;
-    cv_wait_count = 0;
-  }
+    if(cv_wait_count > (uint16_t)(GIMBAL_CV_CMD_TIMEOUT/dt))
+    {
+      cv_input_z = 0.0f;
+      cv_input_y = 0.0f;
+      cv_wait_count = 0;
+    }
+  #endif
 
   rc_input_z = -mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_z, max_input_z);
   rc_input_y = -mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_y, max_input_y);
@@ -317,8 +318,8 @@ static THD_FUNCTION(gimbal_thread, p)
   float pitch_atti_out,yaw_atti_out;
   float sinroll, cosroll, cospitch;
 
-
   systime_t tick = chVTGetSystemTimeX();
+
   while(!chThdShouldTerminateX())
   {
     tick += GIMBAL_CONTROL_PERIOD_ST;

@@ -103,8 +103,6 @@ void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
 
   mavlink_attitude_t* attitude = mavlinkComm_attitude_subscribe();
 
-
-  mavlinkComm_t* comm = mavlinkComm_get();
   float pitchSpeed = 0.0f, yawSpeed = 0.0f;
 
   uint8_t i;
