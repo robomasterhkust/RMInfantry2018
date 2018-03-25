@@ -50,7 +50,8 @@ volatile Gimbal_Send_Dbus_canStruct* can_get_sent_dbus(void){
 }
 
 static inline void  can_processSendDbusEncoder
-        (volatile Gimbal_Send_Dbus_canStruct* db, const CANRxFrame* const rxmsg){
+        (volatile Gimbal_Send_Dbus_canStruct* db, const CANRxFrame* const rxmsg)
+{
     chSysLock();
     db->channel0 = rxmsg->data16[0];
     db->channel1 = rxmsg->data16[1];
@@ -143,6 +144,7 @@ static void can_processEncoderMessage(CANDriver* const canp, const CANRxFrame* c
             break;
         case CAN_GIMBAL_SEND_DBUS_ID:
             can_processSendDbusEncoder(&gimbal_send_dbus,rxmsg);
+            break;
     }
   }
   else
@@ -236,6 +238,7 @@ void can_processInit(void)
   memset((void *)gimbal_encoder,  0, sizeof(GimbalEncoder_canStruct) *GIMBAL_MOTOR_NUM);
   memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct)*CHASSIS_MOTOR_NUM);
   memset((void *)extra_encoder, 0, sizeof(ChassisEncoder_canStruct)*EXTRA_MOTOR_NUM);
+  memset((void *)&gimbal_send_dbus, 0, sizeof(Gimbal_Send_Dbus_canStruct));
 
   uint8_t i;
   for (i = 0; i < CAN_FILTER_NUM; i++)

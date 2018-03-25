@@ -9,10 +9,12 @@
 #include "usbcfg.h"
 #include "flash.h"
 #include "chprintf.h"
+
 #include "canBusProcess.h"
 #include "dbus.h"
 #include "params.h"
 #include "sdlog.h"
+#include "mavlink_comm.h"
 
 #include "mpu6500.h"
 #include "ist8310.h"

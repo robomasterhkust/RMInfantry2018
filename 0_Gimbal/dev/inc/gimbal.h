@@ -9,6 +9,7 @@
 #define GIMBAL_CUTOFF_FREQ    30U
 
 //#define GIMBAL_INIT_TEST
+#define GIMBAL_USE_MAVLINK_CMD
 #define GIMBAL_ENCODER_USE_SPEED
 
 #define GIMBAL_CAN  &CAND1
@@ -103,6 +104,6 @@ GimbalStruct* gimbal_get(void);
 GimbalStruct* gimbal_get_sys_iden(void);
 uint32_t gimbal_get_error(void);
 void gimbal_init(void);
-void gimbal_sys_iden_init(void);
+void gimbal_kill(void);
 
 #endif
