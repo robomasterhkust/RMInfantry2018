@@ -111,7 +111,7 @@ int main(void) {
     pwm_shooter_init(); // *
     error_init();
 //  pwm12init();
-//
+    judgeinit();
 
 //  ultrasonic_init();
 
