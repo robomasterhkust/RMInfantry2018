@@ -316,7 +316,7 @@ static THD_FUNCTION(JudgeThread, arg) {
   event_listener_t serial_listener;
   static eventflags_t pending_flags;
   static eventflags_t current_flag;
-  chEvtRegisterMaskWithFlags(chnGetEventSource(Append_CRC16_Check_Sum), &serial_listener,
+  chEvtRegisterMaskWithFlags(chnGetEventSource(SERIAL_JUDGE), &serial_listener,
                              SERIAL_EVT_MASK, serial_wkup_flags);   //setup event listening
 
   while (!chThdShouldTerminateX()) {
