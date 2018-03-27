@@ -31,6 +31,7 @@
 #include "imu_temp.h"
 #include "sdlog.h"
 #include "shoot_pwm.h"
+#include "MiceTrack.h"
 
 void shellStart(void);
 
