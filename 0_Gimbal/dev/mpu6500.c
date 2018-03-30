@@ -354,7 +354,7 @@ uint8_t imuInit(PIMUStruct pIMU, const IMUConfigStruct* const imu_conf)
   imuTXData[1] = DLPF_41HZ;          // CONFIG register value DLPF_CFG;
   imuTXData[2] = (uint8_t)(imu_conf->_gyroConf << 3U);          // GYRO_CONFIG register value
   imuTXData[3] = (uint8_t)(imu_conf->_accelConf << 3U);          // ACCEL_CONFIG_1 register value
-  imuTXData[4] = ADLPF_184HZ;          // ACCEL_CONFIG_2 register value
+  imuTXData[4] = ADLPF_20HZ;          // ACCEL_CONFIG_2 register value
 
   spiAcquireBus(pIMU->_imu_spi);
   spiSelect(pIMU->_imu_spi);

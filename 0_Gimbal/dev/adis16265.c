@@ -79,10 +79,9 @@ static uint16_t gyro_read(const PGyroStruct pGyro, const uint8_t addr )
 static void gyro_update(PGyroStruct pGyro)
 {
   float angle_raw = (float)(gyro_get_raw_vel(pGyro)) * pGyro->psc + pGyro->offset;
-  float angle_vel;
 
-  angle_vel = lpfilter_apply(pGyro->lpf, angle_raw);
-//  angle_vel = angle_raw;
+  //float angle_vel = lpfilter_apply(pGyro->lpf, angle_raw);
+  float angle_vel = angle_raw;
   float angle = angle_vel * (GYRO_UPDATE_PERIOD_US / 1000000.0f);
 
   pGyro->angle += angle;
@@ -102,23 +101,6 @@ float yaw_temp_derivative = 0;
 float yaw_temp_integral = 0;
 float yaw_pre_error= 0;
 float yaw_pid_output_angle = 0;
-
-void yaw_axis_pid_cal(int32_t target_angle, int32_t current_angle){
-
-    float error = target_angle - current_angle;
-    float Kout = error * yaw_Kp;
-
-    yaw_temp_integral += error;
-
-    float Iout = yaw_temp_integral * yaw_Ki;
-
-    yaw_temp_derivative = error - yaw_pre_error;
-
-    float Dout = yaw_temp_derivative * yaw_Kd;
-
-    yaw_pid_output_angle = Dout + Iout + Kout;
-
-}
 
 #if defined(GYRO_ADIS)
 #define GYRO_OFFS_PSC    0.000319657f

@@ -26,14 +26,15 @@ static THD_FUNCTION(Attitude_thread, p)
   (void)p;
 
   PIMUStruct pIMU = imu_get();
+  PGyroStruct pGyro = gyro_get();
 
   static const IMUConfigStruct imu1_conf =
     {&SPID5, MPU6500_ACCEL_SCALE_8G, MPU6500_GYRO_SCALE_1000, MPU6500_AXIS_REV_X};
   imuInit(pIMU, &imu1_conf);
 
-  static const magConfigStruct mag1_conf =
-    {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
-  ist8310_init(&mag1_conf);
+  //static const magConfigStruct mag1_conf =
+  //  {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
+  //ist8310_init(&mag1_conf);
 
   //Check temperature feedback before starting temp controller
   imuGetData(pIMU);
@@ -68,8 +69,8 @@ static THD_FUNCTION(Attitude_thread, p)
     pIMU->errorCode |= IMU_TEMP_WARNING;
 
     imuGetData(pIMU);
-    ist8310_update();
-    attitude_update(pIMU);
+    //ist8310_update();
+    attitude_update(pIMU, pGyro);
 
     if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
     {

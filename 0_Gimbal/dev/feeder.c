@@ -72,8 +72,8 @@ volatile int16_t PID_VEL(float target){
     vel_pid.inte = vel_pid.inte <-vel_pid.inte_max? -vel_pid.inte_max:vel_pid.inte;
 
     float output = vel_pid.kp * current_error + vel_pid.ki * vel_pid.inte + vel_pid.kd * (current_error - last_error);
-    output = output > 6000?  6000:output;
-    output = output <-6000? -6000:output;
+    output = output > OUTPUT_MAX?  OUTPUT_MAX:output;
+    output = output <-OUTPUT_MAX? -OUTPUT_MAX:output;
 
     return (int16_t) output;
 
@@ -92,8 +92,8 @@ volatile int16_t PID_VEL_POS(float target){
     pos_vel_pid.inte = pos_vel_pid.inte <-pos_vel_pid.inte_max? -pos_vel_pid.inte_max:vel_pid.inte;
 
     float output = pos_vel_pid.kp * current_error + pos_vel_pid.ki * pos_vel_pid.inte + pos_vel_pid.kd * (current_error - last_error);
-    output = output > 6000?  6000:output;
-    output = output <-6000? -6000:output;
+    output = output > OUTPUT_MAX?  OUTPUT_MAX:output;
+    output = output <-OUTPUT_MAX? -OUTPUT_MAX:output;
 
     return (int16_t) output;
 

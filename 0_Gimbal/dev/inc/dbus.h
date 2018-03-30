@@ -10,7 +10,7 @@
 #define UART_DBUS                     &UARTD1
 
 #define RC_SAFE_LOCK
-#define RC_INFANTRY_HERO
+//#define RC_INFANTRY_HERO
 
 #ifdef RC_SAFE_LOCK
 	#define RC_LOCK_TIME_S		 15

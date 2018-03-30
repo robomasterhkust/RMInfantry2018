@@ -13,10 +13,16 @@
 
 static float _error_int[3] = {0.0f, 0.0f, 0.0f};
 
-uint8_t attitude_update(PIMUStruct pIMU)
+uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
 {
   float corr[3] = {0.0f, 0.0f, 0.0f};
-  float spinRate = vector_norm(pIMU->gyroData, 3);
+  float angle_vel[3];
+
+  angle_vel[X] = pIMU->gyroData[X];
+  angle_vel[Y] = pIMU->gyroData[Y];
+  angle_vel[Z] = pGyro->angle_vel;
+
+  float spinRate = vector_norm(angle_vel, 3);
   float accel = vector_norm(pIMU->accelFiltered, 3);
 
   vector_normalize(pIMU->qIMU, 4);
@@ -53,7 +59,7 @@ uint8_t attitude_update(PIMUStruct pIMU)
   }
 
   for (i = 0; i < 3; i++)
-    corr[i] += pIMU->gyroData[i] + _error_int[i];
+    corr[i] += angle_vel[i] + _error_int[i];
 
   float dq[4];
   q_derivative(pIMU->qIMU, corr, dq);

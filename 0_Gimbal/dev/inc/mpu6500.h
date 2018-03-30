@@ -3,7 +3,7 @@
 
 #define MPU6500_UPDATE_FREQ                    1000U  //Read MPU @ 1000Hz
 #define IMU_USE_EULER_ANGLE
-#define IMU_ACCL_USE_LPF
+//#define IMU_ACCL_USE_LPF
 
 #include "params.h"
 

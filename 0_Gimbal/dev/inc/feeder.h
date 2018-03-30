@@ -1,6 +1,7 @@
 #ifndef FEEDER
 #define FEEDER
 
+#define OUTPUT_MAX 6000
 
 #define FEEDER_STOP 3
 #define FEEDER_SINGLE 1

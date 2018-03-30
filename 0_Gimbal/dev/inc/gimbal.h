@@ -8,14 +8,16 @@
 #define GIMBAL_CONTROL_FREQ 1000U
 #define GIMBAL_CUTOFF_FREQ    30U
 
-//#define GIMBAL_INIT_TEST
+//#define GIMBAL_ZERO
+//#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
+//#define GIMBAL_FF_TEST              //Set Initialization position and PID value
 #define GIMBAL_USE_MAVLINK_CMD
 #define GIMBAL_ENCODER_USE_SPEED
 
 #define GIMBAL_CAN  &CAND1
 #define GIMBAL_CAN_EID  0x1FF
 
-#define GIMBAL_YAW_GEAR 0.667f
+#define GIMBAL_YAW_GEAR 0.533f
 
 typedef enum {
   GIMBAL_STATE_UNINIT = 0,
