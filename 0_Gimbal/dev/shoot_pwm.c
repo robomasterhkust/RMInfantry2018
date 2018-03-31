@@ -20,7 +20,8 @@ static bool safe = false;
 static PWMDriver PWMD12;
 void pwm12_setWidth(uint16_t width)
 {
-  PWMD12.tim->CCR[0] = PWMD12.tim->CCR[1] = width;
+  PWMD12.tim->CCR[0] = width;
+  PWMD12.tim->CCR[1] = width;
 }
 
 /**
@@ -137,10 +138,10 @@ void shooter_init(void)
 
     #ifndef SHOOTER_SETUP
       pwm12_setWidth(900);
-      chThdSleepSeconds(2);
+      chThdSleepSeconds(3);
 
       pwm12_setWidth(100);
-      chThdSleepSeconds(2);
+      chThdSleepSeconds(3);
 
       chThdCreateStatic(pwm_thd_wa, sizeof(pwm_thd_wa), NORMALPRIO + 1, pwm_thd, NULL);
     #endif

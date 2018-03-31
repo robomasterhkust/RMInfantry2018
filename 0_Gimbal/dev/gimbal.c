@@ -27,6 +27,8 @@ static pid_controller_t _pitch_atti;
 static pid_controller_t _yaw_pos;
 static pid_controller_t _pitch_pos;
 
+static float yaw_init_pos = 0.0f, pitch_init_pos = 0.0f;
+
 static PGyroStruct pGyro;
 
 #define gimbal_canUpdate()   \
@@ -134,19 +136,23 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 
 static void gimbal_checkLimit(void)
 {
-  if(gimbal.motor[GIMBAL_YAW]._angle < gimbal.axis_limit[0])
+  float yaw_diff = gimbal.motor[GIMBAL_YAW]._angle - yaw_init_pos,
+        pitch_diff = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
+
+  if(yaw_diff < -gimbal.axis_limit[GIMBAL_YAW])
     gimbal.state |= GIMBAL_YAW_AT_LOW_LIMIT;
-  else if(gimbal.motor[GIMBAL_YAW]._angle > gimbal.axis_limit[1])
+  else if(yaw_diff > gimbal.axis_limit[GIMBAL_YAW])
     gimbal.state |= GIMBAL_YAW_AT_UP_LIMIT;
   else
     gimbal.state &= ~(GIMBAL_YAW_AT_UP_LIMIT | GIMBAL_YAW_AT_LOW_LIMIT);
 
-  if(gimbal.motor[GIMBAL_PITCH]._angle < gimbal.axis_limit[2])
+  if(pitch_diff < -gimbal.axis_limit[GIMBAL_PITCH])
     gimbal.state |= GIMBAL_PITCH_AT_LOW_LIMIT;
-  else if(gimbal.motor[GIMBAL_PITCH]._angle > gimbal.axis_limit[3])
+  else if(pitch_diff > gimbal.axis_limit[GIMBAL_PITCH])
     gimbal.state |= GIMBAL_PITCH_AT_UP_LIMIT;
   else
     gimbal.state &= ~(GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT);
+
 }
 
 #ifdef GIMBAL_ENCODER_USE_SPEED
@@ -337,13 +343,13 @@ static THD_FUNCTION(gimbal_thread, p)
     gimbal_encoderUpdate(&gimbal.motor[GIMBAL_YAW], GIMBAL_YAW);
     gimbal_encoderUpdate(&gimbal.motor[GIMBAL_PITCH], GIMBAL_PITCH);
 
-    gimbal.d_yaw = gimbal.motor[GIMBAL_YAW]._angle - gimbal.axis_init_pos[GIMBAL_YAW];
+    gimbal.d_yaw = gimbal.motor[GIMBAL_YAW]._angle - yaw_init_pos;
 
     /* Variables:
      * yaw_theta1: angle between yaw encoder current value and yaw encoder value at init position
      * yaw_theta2: angle between yaw encoder current value and yaw encoder value at max moment of inertia point
      */
-    float yaw_theta1 = gimbal.motor[GIMBAL_PITCH]._angle - gimbal.axis_init_pos[GIMBAL_PITCH];
+    float yaw_theta1 = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
 
     gimbal.motor[GIMBAL_PITCH]._speed = gimbal._pIMU->gyroData[Y];
     gimbal.motor[GIMBAL_YAW]._speed = pGyro->angle_vel * cosf(yaw_theta1) -
@@ -392,15 +398,12 @@ static THD_FUNCTION(gimbal_thread, p)
      *  @NOTE       Requires accelerometer raw data
      */
 
-    /*
     #ifdef GIMBAL_FF_TEST
       gimbal.pitch_iq_cmd = gimbal.axis_ff_ext[GIMBAL_PITCH];
     #else
       float ff_pitch_ext = norm_vector3_projection(gimbal._pIMU->accelData, gimbal.axis_ff_accel);
       gimbal.pitch_iq_cmd += gimbal.axis_ff_ext[GIMBAL_PITCH] * ff_pitch_ext;
     #endif
-
-    */
 
     /*
      * the reference acceleration vector is calculated in this way
@@ -531,6 +534,9 @@ static THD_FUNCTION(gimbal_init_thread, p)
       {
           /*exit this thread and start attitude control*/
         chSysLock();
+
+        yaw_init_pos = gimbal.motor[GIMBAL_YAW]._angle;
+        pitch_init_pos = gimbal.motor[GIMBAL_PITCH]._angle;
 
         gimbal_Follow();
 
