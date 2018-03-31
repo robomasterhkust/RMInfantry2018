@@ -143,6 +143,25 @@ static inline void quarternion2euler(const float q[4], float euler_angle[3])
 }
 
 /**
+ * create quaternion from euler angle
+ */
+static inline void euler2quarternion(const float euler_angle[3], float q[4])
+{
+  float cosPhi_2 = cosf(euler_angle[0] / 2.0f);
+  float sinPhi_2 = sinf(euler_angle[0] / 2.0f);
+  float cosTheta_2 = cosf(euler_angle[1] / 2.0f);
+  float sinTheta_2 = sinf(euler_angle[1] / 2.0f);
+  float cosPsi_2 = cosf(euler_angle[2] / 2.0f);
+  float sinPsi_2 = sinf(euler_angle[2] / 2.0f);
+
+
+  q[0] = (cosPhi_2 * cosTheta_2 * cosPsi_2 + sinPhi_2 * sinTheta_2 * sinPsi_2);
+  q[1] = (sinPhi_2 * cosTheta_2 * cosPsi_2 - cosPhi_2 * sinTheta_2 * sinPsi_2);
+  q[2] = (cosPhi_2 * sinTheta_2 * cosPsi_2 + sinPhi_2 * cosTheta_2 * sinPsi_2);
+  q[3] = (cosPhi_2 * cosTheta_2 * sinPsi_2 - sinPhi_2 * sinTheta_2 * cosPsi_2);
+}
+
+/**
  * @source from MatrixMath.cpp from Arduino
  * @brief for known size matrix multiplication, no check
  * A = input matrix (m x p)
