@@ -105,6 +105,9 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"VelYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
   chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
   chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
+
+  chprintf(chp,"CanPitch: %d\r\n",gimbal->_encoder[GIMBAL_PITCH].updated);
+  chprintf(chp,"CanYaw:   %d\r\n",gimbal->_encoder[GIMBAL_YAW].updated);
 }
 
 void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
@@ -136,6 +139,14 @@ void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
 
     chThdSleepMilliseconds(100);
   }
+}
+
+void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
+{
+  rune_cmd(ENABLE);
+  rune_fire(0.0f, 0.0f);
+  chThdSleepSeconds(1);
+  rune_cmd(DISABLE);
 }
 
 #ifdef SHOOTER_SETUP
@@ -284,6 +295,7 @@ static const ShellCommand commands[] =
   {"mavlink", cmd_mavlink},
   {"cal", cmd_calibrate},
   {"temp", cmd_temp},
+  {"rune", cmd_rune},
   {"\xEE", cmd_data},
   #ifdef PARAMS_USE_USB
     {"\xFD",cmd_param_scale},

@@ -2,6 +2,7 @@
 #define FEEDER
 
 #define OUTPUT_MAX 6000
+#define FEEDER_SINGLE_TIMEOUT_MS 100U
 
 #define FEEDER_STOP 3
 #define FEEDER_SINGLE 1
@@ -10,10 +11,7 @@
 #define NORMAL_TURN 0
 #define ERROR_TURN  1
 
-
-
 //int16_t return_measured(int16_t *);
-
 
 typedef struct{
     float kp;

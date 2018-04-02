@@ -24,15 +24,19 @@
 
 #define FEEDER_INDEX 0
 
+static uint8_t mode = FEEDER_STOP;
+static bool mode_unlock = false;
+static systime_t single_start_time;
+
 ChassisEncoder_canStruct*   feeder_encode;
 RC_Ctl_t*                   p_dbus;
 
 
 static lpfilterStruct lp_spd_feeder;
 
-pid_struct  vel_pid;
-pid_struct  pos_pid;
-pid_struct  pos_vel_pid;
+pid_struct  vel_pid /*= {0, 0, 0, 0}*/;
+pid_struct  pos_pid /*= {5.0, 0, 0, 0, 0}*/;
+pid_struct  pos_vel_pid /*= {0.45, 0, 0, 0, 0}*/;
 
 volatile int16_t set_speed;
 
@@ -40,11 +44,15 @@ int error_count = 0;
 
 
 volatile float speed_sp = 15.0f / 7.0f * GEAR_BOX * 60.0f;   //  (15) / 7 * 36 * 60
-float angle_change = 360.0f / 7.0f;
+float angle_change = 360.0f / 7.0f;//165.0f;
 
 
 volatile int16_t PID_VEL(float target);
 
+void feeder_singleShot(void)
+{
+  mode = FEEDER_SINGLE;
+}
 
 volatile int16_t measured_speed_fuck;
 static THD_WORKING_AREA(feeder_control_wa, 512);
@@ -52,8 +60,20 @@ static THD_FUNCTION(feeder_control, p){
     (void) p;
     chRegSetThreadName("feeder controller");
     while(!chThdShouldTerminateX()){
-        feeder_func(p_dbus->rc.s1);
+
+        feeder_func(mode);
+
+        if(mode_unlock)
+          mode = p_dbus->rc.s1;
+        else
+          mode = FEEDER_STOP;
+
+        if(p_dbus->rc.s1 == FEEDER_STOP &&
+          chVTGetSystemTimeX() > single_start_time + MS2ST(FEEDER_SINGLE_TIMEOUT_MS))
+          mode_unlock = true;
+
         measured_speed_fuck = feeder_encode[FEEDER_INDEX].raw_speed;
+        //if(p_dbus->rc.s1 == 2) can_motorSetCurrent(&CAND1, 0x200, -1000, 0, 0, 0);
         chThdSleepMilliseconds(10);
     }
 }
@@ -72,8 +92,8 @@ volatile int16_t PID_VEL(float target){
     vel_pid.inte = vel_pid.inte <-vel_pid.inte_max? -vel_pid.inte_max:vel_pid.inte;
 
     float output = vel_pid.kp * current_error + vel_pid.ki * vel_pid.inte + vel_pid.kd * (current_error - last_error);
-    output = output > OUTPUT_MAX?  OUTPUT_MAX:output;
-    output = output <-OUTPUT_MAX? -OUTPUT_MAX:output;
+    output = output > 6000?  6000:output;
+    output = output <-6000? -6000:output;
 
     return (int16_t) output;
 
@@ -92,8 +112,8 @@ volatile int16_t PID_VEL_POS(float target){
     pos_vel_pid.inte = pos_vel_pid.inte <-pos_vel_pid.inte_max? -pos_vel_pid.inte_max:vel_pid.inte;
 
     float output = pos_vel_pid.kp * current_error + pos_vel_pid.ki * pos_vel_pid.inte + pos_vel_pid.kd * (current_error - last_error);
-    output = output > OUTPUT_MAX?  OUTPUT_MAX:output;
-    output = output <-OUTPUT_MAX? -OUTPUT_MAX:output;
+    output = output > 10000?  10000:output;
+    output = output <-10000? -10000:output;
 
     return (int16_t) output;
 
@@ -110,8 +130,8 @@ volatile float PID_POS(float target){
     pos_pid.inte = pos_pid.inte <-pos_pid.inte_max? -pos_pid.inte_max:pos_pid.inte;
 
     float output = vel_pid.kp * current_error + vel_pid.ki * vel_pid.inte + vel_pid.kd * (current_error - last_error);
-    output = output > 8000?  8000:output;
-    output = output <-8000? -8000:output;
+    output = output > 10000?  10000:output;
+    output = output <-10000? -10000:output;
 
     return output;
 }
@@ -129,7 +149,7 @@ void feeder_func(int mode){
             break;
         case FEEDER_SINGLE:{
             float angle_sp = feeder_encode[FEEDER_INDEX].total_ecd + angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
-            systime_t single_start_time = chVTGetSystemTime();
+            single_start_time = chVTGetSystemTime();
             while(true){
 
                 //error_detecting
@@ -145,11 +165,12 @@ void feeder_func(int mode){
                 }
 
                 //getting out of the loop
-                if( ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp > -36*10 ) && ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp < 36*10 ) ){
+                if( ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp > -36.0f*2.0f/360.0f*8192.0f ) && ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp < 36.0f*2.0f/360.0f*8192.0f ) ){
                     chThdSleepMilliseconds(10);
                     //feeder_canStop();break;
-                    if( ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp > -36*10 ) && ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp < 36*10 ) ){
+                    if( ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp > -36.0f*2.0f/360.0f*8192.0f ) && ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp < 36.0f*2.0f/360.0f*8192.0f ) ){
                         feeder_canStop();
+                        mode_unlock = false;
                         break;
                     }
                 }
@@ -221,5 +242,9 @@ void feederInit(void){
 
 
     chThdCreateStatic(feeder_control_wa, sizeof(feeder_control_wa),
-                      NORMALPRIO+1, feeder_control, NULL);
+                     NORMALPRIO+1, feeder_control, NULL);
+
+
+
+
 }

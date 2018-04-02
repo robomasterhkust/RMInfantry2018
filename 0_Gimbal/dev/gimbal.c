@@ -31,6 +31,7 @@ static float yaw_init_pos = 0.0f, pitch_init_pos = 0.0f;
 
 static PGyroStruct pGyro;
 static PIMUStruct pIMU;
+static bool rune_state = false;
 
 #define gimbal_canUpdate()   \
   (can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
@@ -51,6 +52,11 @@ GimbalStruct* gimbal_get(void)
 uint32_t gimbal_get_error(void)
 {
   return gimbal.errorFlag;
+}
+
+void gimbal_setRune(uint8_t cmd)
+{
+  rune_state = cmd == DISABLE ? false : true;
 }
 
 void gimbal_kill(void)
@@ -90,8 +96,10 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
     }
   #endif
 
-  rc_input_z = -mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_z, max_input_z);
-  rc_input_y = -mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_y, max_input_y);
+  rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_z, max_input_z)
+               -  mapInput((float)rc->mouse.x, -30, 30, -max_input_z, max_input_z);
+  rc_input_y = -  mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_y, max_input_y)
+               +  mapInput((float)rc->mouse.y, -30, 30, -max_input_z, max_input_z);
 
   float input_z, input_y;
   if(cosf(yaw_theta1) > 0.1f)
@@ -105,7 +113,7 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 
   /* software limit position*/
   float yaw_speed_limit = gimbal.motor[GIMBAL_YAW]._speed - gimbal.motor[GIMBAL_YAW]._speed_enc,
-        pitch_speed_limit = -gimbal.motor[GIMBAL_PITCH]._speed + gimbal.motor[GIMBAL_PITCH]._speed_enc;
+        pitch_speed_limit = gimbal.motor[GIMBAL_PITCH]._speed - gimbal.motor[GIMBAL_PITCH]._speed_enc;
 
   //Need to check signs here
   if((gimbal.state & GIMBAL_YAW_AT_UP_LIMIT && input_z > yaw_speed_limit) ||
@@ -123,12 +131,9 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float euler_cmd[3] =
     {pIMU->euler_angle[Roll], gimbal.pitch_atti_cmd, gimbal.yaw_atti_cmd};
   float angle_vel[3]; //input command converted to angular velocity
-  angle_vel[X] = input_z * sinf(yaw_theta1);
-  //angle_vel[X] = 0.0f;
+  angle_vel[X] = 0.0f;
   angle_vel[Y] = input_y;
-  //angle_vel[Y] = 0.0f;
   angle_vel[Z] = input_z * cosf(yaw_theta1);
-  //angle_vel[Z] = 0.0f;
 
   float q[4];
   euler2quarternion(euler_cmd, q);
@@ -140,55 +145,38 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   for (i = 0; i < 4; i++)
     q[i] += dq[i] * dt;
   vector_normalize(q,4);
-  if(isfinite(q[0]) && isfinite(q[1]) && isfinite(q[2]) && isfinite(q[3]))
+  if(!rune_state &&
+    (isfinite(q[0]) && isfinite(q[1]) && isfinite(q[2]) && isfinite(q[3])))
   {
     gimbal.yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
                           1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
     gimbal.pitch_atti_cmd = asinf(2.0f * (q[0] * q[2] - q[3] * q[1]));
   }
-/*
-  float pitch = gimbal.pitch_atti_cmd;
-  float yaw = gimbal.yaw_atti_cmd;
-
-  float tanpitch = tanf(pitch);
-*/
-  /*
-   *  Useful simplification : for small x, sin x = tan x = x, cos x = 1
-   *  yaw_atti = atan2f(sinf(yaw + input_z) - tanpitch * tantheta * sinf(yaw),
-   *                            cosf(yaw + input_z) - tanpitch * tantheta * cosf(yaw));
-   *
-   *  pitch_atti = asinf(cosf(pitch)*cosf(yaw)*sinf(input_y) + cosf(input_y)*sinf(pitch));
-   */
-
-/*
-  gimbal.yaw_atti_cmd = atan2f(sinf(yaw + input_z) - tanpitch * input_y * sinf(yaw),
-                               cosf(yaw + input_z) - tanpitch * input_y * cosf(yaw));
-
-  gimbal.pitch_atti_cmd = asinf(cosf(pitch)*cosf(yaw)*input_y + sinf(pitch));
-*/
-
 
   //Avoid gimbal-lock point at pitch = M_PI_2
   bound(&gimbal.pitch_atti_cmd, 1.20f);
 }
 
+#define AXIS_LIMIT_TH2 0.1f //Dual stability threshold to prevent state oscillation
 static void gimbal_checkLimit(void)
 {
   float yaw_diff = gimbal.motor[GIMBAL_YAW]._angle - yaw_init_pos,
         pitch_diff = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
 
-  if(yaw_diff < -gimbal.axis_limit[GIMBAL_YAW])
+  if(yaw_diff < -gimbal.axis_limit[GIMBAL_YAW] - AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_YAW_AT_LOW_LIMIT;
-  else if(yaw_diff > gimbal.axis_limit[GIMBAL_YAW])
+  else if(yaw_diff > gimbal.axis_limit[GIMBAL_YAW] + AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_YAW_AT_UP_LIMIT;
-  else
+  else if(yaw_diff < gimbal.axis_limit[GIMBAL_YAW] &&
+          yaw_diff > -gimbal.axis_limit[GIMBAL_YAW])
     gimbal.state &= ~(GIMBAL_YAW_AT_UP_LIMIT | GIMBAL_YAW_AT_LOW_LIMIT);
 
-  if(pitch_diff < -gimbal.axis_limit[GIMBAL_PITCH])
+  if(pitch_diff < -gimbal.axis_limit[GIMBAL_PITCH] - AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_PITCH_AT_LOW_LIMIT;
-  else if(pitch_diff > gimbal.axis_limit[GIMBAL_PITCH])
+  else if(pitch_diff > gimbal.axis_limit[GIMBAL_PITCH] + AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_PITCH_AT_UP_LIMIT;
-  else
+  else if(pitch_diff < gimbal.axis_limit[GIMBAL_PITCH] &&
+          pitch_diff > -gimbal.axis_limit[GIMBAL_PITCH])
     gimbal.state &= ~(GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT);
 
 }
@@ -551,6 +539,11 @@ static THD_FUNCTION(gimbal_init_thread, p)
 
     gimbal.yaw_iq_output = gimbal.yaw_iq_cmd;
     gimbal.pitch_iq_output = gimbal.pitch_iq_cmd;
+
+    #ifdef GIMBAL_ZERO
+      gimbal.yaw_iq_output = 0.0f;
+      gimbal.pitch_iq_output = 0.0f;
+    #endif
 
     gimbal_canUpdate();
 
