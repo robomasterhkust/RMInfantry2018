@@ -30,7 +30,7 @@
 
 /*  Define which topic you need here*/
 
-#define MAVLINK_USE_HEARTBEAT       TRUE
+#define MAVLINK_USE_HEARTBEAT       FALSE
 
 #define MAVLINK_USE_ATTITUDE        FALSE
 

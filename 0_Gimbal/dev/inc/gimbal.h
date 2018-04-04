@@ -17,7 +17,7 @@
 #define GIMBAL_CAN  &CAND1
 #define GIMBAL_CAN_EID  0x1FF
 
-#define GIMBAL_YAW_GEAR 0.533f
+#define GIMBAL_YAW_GEAR 0.57143f
 
 typedef enum {
   GIMBAL_STATE_UNINIT = 0,

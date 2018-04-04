@@ -62,7 +62,7 @@ static THD_FUNCTION(Attitude_thread, p)
     }
   }
 }
-
+/*
 mavlink_heartbeat_t packet_test = {
     963497464,
     17,
@@ -70,7 +70,7 @@ mavlink_heartbeat_t packet_test = {
     151,
     218,
     3
-};
+};*/
 
 /*
  * Application entry point.
@@ -93,7 +93,6 @@ int main(void) {
   palClearPad(GPIOA, GPIOA_LED_Y);
   palClearPad(GPIOA, GPIOA_LED_B);
 
-
     shellStart();
     params_init();
 //    sdlog_init();
@@ -103,24 +102,29 @@ int main(void) {
 //    pGyro = gyro_init();
 //    tempControllerInit(); //*
 
-    mavlinkComm_init();
+    //mavlinkComm_init();
 
-    chassis_init();
+    //chassis_init();
     //gimbal_sys_iden_init(); //*
     //gimbal_init();
     pwm_shooter_init(); // *
     error_init();
 //  pwm12init();
     judgeinit();
+    sen_chassis_init();
 
 //  ultrasonic_init();
 
-    mavlinkComm_heartbeat_publish(&packet_test, 100);
-    mavlink_heartbeat_t* mavlink_rx = mavlinkComm_heartbeat_subscribe();
+    //mavlinkComm_heartbeat_publish(&packet_test, 100);
+    //mavlink_heartbeat_t* mavlink_rx = mavlinkComm_heartbeat_subscribe();
 
 //  tft_init(TFT_HORIZONTAL, CYAN, YELLOW, BLACK);
 
   pIMU = imu_get(); //*
+  XT30_1_ON();
+  XT30_2_ON();
+  XT30_3_ON();
+  XT30_4_ON();
 
   chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
                     NORMALPRIO + 5,

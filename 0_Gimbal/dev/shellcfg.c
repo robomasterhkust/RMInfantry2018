@@ -73,8 +73,9 @@ static THD_FUNCTION(matlab_thread, p)
 
     txbuf_f[0] = (float)(gimbal->motor[GIMBAL_YAW]._speed);
     txbuf_f[1] = (float)(gimbal->motor[GIMBAL_PITCH]._speed);
+    txbuf_f[2] = (float)(pIMU->euler_angle[Pitch]);
 
-    transmit_matlab(chp, NULL, txbuf_f, 0, 2);
+    transmit_matlab(chp, NULL, txbuf_f, 0, 3);
   }
 }
 
@@ -101,8 +102,7 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"gimbalPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
   chprintf(chp,"gimbalYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._angle);
 
-  chprintf(chp,"VelPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed);
-  chprintf(chp,"VelYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
+
   chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
   chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
 }

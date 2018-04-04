@@ -9,7 +9,7 @@
 
 #define GIMBAL_MOTOR_NUM  2U
 #define CHASSIS_MOTOR_NUM 4U
-#define EXTRA_MOTOR_NUM   4U
+#define EXTRA_MOTOR_NUM   2U
 
 /* CAN Bus 1 or 2 */
 #define CAN_CHASSIS_FR_FEEDBACK_MSG_ID              0x201

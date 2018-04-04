@@ -1,7 +1,7 @@
 #include "ch.h"
 #include "hal.h"
 
-#include "minimal/mavlink.h"
+//#include "minimal/mavlink.h"
 //#include "mavlink_helpers.h"
 #include "mavlink_comm.h"
 

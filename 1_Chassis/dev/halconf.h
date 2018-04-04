@@ -45,6 +45,16 @@
 #define LEDB_ON()      (palSetPad(GPIOA, GPIOA_LED_B))
 #define LEDB_TOGGLE()   (palTogglePad(GPIOA, GPIOA_LED_B))
 
+//Controlling 2018 RM Dev Board XT30 Outputs
+#define XT30_1_ON()		(palSetPad(GPIOH, 2))
+#define XT30_1_OFF()	(palClearPad(GPIOH, 2))
+#define XT30_2_ON()		(palSetPad(GPIOH, 3))
+#define XT30_2_OFF()	(palClearPad(GPIOH, 3))
+#define XT30_3_ON()		(palSetPad(GPIOH, 4))
+#define XT30_3_OFF()	(palClearPad(GPIOH, 4))
+#define XT30_4_ON()		(palSetPad(GPIOH, 5))
+#define XT30_4_OFF()	(palClearPad(GPIOH, 5))
+
 //Sets of command for Pneumatics Output
 #define PN1_ON()        (palSetPad(GPIOD, GPIOD_PNEUMATICS1))
 #define PN2_ON()        (palSetPad(GPIOD, GPIOD_PNEUMATICS2))

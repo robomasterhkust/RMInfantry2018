@@ -3,8 +3,9 @@
 
 #include "stdint.h"
 #include "stdbool.h"
-#include "can_lld.h"
 #include "string.h"
+#include "hal.h"
+
 
 #define GIMBAL_MOTOR_NUM  2U
 #define CHASSIS_MOTOR_NUM 4U
@@ -47,6 +48,19 @@ typedef struct {
   bool updated;
 } ChassisEncoder_canStruct;
 
+typedef struct {
+
+	uint16_t raw_angle;
+	int16_t  raw_speed;
+	int16_t  raw_torque;
+
+	int32_t round_count;
+	int32_t total_ecd;
+	int32_t torque_limit;
+	int8_t  over_torque;
+
+}Loader_canStruct;
+
 typedef struct{
     uint16_t channel0;
     uint16_t channel1;
@@ -57,6 +71,7 @@ typedef struct{
 
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void);
+volatile Loader_canStruct* can_getLoaderMotor(void);
 
 void can_processInit(void);
 void can_motorSetCurrent(CANDriver *const CANx,

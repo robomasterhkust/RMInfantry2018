@@ -82,7 +82,8 @@ typedef enum{
     const uint16_t transmit_freq);
 #endif
 
-/* This function is private*/
-inline void _mavlinkComm_topic_decode(mavlink_message_t* const message);
+/* This function is private*
+ */
+void _mavlinkComm_topic_decode(mavlink_message_t* const message);
 
 #endif

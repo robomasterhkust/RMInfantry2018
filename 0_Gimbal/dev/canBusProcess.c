@@ -11,6 +11,7 @@
 
 static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
+static volatile Loader_canStruct loader_encoder[1];
 
 /*
  * 500KBaud, automatic wakeup, automatic recover
@@ -28,6 +29,10 @@ static const CANConfig cancfg = {
 /* TODO */
 static CANFilter canfilter[CAN_FILTER_NUM];
 
+volatile Loader_canStruct* can_getLoaderMotor(void) {
+	return loader_encoder;
+}
+
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void)
 {
   return gimbal_encoder;
@@ -36,6 +41,26 @@ volatile GimbalEncoder_canStruct* can_getGimbalMotor(void)
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
 {
   return chassis_encoder;
+}
+
+
+
+static inline void can_processLoaderEncoder
+  (volatile Loader_canStruct* cm, const CANRxFrame* const rxmsg)
+{
+  chSysLock();
+  uint16_t prev_angle = cm->raw_angle;
+  cm->over_torque = 0;
+  cm->raw_angle = (uint16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
+  cm->raw_speed = (int16_t)(rxmsg->data8[2]) << 8 | rxmsg->data8[3];
+  cm->raw_torque = (int16_t)(rxmsg->data8[4]) << 8 | rxmsg->data8[5];
+
+  if      (cm->raw_angle - prev_angle >  CAN_ENCODER_RANGE / 2) cm->round_count--;
+  else if (cm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2) cm->round_count++;
+
+  cm->total_ecd = cm->round_count * CAN_ENCODER_RANGE + cm->raw_angle;
+
+  chSysUnlock();
 }
 
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
@@ -85,7 +110,7 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
   switch(rxmsg->SID)
   {
       case CAN_FEEDER_FEEDBACK_MSG_ID:
-        can_processChassisEncoder(&chassis_encoder[0] ,rxmsg);
+    	  can_processLoaderEncoder(&loader_encoder[0] ,rxmsg);
         break;
       case CAN_GIMBAL_YAW_FEEDBACK_MSG_ID:
         can_processGimbalEncoder(&gimbal_encoder[GIMBAL_YAW] ,rxmsg);
@@ -121,6 +146,39 @@ static THD_FUNCTION(can_rx, p) {
     }
   }
   chEvtUnregister(&canp->rxfull_event, &el);
+}
+
+
+void can_processInit(void)
+{
+  memset((void *)gimbal_encoder,  0, sizeof(GimbalEncoder_canStruct) *GIMBAL_MOTOR_NUM);
+  memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct)*CHASSIS_MOTOR_NUM);
+
+  uint8_t i;
+  for (i = 0; i < CAN_FILTER_NUM; i++)
+  {
+    canfilter[i].filter = i;
+    canfilter[i].mode = 0; //CAN_FilterMode_IdMask
+    canfilter[i].scale = 1; //CAN_FilterScale_32bit
+    canfilter[i].assignment = 0;
+    canfilter[i].register1 = 0;
+    canfilter[i].register2 = 0;
+  }
+
+  canSTM32SetFilters(14, CAN_FILTER_NUM, canfilter);
+
+  canStart(&CAND1, &cancfg);
+  //canStart(&CAND2, &cancfg);
+
+  /*
+   * Starting the transmitter and receiver threads.
+   */
+  chThdCreateStatic(can_rx1_wa, sizeof(can_rx1_wa), NORMALPRIO + 7,
+                    can_rx, (void *)&CAND1);
+  chThdCreateStatic(can_rx2_wa, sizeof(can_rx2_wa), NORMALPRIO + 7,
+                    can_rx, (void *)&CAND2);
+
+  chThdSleepMilliseconds(200);
 }
 
 /*
@@ -162,34 +220,3 @@ void can_motorSetCurrent(CANDriver *const CANx,
 }
 
 
-void can_processInit(void)
-{
-  memset((void *)gimbal_encoder,  0, sizeof(GimbalEncoder_canStruct) *GIMBAL_MOTOR_NUM);
-  memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct)*CHASSIS_MOTOR_NUM);
-
-  uint8_t i;
-  for (i = 0; i < CAN_FILTER_NUM; i++)
-  {
-    canfilter[i].filter = i;
-    canfilter[i].mode = 0; //CAN_FilterMode_IdMask
-    canfilter[i].scale = 1; //CAN_FilterScale_32bit
-    canfilter[i].assignment = 0;
-    canfilter[i].register1 = 0;
-    canfilter[i].register2 = 0;
-  }
-
-  canSTM32SetFilters(14, CAN_FILTER_NUM, canfilter);
-
-  canStart(&CAND1, &cancfg);
-  //canStart(&CAND2, &cancfg);
-
-  /*
-   * Starting the transmitter and receiver threads.
-   */
-  chThdCreateStatic(can_rx1_wa, sizeof(can_rx1_wa), NORMALPRIO + 7,
-                    can_rx, (void *)&CAND1);
-  chThdCreateStatic(can_rx2_wa, sizeof(can_rx2_wa), NORMALPRIO + 7,
-                    can_rx, (void *)&CAND2);
-
-  chThdSleepMilliseconds(200);
-}

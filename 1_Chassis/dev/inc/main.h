@@ -32,6 +32,8 @@
 #include "sdlog.h"
 #include "shoot_pwm.h"
 
+#include "sentry_chassis.h"
+
 void shellStart(void);
 
 #endif

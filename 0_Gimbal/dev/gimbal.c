@@ -2,6 +2,7 @@
  * Edward ZHANG, 20171101
  * @file    gimbal.c
  * @brief   Gimbal controller, driver and interface
+ *
  */
 #include "ch.h"
 #include "hal.h"
@@ -172,21 +173,22 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   bound(&gimbal.pitch_atti_cmd, 1.20f);
 }
 
+#define AXIS_LIMIT_TH2 0.1f
 static void gimbal_checkLimit(void)
 {
   float yaw_diff = gimbal.motor[GIMBAL_YAW]._angle - yaw_init_pos,
         pitch_diff = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
 
-  if(yaw_diff < -gimbal.axis_limit[GIMBAL_YAW])
+  if(yaw_diff < -gimbal.axis_limit[0] - AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_YAW_AT_LOW_LIMIT;
-  else if(yaw_diff > gimbal.axis_limit[GIMBAL_YAW])
+  else if(yaw_diff > gimbal.axis_limit[1] + AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_YAW_AT_UP_LIMIT;
   else
     gimbal.state &= ~(GIMBAL_YAW_AT_UP_LIMIT | GIMBAL_YAW_AT_LOW_LIMIT);
 
-  if(pitch_diff < -gimbal.axis_limit[GIMBAL_PITCH])
+  if(pitch_diff < -gimbal.axis_limit[2]  - AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_PITCH_AT_LOW_LIMIT;
-  else if(pitch_diff > gimbal.axis_limit[GIMBAL_PITCH])
+  else if(pitch_diff > gimbal.axis_limit[3] + AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_PITCH_AT_UP_LIMIT;
   else
     gimbal.state &= ~(GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT);
@@ -231,7 +233,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
     //Check validiaty of can connection
     gimbal._encoder[id].updated = false;
 
-    float angle_input = gimbal._encoder[id].radian_angle;
+    float angle_input = -gimbal._encoder[id].radian_angle;
     if(id == GIMBAL_YAW)
       angle_input *= GIMBAL_YAW_GEAR;
     motor->_angle = lpfilter_apply(&lp_angle[id], angle_input);
@@ -251,7 +253,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
       else if(diff < -6000)
         diff += 8192;
 
-      motor->_speed_enc = diff * GIMBAL_ANGLE_PSC * GIMBAL_CONTROL_FREQ /_count_sum[id];
+      motor->_speed_enc = -diff * GIMBAL_ANGLE_PSC * GIMBAL_CONTROL_FREQ /_count_sum[id];
       _speed_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN] = gimbal._encoder[id].raw_angle;
       _speed_count_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN] = motor->_wait_count;
       _speed_count[id]++;
