@@ -88,9 +88,9 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
       pIMU->euler_angle[Yaw] = pIMU->rev*2*M_PI + euler_angle[Yaw];
 
       pIMU->d_euler_angle[Pitch] = cosf(pIMU->euler_angle[Roll])*pIMU->gyroData[Y] -
-        sinf(pIMU->euler_angle[Roll]) * pIMU->gyroData[Z];
+        sinf(pIMU->euler_angle[Roll]) * pGyro->angle_vel;
       pIMU->d_euler_angle[Yaw] = (sinf(pIMU->euler_angle[Roll])*pIMU->gyroData[Y] +
-        cosf(pIMU->euler_angle[Roll]) * pIMU->gyroData[Z]) / cosf(pIMU->euler_angle[Pitch]);
+        cosf(pIMU->euler_angle[Roll]) * pGyro->angle_vel) / cosf(pIMU->euler_angle[Pitch]);
 
       pIMU->prev_yaw = euler_angle[Yaw];
     #endif

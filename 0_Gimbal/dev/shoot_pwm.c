@@ -65,10 +65,10 @@ static THD_FUNCTION(pwm_thd, arg) {
       #ifdef SHOOTER_USE_RC
       switch (rc->rc.s2) {
         case RC_S_UP:
-          shooter_control(150);
+          shooter_control(175);
           break;
         case RC_S_MIDDLE:
-          shooter_control(125);
+          shooter_control(135);
           break;
         case RC_S_DOWN:
           safe = true;

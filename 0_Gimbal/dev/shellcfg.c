@@ -92,7 +92,6 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
   chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
   chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
-  chprintf(chp,"Gyro: %f\r\n",PGyro->angle);
 
   chprintf(chp,"Roll:  %f\r\n",PIMU->euler_angle[Roll]);
   chprintf(chp,"Pitch: %f\r\n",PIMU->euler_angle[Pitch]);
