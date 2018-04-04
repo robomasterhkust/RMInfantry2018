@@ -150,7 +150,8 @@ void feeder_func(int mode){
         case FEEDER_SINGLE:{
             float angle_sp = feeder_encode[FEEDER_INDEX].total_ecd + angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
             single_start_time = chVTGetSystemTime();
-            while(true){
+            uint8_t bullet_pass = 0;
+            /*while(true){
 
                 //error_detecting
                 if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 1000){
@@ -176,6 +177,28 @@ void feeder_func(int mode){
                 }
 
                 turn_angle(angle_sp);
+                feeder_canUpdate();
+                chThdSleepMilliseconds(1);
+            }*/
+            while(bullet_pass == 0){
+                if(palReadPad(GPIOA, GPIOA_PIN4) == 1) bullet_pass = 1;
+
+                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 3000){
+                    break;
+                }
+
+                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 1000){
+                    float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd - angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
+                    systime_t error_start_time = chVTGetSystemTime();
+                    while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) ){
+                        turn_angle(error_angle_sp);
+                        feeder_canUpdate();
+                        chThdSleepMilliseconds(1);
+                    }
+                    single_start_time = chVTGetSystemTime();
+                }
+
+                set_speed = PID_VEL(speed_sp);
                 feeder_canUpdate();
                 chThdSleepMilliseconds(1);
             }
