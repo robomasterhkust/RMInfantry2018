@@ -520,9 +520,9 @@ static THD_FUNCTION(gimbal_init_thread, p)
     _error[GIMBAL_YAW] = gimbal.axis_init_pos[GIMBAL_YAW] - gimbal.motor[GIMBAL_YAW]._angle;
     _error[GIMBAL_PITCH] = gimbal.axis_init_pos[GIMBAL_PITCH] - gimbal.motor[GIMBAL_PITCH]._angle;
 
-    while(_error[GIMBAL_YAW] > M_PI * GIMBAL_YAW_GEAR)
+    while(_error[GIMBAL_YAW] > M_PI)
       _error[GIMBAL_YAW] -= 2 * M_PI * GIMBAL_YAW_GEAR;
-    while(_error[GIMBAL_YAW] < -M_PI * GIMBAL_YAW_GEAR)
+    while(_error[GIMBAL_YAW] < -M_PI)
       _error[GIMBAL_YAW] += 2 * M_PI * GIMBAL_YAW_GEAR;
 
     while(_error[GIMBAL_PITCH] > M_PI)

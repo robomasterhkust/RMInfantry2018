@@ -42,10 +42,15 @@ volatile int16_t set_speed;
 
 int error_count = 0;
 
-
 volatile float speed_sp = 15.0f / 7.0f * GEAR_BOX * 60.0f;   //  (15) / 7 * 36 * 60
 float angle_change = 360.0f / 7.0f;//165.0f;
 
+static uint32_t bulletCount = 0;
+
+void feeder_bulletOut(void)
+{
+  bulletCount++;
+}
 
 volatile int16_t PID_VEL(float target);
 
@@ -129,14 +134,17 @@ volatile float PID_POS(float target){
     pos_pid.inte = pos_pid.inte > pos_pid.inte_max?  pos_pid.inte_max:pos_pid.inte;
     pos_pid.inte = pos_pid.inte <-pos_pid.inte_max? -pos_pid.inte_max:pos_pid.inte;
 
-    float output = vel_pid.kp * current_error + vel_pid.ki * vel_pid.inte + vel_pid.kd * (current_error - last_error);
+    float output = vel_pid.kp * current_error +
+                   vel_pid.ki * vel_pid.inte +
+                   vel_pid.kd * (current_error - last_error);
     output = output > 10000?  10000:output;
     output = output <-10000? -10000:output;
 
     return output;
 }
 
-void turn_angle(float angle_sp){
+void turn_angle(float angle_sp)
+{
     float temp_speed = PID_POS(angle_sp);
     set_speed = PID_VEL_POS(temp_speed);
 }
@@ -148,49 +156,27 @@ void feeder_func(int mode){
             feeder_canUpdate();
             break;
         case FEEDER_SINGLE:{
-            float angle_sp = feeder_encode[FEEDER_INDEX].total_ecd + angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
+            float angle_sp = feeder_encode[FEEDER_INDEX].total_ecd +
+              angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
             single_start_time = chVTGetSystemTime();
             uint8_t bullet_pass = 0;
-            /*while(true){
 
-                //error_detecting
-                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 1000){
-                    float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd - angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
+            uint32_t prev_count = bulletCount;
+            while(true)
+              {
+                if(bulletCount > prev_count)
+                  break;
+
+                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 3000)
+                  break;
+
+                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 1000)
+                {
+                    float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd -
+                      angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
                     systime_t error_start_time = chVTGetSystemTime();
-                    while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) ){
-                        turn_angle(error_angle_sp);
-                        feeder_canUpdate();
-                        chThdSleepMilliseconds(1);
-                    }
-                    single_start_time = chVTGetSystemTime();
-                }
-
-                //getting out of the loop
-                if( ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp > -36.0f*2.0f/360.0f*8192.0f ) && ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp < 36.0f*2.0f/360.0f*8192.0f ) ){
-                    chThdSleepMilliseconds(10);
-                    //feeder_canStop();break;
-                    if( ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp > -36.0f*2.0f/360.0f*8192.0f ) && ( feeder_encode[FEEDER_INDEX].total_ecd - angle_sp < 36.0f*2.0f/360.0f*8192.0f ) ){
-                        feeder_canStop();
-                        mode_unlock = false;
-                        break;
-                    }
-                }
-
-                turn_angle(angle_sp);
-                feeder_canUpdate();
-                chThdSleepMilliseconds(1);
-            }*/
-            while(bullet_pass == 0){
-                if(palReadPad(GPIOA, GPIOA_PIN4) == 1) bullet_pass = 1;
-
-                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 3000){
-                    break;
-                }
-
-                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 1000){
-                    float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd - angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
-                    systime_t error_start_time = chVTGetSystemTime();
-                    while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) ){
+                    while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) )
+                    {
                         turn_angle(error_angle_sp);
                         feeder_canUpdate();
                         chThdSleepMilliseconds(1);
@@ -202,40 +188,33 @@ void feeder_func(int mode){
                 feeder_canUpdate();
                 chThdSleepMilliseconds(1);
             }
+            mode_unlock = false;
             break;
         }
         case FEEDER_LONG:
             //error detecting
-            if(speed_sp > 0){
-                if (speed_sp - feeder_encode[FEEDER_INDEX].raw_speed > speed_sp*0.9f){
-                    error_count++;
-                    if (error_count > 200){
-                        float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd + angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
-                        systime_t error_start_time = chVTGetSystemTime();
-                        while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) ){
-                            turn_angle(error_angle_sp);
-                            feeder_canUpdate();
-                            chThdSleepMilliseconds(1);
-                        }
-                        error_count = 0;
+            if (
+                  (speed_sp > 0.0f && feeder_encode[FEEDER_INDEX].raw_speed < 0.1f * speed_sp) ||
+                  (speed_sp < 0.0f && feeder_encode[FEEDER_INDEX].raw_speed > 0.1f * speed_sp)
+               )
+            {
+                error_count++;
+                if (error_count > 200)
+                {
+                    float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd +
+                      angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
+                    systime_t error_start_time = chVTGetSystemTime();
+                    while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) )
+                    {
+                        turn_angle(error_angle_sp);
+                        feeder_canUpdate();
+                        chThdSleepMilliseconds(1);
                     }
+                    error_count = 0;
                 }
             }
-            if(speed_sp < 0){
-                if (speed_sp - feeder_encode[FEEDER_INDEX].raw_speed < speed_sp*0.9f){
-                    error_count++;
-                    if(error_count > 200){
-                        float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd + angle_change / 360.0f * GEAR_BOX * CAN_ENCODER_RANGE;
-                        systime_t error_start_time = chVTGetSystemTime();
-                        while ( chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) ){
-                            turn_angle(error_angle_sp);
-                            feeder_canUpdate();
-                            chThdSleepMilliseconds(1);
-                        }
-                        error_count = 0;
-                    }
-                }
-            }
+            else
+              error_count = 0;
 
             set_speed = PID_VEL(speed_sp);
             feeder_canUpdate();

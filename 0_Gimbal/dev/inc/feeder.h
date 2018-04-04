@@ -21,7 +21,7 @@ typedef struct{
     float inte;
 } __attribute__((packed)) pid_struct;
 
-
+void feeder_bulletOut(void);
 void feeder_func(int mode);
 void feederInit(void);
 

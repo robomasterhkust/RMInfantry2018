@@ -105,8 +105,7 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
   chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
 
-  chprintf(chp,"CanPitch: %d\r\n",gimbal->_encoder[GIMBAL_PITCH].updated);
-  chprintf(chp,"CanYaw:   %d\r\n",gimbal->_encoder[GIMBAL_YAW].updated);
+  chprintf(chp,"LS: %d\r\n",palReadPad(BULLET_LS_GPIO, BULLET_LS_PIN));
 }
 
 void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])

@@ -115,7 +115,7 @@ int main(void)
   params_init();
 
   //sdlog_init();
-  //extiinit();
+  extiinit();
 
   /* Init sequence 2: sensors, comm*/
   attitude_init();
