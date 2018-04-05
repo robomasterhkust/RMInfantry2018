@@ -47,11 +47,6 @@ typedef enum{
 	RC_UNLOCKED
 } rc_lock_state_t;
 
-#ifdef RC_INFANTRY_HERO
-	#include "canBusProcess.h"
-	#define DBUS_CAN 				 &CAND1
-#endif
-
 typedef struct{
 		struct{
 			uint16_t channel0;
@@ -88,6 +83,12 @@ typedef struct{
 		  uint16_t key_code;
 		}keyboard;
 }RC_Ctl_t;
+
+#ifdef RC_INFANTRY_HERO
+	#include "canBusProcess.h"
+	#define DBUS_CAN 				 &CAND1
+	void RC_canTxCmd(const uint8_t cmd);
+#endif
 
 RC_Ctl_t* RC_get(void);
 void RC_init(void);

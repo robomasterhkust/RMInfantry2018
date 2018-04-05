@@ -125,7 +125,10 @@ int main(void)
   mavlinkComm_init();
 
   while(!power_check())
+  {
+    LEDY_TOGGLE();
     chThdSleepMilliseconds(200);
+  }
 
   /* Init sequence 3: actuators, display*/
   gimbal_init();
@@ -142,22 +145,6 @@ int main(void)
     if(!power_failure())
     {
       wdgReset(&WDGD1);
-
-      /* REBOOT */
-
-      /*
-      LEDY_ON();
-      chThdSleepMilliseconds(500);
-
-      chSysDisable();
-      {
-        __DSB();
-        SCB->AIRCR  = ((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
-                       (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
-                        SCB_AIRCR_SYSRESETREQ_Msk);      // Keep priority group unchanged
-        __DSB();                               // Ensure completion of memory access
-        while(true);
-      }*/
     }
     else
       gimbal_kill();

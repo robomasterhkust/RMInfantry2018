@@ -183,7 +183,7 @@ static void gimbal_checkLimit(void)
 
 #ifdef GIMBAL_ENCODER_USE_SPEED
   #define GIMBAL_SPEED_BUFFER_LEN      50U
-  static int16_t _speed_buffer[2][GIMBAL_SPEED_BUFFER_LEN];
+  static float _speed_buffer[2][GIMBAL_SPEED_BUFFER_LEN];
   static uint8_t _speed_count_buffer[2][GIMBAL_SPEED_BUFFER_LEN];
   static uint8_t _count_sum[2];
   static uint32_t _speed_count[2];
@@ -195,7 +195,7 @@ static void gimbal_checkLimit(void)
 #define GIMBAL_MIN_ANGLE 1.25664f
 
 #define GIMBAL_ANGLE_PSC 7.6699e-4 //2*M_PI/0x1FFF
-#define GIMBAL_CONNECTION_ERROR_COUNT 25U
+#define GIMBAL_CONNECTION_ERROR_COUNT 10U
 
 #define MOTOR_SPEED_ENC_TH_1  0.0f
 #define MOTOR_SPEED_ENC_TH_2  0.15f
@@ -230,7 +230,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
       _count_sum[id] += motor->_wait_count;
       _count_sum[id] -= _speed_count_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN];
 
-      int16_t diff = gimbal._encoder[id].raw_angle -
+      float diff = gimbal._encoder[id].radian_angle -
         _speed_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN];
 
       //Detect zero-crossing scenerio
@@ -239,8 +239,8 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
       else if(diff < -6000)
         diff += 8192;
 
-      motor->_speed_enc = diff * GIMBAL_ANGLE_PSC * GIMBAL_CONTROL_FREQ /_count_sum[id];
-      _speed_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN] = gimbal._encoder[id].raw_angle;
+      motor->_speed_enc = diff * GIMBAL_CONTROL_FREQ /_count_sum[id];
+      _speed_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN] = gimbal._encoder[id].radian_angle;
       _speed_count_buffer[id][_speed_count[id] % GIMBAL_SPEED_BUFFER_LEN] = motor->_wait_count;
       _speed_count[id]++;
 
@@ -271,6 +271,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
     if(motor->_wait_count > GIMBAL_CONNECTION_ERROR_COUNT)
     {
       gimbal.errorFlag |= (GIMBAL_YAW_NOT_CONNECTED << (id == GIMBAL_YAW ? 0 : 1));
+      gimbal_kill();
       motor->_wait_count = 1;
     }
   }
@@ -344,6 +345,8 @@ static THD_FUNCTION(gimbal_thread, p)
   chSysLock();
   chThdSuspendS(&gimbal_thread_handler);
   chSysUnlock();
+
+  RC_canTxCmd(ENABLE);
 
   _yaw_vel.error_int_max = 2000.0f;
   _pitch_vel.error_int_max = 2500.0f;
