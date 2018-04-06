@@ -68,6 +68,9 @@ typedef struct{
 
 typedef struct{
   uint8_t state;
+
+  int32_t rev;
+  float prev_yaw_cmd;
   uint32_t errorFlag;
 
   volatile IMUStruct* _pIMU;
@@ -103,6 +106,7 @@ typedef struct{
 }  GimbalStruct;
 
 GimbalStruct* gimbal_get(void);
+void gimbal_setRune(uint8_t cmd);
 GimbalStruct* gimbal_get_sys_iden(void);
 uint32_t gimbal_get_error(void);
 void gimbal_init(void);

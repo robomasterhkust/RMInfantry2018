@@ -128,6 +128,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   input_z *= dt;
   input_y *= dt;
 */
+  float yaw_atti_cmd;
+
   float euler_cmd[3] =
     {pIMU->euler_angle[Roll], gimbal.pitch_atti_cmd, gimbal.yaw_atti_cmd};
   float angle_vel[3]; //input command converted to angular velocity
@@ -148,10 +150,18 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   if(!rune_state &&
     (isfinite(q[0]) && isfinite(q[1]) && isfinite(q[2]) && isfinite(q[3])))
   {
-    gimbal.yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
+    yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
                           1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
     gimbal.pitch_atti_cmd = asinf(2.0f * (q[0] * q[2] - q[3] * q[1]));
   }
+
+  if(yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
+    gimbal.rev++;
+  else if(yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
+    gimbal.rev--;
+
+  gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2* M_PI;
+  gimbal.prev_yaw_cmd = yaw_atti_cmd;
 
   //Avoid gimbal-lock point at pitch = M_PI_2
   bound(&gimbal.pitch_atti_cmd, 1.20f);
@@ -346,7 +356,9 @@ static THD_FUNCTION(gimbal_thread, p)
   chThdSuspendS(&gimbal_thread_handler);
   chSysUnlock();
 
-  RC_canTxCmd(ENABLE);
+  #ifdef RC_INFANTRY_HERO
+    RC_canTxCmd(ENABLE);
+  #endif
 
   _yaw_vel.error_int_max = 2000.0f;
   _pitch_vel.error_int_max = 2500.0f;
