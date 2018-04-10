@@ -9,6 +9,7 @@
 #define GIMBAL_CUTOFF_FREQ    30U
 
 //#define GIMBAL_ZERO
+//#define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
 //#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
 #define GIMBAL_USE_MAVLINK_CMD
@@ -86,7 +87,7 @@ typedef struct{
   float d_yaw;
 
   /*Mechanical parameters*/
-  param_t axis_init_pos[2];
+  param_t axis_init_pos[4];
   param_t axis_ff_ext[6];
   param_t axis_ff_int[2];
   param_t axis_limit[4];

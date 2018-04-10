@@ -25,8 +25,9 @@
 #define FEEDER_INDEX 0
 
 static uint8_t mode = FEEDER_STOP;
-static bool mode_unlock = false;
+
 static systime_t single_start_time;
+static thread_reference_t rune_singleShot_thread = NULL;
 
 ChassisEncoder_canStruct*   feeder_encode;
 RC_Ctl_t*                   p_dbus;
@@ -57,6 +58,9 @@ volatile int16_t PID_VEL(float target);
 void feeder_singleShot(void)
 {
   mode = FEEDER_SINGLE;
+  chSysLock();
+  chThdSuspendS(&rune_singleShot_thread);
+  chSysUnlock();
 }
 
 volatile int16_t measured_speed_fuck;
@@ -68,18 +72,16 @@ static THD_FUNCTION(feeder_control, p){
 
         feeder_func(mode);
 
-        if(mode_unlock)
-          mode = p_dbus->rc.s1;
-        else
-          mode = FEEDER_STOP;
-
-        if(p_dbus->rc.s1 == FEEDER_STOP &&
-          chVTGetSystemTimeX() > single_start_time + MS2ST(FEEDER_SINGLE_TIMEOUT_MS))
-          mode_unlock = true;
+        if(p_dbus->rc.s1 != FEEDER_SINGLE)
+        {
+          if(p_dbus->rc.s1 == FEEDER_LONG || p_dbus->mouse.LEFT)
+              mode = FEEDER_LONG;
+          else
+              mode = FEEDER_STOP;
+        }
 
         measured_speed_fuck = feeder_encode[FEEDER_INDEX].raw_speed;
-        //if(p_dbus->rc.s1 == 2) can_motorSetCurrent(&CAND1, 0x200, -1000, 0, 0, 0);
-        chThdSleepMilliseconds(10);
+        chThdSleepMilliseconds(1);
     }
 }
 
@@ -167,9 +169,6 @@ void feeder_func(int mode){
                 if(bulletCount > prev_count)
                   break;
 
-                if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 3000)
-                  break;
-
                 if( ( ST2MS(chVTGetSystemTime())-ST2MS(single_start_time)) > 1000)
                 {
                     float error_angle_sp = feeder_encode[FEEDER_INDEX].total_ecd -
@@ -181,14 +180,20 @@ void feeder_func(int mode){
                         feeder_canUpdate();
                         chThdSleepMilliseconds(1);
                     }
-                    single_start_time = chVTGetSystemTime();
                 }
 
                 set_speed = PID_VEL(speed_sp);
                 feeder_canUpdate();
                 chThdSleepMilliseconds(1);
             }
-            mode_unlock = false;
+
+            if(rune_singleShot_thread != NULL)
+            {
+              chSysLock();
+              chThdResumeS(&rune_singleShot_thread, MSG_OK);
+              chSysUnlock();
+              rune_singleShot_thread = NULL;
+            }
             break;
         }
         case FEEDER_LONG:
@@ -244,7 +249,7 @@ void feederInit(void){
 
 
     chThdCreateStatic(feeder_control_wa, sizeof(feeder_control_wa),
-                     NORMALPRIO+1, feeder_control, NULL);
+                     NORMALPRIO - 5, feeder_control, NULL);
 
 
 

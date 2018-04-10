@@ -174,7 +174,7 @@ static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
 #ifdef RC_INFANTRY_HERO
 void RC_canTxCmd(const uint8_t cmd)
 {
-  rc_can_flag = cmd == DISABLE ? false : true;
+  rc_can_flag = (cmd == DISABLE ? false : true);
 }
 #endif
 

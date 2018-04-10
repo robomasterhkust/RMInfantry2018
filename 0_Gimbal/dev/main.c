@@ -43,13 +43,14 @@ static THD_FUNCTION(Attitude_thread, p)
   else
     pIMU->errorCode |= IMU_TEMP_ERROR;
 
+/*
   while(pIMU->temperature < 61.0f)
   {
     imuGetData(pIMU);
     chThdSleepMilliseconds(50);
   }
 
-  pIMU->state = IMU_STATE_READY;
+  pIMU->state = IMU_STATE_READY;*/
   attitude_imu_init(pIMU);
 
   uint32_t tick = chVTGetSystemTimeX();
@@ -65,8 +66,10 @@ static THD_FUNCTION(Attitude_thread, p)
       pIMU->errorCode |= IMU_LOSE_FRAME;
     }
 
-    if(pIMU->temperature < 55.0f || pIMU->temperature < 70.0f)
-    pIMU->errorCode |= IMU_TEMP_WARNING;
+    if(pIMU->state == IMU_STATE_HEATING && pIMU->temperature > 61.0f)
+      pIMU->state = IMU_STATE_READY;
+    else if(pIMU->temperature < 55.0f || pIMU->temperature > 70.0f)
+      pIMU->errorCode |= IMU_TEMP_WARNING;
 
     imuGetData(pIMU);
     //ist8310_update();

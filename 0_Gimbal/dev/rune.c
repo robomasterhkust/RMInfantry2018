@@ -4,6 +4,7 @@
 #include "rune.h"
 #include "dbus.h"
 #include "gimbal.h"
+#include "feeder.h"
 #include "shoot.h"
 
 static GimbalStruct* gimbal;
