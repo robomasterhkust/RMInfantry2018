@@ -10,7 +10,6 @@
 #define UART_DBUS                     &UARTD1
 
 #define RC_SAFE_LOCK
-#define RC_INFANTRY_HERO
 
 #ifdef RC_SAFE_LOCK
 	#define RC_LOCK_TIME_S		 15
@@ -84,7 +83,7 @@ typedef struct{
 		}keyboard;
 }RC_Ctl_t;
 
-#ifdef RC_INFANTRY_HERO
+#if defined (RM_INFANTRY) || defined (RM_HERO)
 	#include "canBusProcess.h"
 	#define DBUS_CAN 				 &CAND1
 	void RC_canTxCmd(const uint8_t cmd);

@@ -356,7 +356,7 @@ static THD_FUNCTION(gimbal_thread, p)
   chThdSuspendS(&gimbal_thread_handler);
   chSysUnlock();
 
-  #ifdef RC_INFANTRY_HERO
+  #if defined (RM_INFANTRY) || defined(RM_HERO)
     RC_canTxCmd(ENABLE);
   #endif
 
@@ -514,7 +514,6 @@ typedef enum{
   INIT_STATE_PITCH_0 = 0,
   INIT_STATE_LEFT_SWING,
   INIT_STATE_RIGHT_SWING,
-  INIT_STATE_DEADZONE, //Gimbal is found in dead zone
   INIT_STATE_PITCH_YAW,
   INIT_STATE_LOCK_YAW //Lock yaw axis if pitch axis is disturbed
 } gimbal_init_state_t;
@@ -552,21 +551,19 @@ static THD_FUNCTION(gimbal_init_thread, p)
           _error[GIMBAL_PITCH] -= 2 * M_PI;
         while(_error[GIMBAL_PITCH] < -M_PI)
           _error[GIMBAL_PITCH] += 2 * M_PI;
+
+        #ifndef GIMBAL_INIT_TEST_PITCH
         if(
             state_count((_error[GIMBAL_PITCH] < GIMBAL_INIT_MAX_ERROR &&
                          _error[GIMBAL_PITCH] > -GIMBAL_INIT_MAX_ERROR),
                          GIMBAL_INIT_SCORE_FULL, &(_init_count[GIMBAL_PITCH]))
           )
-          #ifndef GIMBAL_INIT_TEST_PITCH
             init_state = INIT_STATE_LEFT_SWING;
-          #else
-            ;
-          #endif
+        #endif //GIMBAL_INIT_TEST_PITCH
         break;
       case INIT_STATE_LEFT_SWING:
       case INIT_STATE_RIGHT_SWING:
       case INIT_STATE_LOCK_YAW:
-      case INIT_STATE_DEADZONE:
         _error[GIMBAL_PITCH] = gimbal.axis_init_pos[0] - gimbal.motor[GIMBAL_PITCH]._angle;
         while(_error[GIMBAL_PITCH] > M_PI)
           _error[GIMBAL_PITCH] -= 2 * M_PI;

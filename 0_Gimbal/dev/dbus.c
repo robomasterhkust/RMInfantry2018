@@ -16,7 +16,7 @@ static RC_Ctl_t RC_Ctl;
 static thread_reference_t uart_dbus_thread_handler = NULL;
 static uint8_t rx_start_flag = 1;
 
-#ifdef RC_INFANTRY_HERO
+#if defined (RM_INFANTRY) || defined (RM_HERO)
   static bool rc_can_flag = false;
 #endif
 
@@ -146,7 +146,7 @@ static void RC_reset(void)
   RC_Ctl.keyboard.key_code=0;
 }
 
-#ifdef RC_INFANTRY_HERO
+#if defined (RM_INFANTRY) || defined (RM_HERO)
 static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
 {
   CANTxFrame txmsg;
@@ -171,7 +171,7 @@ static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
 }
 #endif
 
-#ifdef RC_INFANTRY_HERO
+#if defined (RM_INFANTRY) || defined (RM_HERO)
 void RC_canTxCmd(const uint8_t cmd)
 {
   rc_can_flag = (cmd == DISABLE ? false : true);
@@ -233,7 +233,7 @@ static THD_FUNCTION(uart_dbus_thread, p)
       timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
     }
 
-    #ifdef RC_INFANTRY_HERO
+    #if defined (RM_INFANTRY) || defined (RM_HERO)
       if(rc_can_flag)
         RC_txCan(DBUS_CAN, CAN_DBUS_ID);
     #endif
