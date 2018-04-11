@@ -132,6 +132,7 @@ int main(void)
   shooter_init();
   //feederInit();
   sen_loader_init();
+  palSetPad(GPIOG, 13);
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
   while (true)

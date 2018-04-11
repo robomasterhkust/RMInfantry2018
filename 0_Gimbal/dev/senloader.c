@@ -12,10 +12,13 @@
 #include "hal.h"
 #include "dbus.h"
 #include <can_lld.h>
+#include "mavlink_comm.h"
 
 
 static sen_motorStruct senloader;
+static GameData_rx* judge_fb;
 static RC_Ctl_t* control;
+static mavlink_attitude_t* mavv;
 
 static uint8_t abs_limit(float *a, float ABS_MAX)
 {
@@ -124,7 +127,9 @@ static THD_FUNCTION(senloader_control, p) {
 
 
 
-		if (!DEBUG && control->rc.s1 == 2) {
+		if ((!DEBUG && control->rc.s1 == 2 ||
+			mavv->roll != 0) &&
+			judge_fb->shooter_heat < (SENTRY_HEAT_LIMIT - SENTRY_HEAT_BUFFER)) {
 
 			for (i = 0; i < 50; i++) {
 				senloader.speed_sp = senloader_pos_pid(&senloader.setting, &senloader.pidcontroller,
@@ -156,11 +161,15 @@ void sen_loader_init (void) {
 
 	control = RC_get();
 
+	mavv = mavlinkComm_attitude_subscribe();
+
+	judge_fb = can_getChassisdata();
+
 	memset(&senloader, 0, sizeof(sen_motorStruct));
 
 	senloader._encoder = can_getLoaderMotor();
-	SP = 2500;
-	STUCK = 1750;
+	SP = 1600;
+	STUCK = 1000;
 
 	senloader.inverted = 0;
 

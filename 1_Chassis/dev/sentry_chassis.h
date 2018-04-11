@@ -65,6 +65,8 @@ typedef struct sen_motorStruct{
 	float speed;
 	float pos_sp;
 	float pos;
+	float pos_offset;
+	float pos_limit;
 	sen_pid_controller_t pidcontroller;
 	uint8_t	inverted;
 
@@ -79,7 +81,12 @@ typedef struct senchassisstruct{
 	float pos;
 	float pos_sp;
 
+	bool right_flag;
+	bool left_flag;
+
 }senchassisstruct;
+
+volatile senchassisstruct* get_chassis(void);
 
 void sen_chassis_init (void);
 

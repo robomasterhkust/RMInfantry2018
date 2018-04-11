@@ -4,6 +4,8 @@
 #define SHOOTER_USE_RC
 //#define SHOOTER_SETUP
 
+#define SHOOT_SAFE_PWM_VAL		113
+
 void pwm12_setWidth(uint16_t width);
 
 void shooter_control(uint16_t setpoint);

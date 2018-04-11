@@ -8,6 +8,7 @@
 
 #include "shoot.h"
 #include "dbus.h"
+#include "mavlink_comm.h"
 
 #define MIN_SHOOT_SPEED 100U
 #define MAX_SHOOT_SPEED 900U
@@ -53,6 +54,8 @@ static const PWMConfig pwm12cfg = {
         0
 };
 
+static mavlinkComm_t* mav;
+
 static THD_WORKING_AREA(pwm_thd_wa, 512);
 static THD_FUNCTION(pwm_thd, arg) {
     (void)arg;
@@ -62,20 +65,22 @@ static THD_FUNCTION(pwm_thd, arg) {
 
     while (!chThdShouldTerminateX())
     {
-      #ifdef SHOOTER_USE_RC
-      switch (rc->rc.s2) {
-        case RC_S_UP:
-          shooter_control(150);
-          break;
-        case RC_S_MIDDLE:
-          shooter_control(125);
-          break;
-        case RC_S_DOWN:
-          safe = true;
-          shooter_control(100);
-          break;
-      }
-      #endif
+		if (mav->status.msg_received) {
+			shooter_control(SHOOT_SAFE_PWM_VAL);
+		} else {
+			switch (rc->rc.s2) {
+				case RC_S_UP:
+				  shooter_control(175);   //min 100 max 900
+				  break;
+				case RC_S_MIDDLE:
+				  shooter_control(SHOOT_SAFE_PWM_VAL);
+				  break;
+				case RC_S_DOWN:
+				  safe = true;
+				  shooter_control(100);
+				  break;
+			  }
+		}
 
       speed = alpha * (float)speed_sp + (1-alpha) * speed;
       pwm12_setWidth((uint16_t)speed);
@@ -134,6 +139,7 @@ static void pwm12_start(void)
 void shooter_init(void)
 {
     rc = RC_get();
+    mav = mavlinkComm_get();
     pwm12_start();
 
     #ifndef SHOOTER_SETUP

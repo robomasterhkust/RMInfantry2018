@@ -133,24 +133,34 @@ static void imuStructureInit(PIMUStruct pIMU, IMUConfigStruct* imu_conf)
 
   pIMU->_imu_spi = imu_conf->_imu_spi;
 
-  params_set(pIMU->_accelBias, 31, 3, accelBiasName, axisName, PARAM_PRIVATE);
+//  params_set(pIMU->_accelBias, 31, 3, accelBiasName, axisName, PARAM_PRIVATE);
   params_set(pIMU->_gyroBias, 30, 3, gyroBiasName, axisName, PARAM_PRIVATE);
-  if(params_set(pIMU->_accelT[0], 29, 6, accelTName1, accelTNameSub1, PARAM_PRIVATE))
-    goto ID_MATRIX;
-  if(params_set(pIMU->_accelT[2], 28, 3, accelTName2, accelTNameSub2, PARAM_PRIVATE))
-  {
-    ID_MATRIX:
+//  if(params_set(pIMU->_accelT[0], 29, 6, accelTName1, accelTNameSub1, PARAM_PRIVATE))
+//    goto ID_MATRIX;
+//  if(params_set(pIMU->_accelT[2], 28, 3, accelTName2, accelTNameSub2, PARAM_PRIVATE))
+//  {
+//    ID_MATRIX:
+//
+//    pIMU->_accelT[0][0] = 1.0f;
+//    pIMU->_accelT[1][1] = 1.0f;
+//    pIMU->_accelT[2][2] = 1.0f;
+//    pIMU->_accelT[0][1] = 0.0f;
+//    pIMU->_accelT[1][2] = 0.0f;
+//    pIMU->_accelT[2][0] = 0.0f;
+//    pIMU->_accelT[0][2] = 0.0f;
+//    pIMU->_accelT[1][0] = 0.0f;
+//    pIMU->_accelT[2][1] = 0.0f;
+//  }
 
-    pIMU->_accelT[0][0] = 1.0f;
-    pIMU->_accelT[1][1] = 1.0f;
-    pIMU->_accelT[2][2] = 1.0f;
-    pIMU->_accelT[0][1] = 0.0f;
-    pIMU->_accelT[1][2] = 0.0f;
-    pIMU->_accelT[2][0] = 0.0f;
-    pIMU->_accelT[0][2] = 0.0f;
-    pIMU->_accelT[1][0] = 0.0f;
-    pIMU->_accelT[2][1] = 0.0f;
-  }
+  pIMU->_accelT[0][0] = 1.0f;
+  pIMU->_accelT[1][1] = 1.0f;
+  pIMU->_accelT[2][2] = 1.0f;
+  pIMU->_accelT[0][1] = 0.0f;
+  pIMU->_accelT[1][2] = 0.0f;
+  pIMU->_accelT[2][0] = 0.0f;
+  pIMU->_accelT[0][2] = 0.0f;
+  pIMU->_accelT[1][0] = 0.0f;
+  pIMU->_accelT[2][1] = 0.0f;
 
   switch(imu_conf->_gyroConf)
   {

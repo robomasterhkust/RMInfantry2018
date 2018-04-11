@@ -13,9 +13,12 @@
 #include "exti.h"
 #include "canBusProcess.h"
 #include "can.h"
+#include "sentry_chassis.h"
 
 //comment out the line below to disable motor testing
-#define MOTOR_TEST
+//#define MOTOR_TEST
+
+volatile static senchassisstruct* chassis;
 
 /*
  * Turns on all chassis motor for 1 sec when MotorOn is TRUE
@@ -82,14 +85,48 @@ static void extcb10(EXTDriver *extp, expchannel_t channel)
 
 }
 
+//Right switch
+static void extcb0(EXTDriver *extp, expchannel_t channel) {
+
+	(void) extp;
+	(void) channel;
+
+	static uint8_t i;
+
+    chSysLockFromISR();
+    for(i = 0; i < SEN_CHASSIS_MOTOR_NUM; i++) {
+    	chassis->_motors[i].pos_offset = chassis->encoders->total_ecd;
+    }
+    chSysUnlockFromISR();
+
+}
+
+//Left switch
+static void extcb1(EXTDriver *extp, expchannel_t channel) {
+
+	(void) extp;
+	(void) channel;
+
+	static uint8_t i;
+
+	chSysLockFromISR();
+	for(i = 0; i < SEN_CHASSIS_MOTOR_NUM; i++) {
+	    	chassis->_motors[i].pos_limit = chassis->encoders->total_ecd - chassis->_motors[i].pos_offset;
+	    }
+	chSysUnlockFromISR();
+
+}
+
 /*
  * Refer to STM32F4 datasheet about EXTI channel configurations
  */
 
 static const EXTConfig extcfg = {
         {
-                {EXT_CH_MODE_DISABLED, NULL},   //EXTI0
-                {EXT_CH_MODE_DISABLED, NULL},   //EXTI1
+                {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART |
+                        EXT_MODE_GPIOC, extcb0},   //EXTI0
+                {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART |
+                        EXT_MODE_GPIOC, extcb1},   //EXTI1
                 {EXT_CH_MODE_DISABLED, NULL},   //EXTI2
                 {EXT_CH_MODE_DISABLED, NULL},   //EXTI3
                 {EXT_CH_MODE_DISABLED, NULL},   //EXTI4
@@ -119,7 +156,11 @@ void extiinit(void)
 {
 
   extStart(&EXTD1, &extcfg);
-  extChannelEnable(&EXTD1, 10);
+  chassis = get_chassis();
+  extChannelEnable(&EXTD1, 0);
+  //extChannelEnable(&EXTD1, 1);
+  //extChannelEnable(&EXTD1, 10);
+
 #ifdef MOTOR_TEST
   chThdCreateStatic(MotorToggleThread_wa, sizeof(MotorToggleThread_wa),
                     NORMALPRIO, MotorToggleThread, NULL);

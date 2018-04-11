@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<mavlink>
+  <version>2</version>
+  <enums>
+    <enum name="ROBO_TYPE">
+      <entry value="0" name="ROBO_TYPE_SOLDIER"></entry>
+      <entry value="1" name="ROBO_TYPE_SENTRY"></entry>
+      <entry value="2" name="ROBO_TYPE_ENGINEER"></entry>
+      <entry value="3" name="ROBO_TYPE_HERO"></entry>
+      <entry value="4" name="ROBO_TYPE_DRONE"></entry>
+    </enum>
+    <enum name="ROBO_STATE">
+      <entry value="0" name="ROBO_STATE_UNINIT">
+        <description>Uninitialized system, state is unknown.</description>
+      </entry>
+      <entry name="ROBO_STATE_BOOT">
+        <description>System is booting up.</description>
+      </entry>
+      <entry name="ROBO_STATE_CALIBRATING">
+        <description>System is calibrating and not flight-ready.</description>
+      </entry>
+      <entry name="ROBO_STATE_STANDBY">
+        <description>System is grounded and on standby. It can be launched any time.</description>
+      </entry>
+      <entry name="ROBO_STATE_ACTIVE">
+        <description>System is active and might be already airborne. Motors are engaged.</description>
+      </entry>
+      <entry name="ROBO_STATE_CRITICAL">
+        <description>System is in a non-normal flight mode. It can however still navigate.</description>
+      </entry>
+      <entry name="ROBO_STATE_EMERGENCY">
+        <description>System is in a non-normal flight mode. It lost control over parts or over the whole airframe. It is in mayday and going down.</description>
+      </entry>
+      <entry name="ROBO_STATE_POWEROFF">
+        <description>System just initialized its power-down sequence, will shut down now.</description>
+      </entry>
+    </enum>
+  </enums>
+  <messages>
+    <message id="0" name="HEARTBEAT">
+      <description>The heartbeat message shows that a system is present and responding. The type of the MAV and Autopilot hardware allow the receiving system to treat further messages from this system appropriate (e.g. by laying out the user interface based on the autopilot).</description>
+      <field type="uint8_t" name="type" enum="ROBO_TYPE">Type of the MAV (soldier, sentry, etc., up to 5 types, defined in ROBO_TYPE ENUM)</field>
+      <field type="uint8_t" name="base_mode">System mode bitfield, see ROBO_MODE_FLAGS ENUM in mavlink/include/mavlink_types.h</field>
+      <field type="uint32_t" name="custom_mode">A bitfield for use for autopilot-specific flags.</field>
+      <field type="uint8_t" name="system_status" enum="ROBO_STATE">System status flag, see ROBO_STATE ENUM</field>
+      <field type="uint8_t_mavlink_version" name="mavlink_version">MAVLink version</field>
+    </message>
+    <message id="30" name="GIMBAL_ATTITUDE">
+      <description>The attitude in the gimbal frame (right-handed, Z-down, X-front, Y-right).</description>
+      <field type="float" name="pitch" units="rad">Pitch angle (rad, -pi..+pi)</field>
+      <field type="float" name="yaw" units="rad">Yaw angle (rad, -pi..+pi)</field>
+      <field type="float" name="pitchspeed" units="rad/s">Pitch angular speed (rad/s)</field>
+      <field type="float" name="yawspeed" units="rad/s">Yaw angular speed (rad/s)</field>
+    </message>
+    <message id="31" name="CHASSIS_ATTITUDE">
+      <description>The attitude in the gimbal frame (right-handed, Z-down, X-front, Y-right).</description>
+      <field type="float" name="x" units="mm"></field>
+      <field type="float" name="y" units="mm"></field>
+      <field type="float" name="z" units="mm"></field>
+      <field type="float" name="vx" units="mm/s"></field>
+      <field type="float" name="vy" units="mm/s"></field>
+      <field type="float" name="vz" units="mm/s"></field>
+    </message>
+    <message id="32" name="RAIL_POSITION">
+      <description>the sensed position of the sentry on the rail</description>
+      <field type="float" name="position" units="mm"></field>
+    </message>
+    <message id="34" name="GIMBAL_SPEED_TARGET">
+      <description>The angular speed target gimbal is expected to rotate at.</description>
+      <field type="float" name="yawspeed" units="rad/s">Yaw angular speed (rad/s)</field>
+      <field type="float" name="pitchspeed" units="rad/s">Pitch angular speed (rad/s)</field>
+    </message>
+    <message id="35" name="RAIL_POSITION_TARGET">
+      <description>The angular speed target gimbal is expected to rotate at.</description>
+      <field type="float" name="position" units="mm"></field>
+    </message>
+    <message id="36" name="RAIL_SPEED_TARGET">
+      <description>The angular speed target gimbal is expected to rotate at.</description>
+      <field type="float" name="move_speed" units="mm/s"></field>
+    </message>
+  </messages>
+</mavlink>

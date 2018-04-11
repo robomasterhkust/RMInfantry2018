@@ -12,6 +12,7 @@
 static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
 static volatile Loader_canStruct loader_encoder[1];
+static volatile GameData_rx chassis_data[1];
 
 /*
  * 500KBaud, automatic wakeup, automatic recover
@@ -42,8 +43,20 @@ volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
 {
   return chassis_encoder;
 }
+volatile GameData_rx* can_getChassisdata(void) {
+	return chassis_data;
+}
 
-
+static inline void can_processChassisData
+  (volatile GameData_rx* cm, const CANRxFrame* const rxmsg)
+{
+  chSysLock();
+//  cm->chassis_pos = (int16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
+//  cm->shooter_heat = (uint16_t)(rxmsg->data8[2]) << 8 | rxmsg->data8[3];
+//  memcpy(&cm->shooter_speed, &rxmsg[4], 4);
+  memcpy(cm, rxmsg->data8, 8);
+  chSysUnlock();
+}
 
 static inline void can_processLoaderEncoder
   (volatile Loader_canStruct* cm, const CANRxFrame* const rxmsg)
@@ -118,6 +131,9 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
       case CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID:
         can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH] ,rxmsg);
         break;
+      case CAN_GIMBAL_RX_GAMEDATA_ID:
+    	can_processChassisData(&chassis_data[0], rxmsg);
+    	break;
   }
 }
 

@@ -21,6 +21,9 @@
 
 #define BULLET_ROTATION_CNT			32768
 
+#define SENTRY_HEAT_LIMIT			360
+#define SENTRY_HEAT_BUFFER			220
+
 typedef struct pid_profile_t{
 
 	float kp;

@@ -70,6 +70,8 @@ typedef struct{
   uint8_t state;
   uint32_t errorFlag;
 
+  int32_t rev;
+  float prev_yaw_cmd;
   volatile IMUStruct* _pIMU;
   volatile GimbalEncoder_canStruct* _encoder;
 

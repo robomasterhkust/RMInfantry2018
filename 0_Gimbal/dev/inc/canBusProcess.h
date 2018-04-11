@@ -15,6 +15,7 @@
 #define CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID            0x206
 
 #define CAN_DBUS_ID                                 0x001
+#define CAN_GIMBAL_RX_GAMEDATA_ID					0x002
 
 #define CAN_ENCODER_RANGE           8192            // 0x2000
 
@@ -69,6 +70,15 @@ typedef struct{
     uint16_t key_code;
 } dbus_tx_canStruct;
 
+typedef struct{
+
+	int16_t		chassis_pos;
+	uint16_t	shooter_heat;
+	float		shooter_speed;
+
+} GameData_rx;
+
+volatile GameData_rx* can_getChassisdata(void);
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void);
 volatile Loader_canStruct* can_getLoaderMotor(void);

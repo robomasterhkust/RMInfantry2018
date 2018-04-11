@@ -20,6 +20,7 @@
 #define CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID            0x206
 
 #define CAN_GIMBAL_SEND_DBUS_ID                     0x001
+#define CAN_GIMBAL_TX_GAMEDATA_ID					0x002
 
 #define CAN_ENCODER_RANGE           8192            // 0x2000
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
@@ -79,6 +80,14 @@ typedef struct{
     uint8_t  s2;
     uint16_t key_code;
 } Gimbal_Send_Dbus_canStruct;
+
+typedef struct{
+
+	int16_t		chassis_pos;
+	uint16_t	shooter_heat;
+	float		shooter_speed;
+
+} GameData_tx;
 
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void);

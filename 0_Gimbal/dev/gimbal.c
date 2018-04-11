@@ -137,16 +137,28 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float dq[4];
   q_derivative(q, angle_vel, dq);
 
+  float yaw_atti_cmd;
+
   uint8_t i;
   for (i = 0; i < 4; i++)
     q[i] += dq[i] * dt;
   vector_normalize(q,4);
   if(isfinite(q[0]) && isfinite(q[1]) && isfinite(q[2]) && isfinite(q[3]))
   {
-    gimbal.yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
+    yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
                           1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
     gimbal.pitch_atti_cmd = asinf(2.0f * (q[0] * q[2] - q[3] * q[1]));
   }
+
+  if(yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
+	  gimbal.rev--;
+  else if(yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
+	  gimbal.rev++;
+
+  gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * M_PI;
+  gimbal.prev_yaw_cmd = yaw_atti_cmd;
+//  gimbal.yaw_atti_cmd = 0;
+//  gimbal.pitch_atti_cmd = 0;
 /*
   float pitch = gimbal.pitch_atti_cmd;
   float yaw = gimbal.yaw_atti_cmd;
