@@ -82,7 +82,7 @@ static systime_t tx_end = 0; //Estimated end_of_transmission time, used to preve
 /**/
 
 /* definitions of mavlink messages*/
-#if (MAVLINK_USE_HEARTBEAT == TRUE) && !defined(__DOXYGEN__)
+#if (MAVLINK_USE_ATTITUDE == TRUE) && !defined(__DOXYGEN__)
   static mavlink_attitude_t* attitude_tx = NULL;
   static THD_WORKING_AREA(attitude_tx_wa, 512);
   static mavlink_attitude_t attitude;

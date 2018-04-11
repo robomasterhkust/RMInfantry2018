@@ -2,6 +2,7 @@
 #define ROBOCONF_H_
 
 #define RM_INFANTRY
+//#define RM_HERO
 
 #ifdef RM_INFANTRY
   #define CHASSIS_POWER_MAX_W        80U

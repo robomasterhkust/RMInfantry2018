@@ -30,12 +30,12 @@
 
 /*  Define which topic you need here*/
 
-#define MAVLINK_USE_HEARTBEAT       TRUE
+#define MAVLINK_USE_HEARTBEAT       FALSE
 
 #define MAVLINK_USE_ATTITUDE        TRUE
 
 /**/
-
+#include "infantry/mavlink.h"
 #include "mavlink_types.h"
 
 #define UART_MAVLINK &UARTD3            //MAVLINK_COMM_0

@@ -74,9 +74,7 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float           rc_input_z = 0.0f, rc_input_y = 0.0f;     //RC input
   static float    cv_input_z = 0.0f, cv_input_y = 0.0f;     //CV input
 
-  const float max_input_z = 2.0f, max_input_y = 2.0f;
-
-  #ifdef GIMBAL_USE_MAVLINK_CMD
+  #if defined (GIMBAL_USE_MAVLINK_CMD)
     if(mavlinkComm_attitude_check())
     {
       cv_wait_count = 0;
@@ -94,12 +92,15 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
       cv_input_y = 0.0f;
       cv_wait_count = 0;
     }
+  #elif defined (GIMBAL_USE_CAN_CMD)
   #endif
 
-  rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_z, max_input_z)
-               -  mapInput((float)rc->mouse.x, -30, 30, -max_input_z, max_input_z);
-  rc_input_y = -  mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX, -max_input_y, max_input_y)
-               +  mapInput((float)rc->mouse.y, -30, 30, -max_input_z, max_input_z);
+  rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
+                              -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
+               -  mapInput((float)rc->mouse.x, -30, 30, -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW);
+  rc_input_y = -  mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
+                              -GIMBAL_MAX_SPEED_PITCH, GIMBAL_MAX_SPEED_PITCH)
+               +  mapInput((float)rc->mouse.y, -30, 30, -GIMBAL_MAX_SPEED_PITCH, GIMBAL_MAX_SPEED_PITCH);
 
   float input_z, input_y;
   if(cosf(yaw_theta1) > 0.1f)
@@ -108,8 +109,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
     input_z = rc_input_z;
 
   input_y = rc_input_y + cv_input_y;
-  bound(&input_z, max_input_z);
-  bound(&input_y, max_input_y);
+  bound(&input_z, GIMBAL_MAX_SPEED_YAW);
+  bound(&input_y, GIMBAL_MAX_SPEED_PITCH);
 
   /* software limit position*/
   float yaw_speed_limit = gimbal.motor[GIMBAL_YAW]._speed - gimbal.motor[GIMBAL_YAW]._speed_enc,
@@ -538,7 +539,7 @@ static THD_FUNCTION(gimbal_init_thread, p)
   float yaw_left_limit, yaw_right_limit;
   float lock_yaw; //Used to lock yaw axis during pitch disturbance
 
-  while(true)
+  while(!chThdShouldTerminateX())
   {
     gimbal_encoderUpdate(&gimbal.motor[GIMBAL_YAW], GIMBAL_YAW);
     gimbal_encoderUpdate(&gimbal.motor[GIMBAL_PITCH], GIMBAL_PITCH);
@@ -669,6 +670,8 @@ static THD_FUNCTION(gimbal_init_thread, p)
         yaw_init_pos = gimbal.motor[GIMBAL_YAW]._angle;
         pitch_init_pos = gimbal.motor[GIMBAL_PITCH]._angle;
 
+        chThdSleepSeconds(2);
+
         gimbal_Follow();
 
         chThdResumeS(&gimbal_thread_handler, MSG_OK);
@@ -695,7 +698,7 @@ const char ff_int_name[] = "Gimbal FF Int";
 const char limit_name[] = "Gimbal axis limit";
 
 const char subname_axis[]  = "Yaw Pitch";
-const char subname_init_pos[]  = "Pitch0 Pitch1 DZleft DZright";
+const char subname_init_pos[]  = "Pitch0 Pitch1";
 const char subname_ff[]    = "Yaw_w1 Pitch_w Yaw_SD Pitch_a Yaw_w2 Yaw_th";
 const char subname_accl[]  = "YawX YawY YawZ PitchX PitchY PitchZ";
 const char limit_subname[] = "Yaw_min Yaw_max Pitch_min Pitch_max";
@@ -740,7 +743,7 @@ void gimbal_init(void)
   gimbal_encoderUpdate(&gimbal.motor[GIMBAL_YAW], GIMBAL_YAW);
   gimbal_encoderUpdate(&gimbal.motor[GIMBAL_PITCH], GIMBAL_PITCH);
 
-  params_set(gimbal.axis_init_pos,  5, 4,   init_pos_name,  subname_init_pos, PARAM_PUBLIC);
+  params_set(gimbal.axis_init_pos,  5, 2,   init_pos_name,  subname_init_pos, PARAM_PUBLIC);
   params_set(gimbal.axis_ff_ext,    2, 6,   axis_ff_name,   subname_ff,       PARAM_PUBLIC);
   params_set(gimbal.axis_ff_accel,  6, 6,   accl_name,      subname_accl,     PARAM_PUBLIC);
   params_set(gimbal.axis_ff_int,    9, 2,   ff_int_name,    subname_axis,     PARAM_PUBLIC);
