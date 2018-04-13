@@ -71,9 +71,8 @@ static THD_FUNCTION(matlab_thread, p)
       tick = chVTGetSystemTimeX();
     }
 
-    txbuf_f[0] = (float)(pIMU->euler_angle[Yaw]);
-    txbuf_f[1] = (float)(pIMU->euler_angle[Pitch]);
-
+    txbuf_f[0] = (float)(gimbal->motor[GIMBAL_YAW]._speed);
+    txbuf_f[1] = (float)(gimbal->motor[GIMBAL_PITCH]._speed);
 
     transmit_matlab(chp, NULL, txbuf_f, 0, 2);
   }
@@ -87,14 +86,26 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
   PIMUStruct PIMU = imu_get();
+  PGyroStruct PGyro = gyro_get();
   GimbalStruct* gimbal = gimbal_get();
-  RC_Ctl_t* rc = RC_get();
-
-  GimbalEncoder_canStruct* gm =  can_getGimbalMotor();
 
   chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
   chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
   chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
+
+  chprintf(chp,"Roll:  %f\r\n",PIMU->euler_angle[Roll]);
+  chprintf(chp,"Pitch: %f\r\n",PIMU->euler_angle[Pitch]);
+  chprintf(chp,"Yaw:   %f\r\n",PIMU->euler_angle[Yaw]);
+
+  chprintf(chp,"gimbalPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
+  chprintf(chp,"gimbalYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._angle);
+
+  chprintf(chp,"VelPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed);
+  chprintf(chp,"VelYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
+  chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
+  chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
+
+  chprintf(chp,"LS: %d\r\n",palReadPad(BULLET_LS_GPIO, BULLET_LS_PIN));
 }
 
 void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
@@ -128,6 +139,38 @@ void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
   }
 }
 
+void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
+{
+  rune_cmd(ENABLE);
+  rune_fire(0.0f, 0.0f);
+  chThdSleepSeconds(1);
+  rune_cmd(DISABLE);
+}
+
+#ifdef SHOOTER_SETUP
+  /**
+   * @brief Start the data tramsmission to matlab
+   * @note caution of data flooding to the serial port
+   */
+  void cmd_shooter_setup(BaseSequentialStream * chp, int argc, char *argv[])
+  {
+    if(argc)
+    {
+      if(!strcmp(argv[0], "set1"))
+      {
+        pwm12_setWidth(900);
+        chprintf(chp,"Set pwm to max\r\n");
+      }
+      else if(!strcmp(argv[0], "set2"))
+      {
+        pwm12_setWidth(100);
+        chprintf(chp,"Set pwm to min\r\n");
+      }
+    }
+    else
+      chprintf(chp,"cmd: set1, set2\r\n");
+  }
+#endif
 
 /**
  * @brief Start the data tramsmission to matlab
@@ -250,12 +293,16 @@ static const ShellCommand commands[] =
   {"mavlink", cmd_mavlink},
   {"cal", cmd_calibrate},
   {"temp", cmd_temp},
+  {"rune", cmd_rune},
   {"\xEE", cmd_data},
   #ifdef PARAMS_USE_USB
     {"\xFD",cmd_param_scale},
     {"\xFB",cmd_param_update},
     {"\xFA",cmd_param_tx},
     {"\xF9",cmd_param_rx},
+  #endif
+  #ifdef SHOOTER_SETUP
+    {"shoot", cmd_shooter_setup},
   #endif
   {NULL, NULL}
 };

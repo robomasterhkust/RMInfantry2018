@@ -16,6 +16,11 @@ static RC_Ctl_t RC_Ctl;
 static thread_reference_t uart_dbus_thread_handler = NULL;
 static uint8_t rx_start_flag = 1;
 
+#if defined (RM_INFANTRY) || defined (RM_HERO)
+  static bool rc_can_flag = false;
+#endif
+
+
 #ifdef RC_SAFE_LOCK
   systime_t update_time;
   rc_lock_state_t lock_state;
@@ -141,7 +146,7 @@ static void RC_reset(void)
   RC_Ctl.keyboard.key_code=0;
 }
 
-#ifdef RC_INFANTRY_HERO
+#if defined (RM_INFANTRY) || defined (RM_HERO)
 static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
 {
   CANTxFrame txmsg;
@@ -163,6 +168,13 @@ static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
   chSysUnlock();
 
   canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+}
+#endif
+
+#if defined (RM_INFANTRY) || defined (RM_HERO)
+void RC_canTxCmd(const uint8_t cmd)
+{
+  rc_can_flag = (cmd == DISABLE ? false : true);
 }
 #endif
 
@@ -221,8 +233,9 @@ static THD_FUNCTION(uart_dbus_thread, p)
       timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
     }
 
-    #ifdef RC_INFANTRY_HERO
-      RC_txCan(DBUS_CAN, CAN_DBUS_ID);
+    #if defined (RM_INFANTRY) || defined (RM_HERO)
+      if(rc_can_flag)
+        RC_txCan(DBUS_CAN, CAN_DBUS_ID);
     #endif
 
     //Control the flashing of green LED // Shift to Error.c

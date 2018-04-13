@@ -101,7 +101,7 @@ static THD_FUNCTION(mavlink_rx, p)
     (*UART_MAVLINK).usart->CR1 |= USART_CR1_RXNEIE;
     rxbuf[0] = rxbuf[1] = 0;
 
-    if(comm.status.msg_received != MAVLINK_FRAMING_INCOMPLETE)
+    if(comm.status.msg_received == MAVLINK_FRAMING_OK)
     {
       _mavlinkComm_topic_decode(&comm.rx_message);
     }

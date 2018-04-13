@@ -29,6 +29,7 @@
 #define _HALCONF_H_
 
 #include "mcuconf.h"
+#include "roboconf.h"
 
 #define CHPRINTF_USE_FLOAT TRUE
 
@@ -44,6 +45,10 @@
 #define LEDB_ON()       (palSetPad(GPIOA, GPIOA_LED_B))
 #define LEDB_OFF()      (palClearPad(GPIOA, GPIOA_LED_B))
 #define LEDB_TOGGLE()   (palTogglePad(GPIOA, GPIOA_LED_B))
+
+#define BULLET_LS_GPIO    GPIOC
+#define BULLET_LS_PIN     GPIOC_PIN1
+#define BULLET_LS_DOWN    0U
 
 //#define LEDB_ON()       (palClearPad(GPIOA, GPIOA_TIM2_CH3))
 //#define LEDB_OFF()      (palSetPad(GPIOA, GPIOA_TIM2_CH3))

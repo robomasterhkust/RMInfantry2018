@@ -11,12 +11,18 @@
 
 #define MIN_SHOOT_SPEED 100U
 #define MAX_SHOOT_SPEED 900U
-#define pwm12_setWidth(width) (PWMD12.tim->CCR[0] = PWMD12.tim->CCR[1] = width)
 
 RC_Ctl_t* rc;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
+
+static PWMDriver PWMD12;
+void pwm12_setWidth(uint16_t width)
+{
+  PWMD12.tim->CCR[0] = width;
+  PWMD12.tim->CCR[1] = width;
+}
 
 /**
  * 2017/12/17 PWM test
@@ -33,7 +39,6 @@ void shooter_control(uint16_t setpoint)
     speed_sp = setpoint;
 }
 
-static PWMDriver PWMD12;
 static const PWMConfig pwm12cfg = {
         100000,   /* 1MHz PWM clock frequency.   */
         1000,      /* Initial PWM period 1ms.    width   */
@@ -60,12 +65,10 @@ static THD_FUNCTION(pwm_thd, arg) {
       #ifdef SHOOTER_USE_RC
       switch (rc->rc.s2) {
         case RC_S_UP:
-          shooter_control(200);
-          safe = false;
+          shooter_control(175);
           break;
         case RC_S_MIDDLE:
-          shooter_control(150);
-          safe = false;
+          shooter_control(135);
           break;
         case RC_S_DOWN:
           safe = true;
@@ -133,11 +136,13 @@ void shooter_init(void)
     rc = RC_get();
     pwm12_start();
 
-    pwm12_setWidth(900);
-    chThdSleepSeconds(2);
+    #ifndef SHOOTER_SETUP
+      pwm12_setWidth(900);
+      chThdSleepSeconds(3);
 
-    pwm12_setWidth(100);
-    chThdSleepSeconds(2);
+      pwm12_setWidth(100);
+      chThdSleepSeconds(3);
 
-    chThdCreateStatic(pwm_thd_wa, sizeof(pwm_thd_wa), NORMALPRIO + 1, pwm_thd, NULL);
+      chThdCreateStatic(pwm_thd_wa, sizeof(pwm_thd_wa), NORMALPRIO + 1, pwm_thd, NULL);
+    #endif
 }

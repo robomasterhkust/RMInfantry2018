@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeSettings">
+    <configurations>
+      <configuration PROFILE_NAME="Debug" CONFIG_NAME="Debug" />
+    </configurations>
+  </component>
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="992" />
+    <option name="y" value="24" />
+    <option name="width" value="928" />
+    <option name="height" value="1056" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/STlink.sh" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+  </component>
+  <component name="RunManager" selected="Application.STLink">
+    <configuration name="BOARD" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="STLink" CONFIG_NAME="Debug" RUN_PATH="$PROJECT_DIR$/STlink.sh" />
+    <configuration name="Build All" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" CONFIG_NAME="Debug" EXPLICIT_BUILD_TARGET_NAME="all" />
+    <configuration name="HAL" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="HAL" CONFIG_NAME="Debug" />
+    <configuration name="OSAL" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="OSAL" CONFIG_NAME="Debug" />
+    <configuration name="Ozone" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="Ozone" CONFIG_NAME="Debug" />
+    <configuration name="PLATFORM" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="PLATFORM" CONFIG_NAME="Debug" />
+    <configuration name="PORT" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="PORT" CONFIG_NAME="Debug" />
+    <configuration name="RTOS" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="RTOS" CONFIG_NAME="Debug" />
+    <configuration name="SHELL" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="SHELL" CONFIG_NAME="Debug" />
+    <configuration name="STARTUP" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="STARTUP" CONFIG_NAME="Debug" />
+    <configuration name="STLink" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="STLink" CONFIG_NAME="Debug" RUN_PATH="$PROJECT_DIR$/STlink.sh" />
+    <configuration name="USER" type="CMakeRunConfiguration" factoryName="Application" PASS_PARENT_ENVS_2="true" PROJECT_NAME="RMdevBoard_ChibiOS" TARGET_NAME="USER" CONFIG_NAME="Debug" />
+    <list>
+      <item itemvalue="Application.Build All" />
+      <item itemvalue="Application.BOARD" />
+      <item itemvalue="Application.HAL" />
+      <item itemvalue="Application.OSAL" />
+      <item itemvalue="Application.Ozone" />
+      <item itemvalue="Application.PLATFORM" />
+      <item itemvalue="Application.PORT" />
+      <item itemvalue="Application.RTOS" />
+      <item itemvalue="Application.SHELL" />
+      <item itemvalue="Application.STARTUP" />
+      <item itemvalue="Application.STLink" />
+      <item itemvalue="Application.USER" />
+    </list>
+  </component>
+</project>

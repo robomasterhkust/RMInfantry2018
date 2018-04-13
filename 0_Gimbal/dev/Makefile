@@ -134,6 +134,7 @@ CSRC = $(STARTUPSRC) \
        exti.c imu_temp.c mavlink_comm.c mavlink_topic.c barrelStatus.c
 
 
+
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
 CPPSRC =

@@ -26,14 +26,15 @@ static THD_FUNCTION(Attitude_thread, p)
   (void)p;
 
   PIMUStruct pIMU = imu_get();
+  PGyroStruct pGyro = gyro_get();
 
   static const IMUConfigStruct imu1_conf =
     {&SPID5, MPU6500_ACCEL_SCALE_8G, MPU6500_GYRO_SCALE_1000, MPU6500_AXIS_REV_X};
   imuInit(pIMU, &imu1_conf);
 
-  static const magConfigStruct mag1_conf =
-    {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
-  ist8310_init(&mag1_conf);
+  //static const magConfigStruct mag1_conf =
+  //  {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
+  //ist8310_init(&mag1_conf);
 
   //Check temperature feedback before starting temp controller
   imuGetData(pIMU);
@@ -42,13 +43,14 @@ static THD_FUNCTION(Attitude_thread, p)
   else
     pIMU->errorCode |= IMU_TEMP_ERROR;
 
+/*
   while(pIMU->temperature < 61.0f)
   {
     imuGetData(pIMU);
     chThdSleepMilliseconds(50);
   }
 
-  pIMU->state = IMU_STATE_READY;
+  pIMU->state = IMU_STATE_READY;*/
   attitude_imu_init(pIMU);
 
   uint32_t tick = chVTGetSystemTimeX();
@@ -64,12 +66,14 @@ static THD_FUNCTION(Attitude_thread, p)
       pIMU->errorCode |= IMU_LOSE_FRAME;
     }
 
-    if(pIMU->temperature < 55.0f || pIMU->temperature < 70.0f)
-    pIMU->errorCode |= IMU_TEMP_WARNING;
+    if(pIMU->state == IMU_STATE_HEATING && pIMU->temperature > 61.0f)
+      pIMU->state = IMU_STATE_READY;
+    else if(pIMU->temperature < 55.0f || pIMU->temperature > 70.0f)
+      pIMU->errorCode |= IMU_TEMP_WARNING;
 
     imuGetData(pIMU);
-    ist8310_update();
-    attitude_update(pIMU);
+    //ist8310_update();
+    attitude_update(pIMU, pGyro);
 
     if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
     {
@@ -114,7 +118,7 @@ int main(void)
   params_init();
 
   //sdlog_init();
-  //extiinit();
+  extiinit();
 
   /* Init sequence 2: sensors, comm*/
   attitude_init();
@@ -125,12 +129,16 @@ int main(void)
   barrelHeatLimitControl_init();
 
   while(!power_check())
+  {
+    LEDY_TOGGLE();
     chThdSleepMilliseconds(200);
+  }
 
   /* Init sequence 3: actuators, display*/
   gimbal_init();
   shooter_init();
   feederInit();
+  rune_init();
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
@@ -141,22 +149,6 @@ int main(void)
     if(!power_failure())
     {
       wdgReset(&WDGD1);
-
-      /* REBOOT */
-
-      /*
-      LEDY_ON();
-      chThdSleepMilliseconds(500);
-
-      chSysDisable();
-      {
-        __DSB();
-        SCB->AIRCR  = ((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
-                       (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
-                        SCB_AIRCR_SYSRESETREQ_Msk);      // Keep priority group unchanged
-        __DSB();                               // Ensure completion of memory access
-        while(true);
-      }*/
     }
     else
       gimbal_kill();

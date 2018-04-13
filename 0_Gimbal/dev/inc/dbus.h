@@ -10,7 +10,6 @@
 #define UART_DBUS                     &UARTD1
 
 #define RC_SAFE_LOCK
-#define RC_INFANTRY_HERO
 
 #ifdef RC_SAFE_LOCK
 	#define RC_LOCK_TIME_S		 15
@@ -46,11 +45,6 @@ typedef enum{
 	RC_UNLOCKING,
 	RC_UNLOCKED
 } rc_lock_state_t;
-
-#ifdef RC_INFANTRY_HERO
-	#include "canBusProcess.h"
-	#define DBUS_CAN 				 &CAND1
-#endif
 
 typedef struct{
 		struct{
@@ -88,6 +82,12 @@ typedef struct{
 		  uint16_t key_code;
 		}keyboard;
 }RC_Ctl_t;
+
+#if defined (RM_INFANTRY) || defined (RM_HERO)
+	#include "canBusProcess.h"
+	#define DBUS_CAN 				 &CAND1
+	void RC_canTxCmd(const uint8_t cmd);
+#endif
 
 RC_Ctl_t* RC_get(void);
 void RC_init(void);

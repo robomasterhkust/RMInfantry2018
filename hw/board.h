@@ -582,7 +582,7 @@
                                      PIN_OSPEED_HIGH(GPIOC_PIN14) |         \
                                      PIN_OSPEED_HIGH(GPIOC_PIN15))
 #define VAL_GPIOC_PUPDR             (PIN_PUPDR_FLOATING(GPIOC_PIN0) |\
-                                     PIN_PUPDR_FLOATING(GPIOC_PIN1) |         \
+                                     PIN_PUPDR_PULLUP(GPIOC_PIN1) |         \
                                      PIN_PUPDR_PULLDOWN(GPIOC_PIN2) |         \
                                      PIN_PUPDR_FLOATING(GPIOC_PIN3) |      \
                                      PIN_PUPDR_FLOATING(GPIOC_PIN4) |         \
@@ -706,8 +706,8 @@
                                      PIN_PUPDR_FLOATING(GPIOD_UART2_TX) |\
                                      PIN_PUPDR_FLOATING(GPIOD_UART2_RX) |         \
                                      PIN_PUPDR_FLOATING(GPIOD_PIN7) |         \
-                                     PIN_PUPDR_FLOATING(GPIOD_UART3_TX) |         \
-                                     PIN_PUPDR_FLOATING(GPIOD_UART3_RX) |         \
+                                     PIN_PUPDR_PULLDOWN(GPIOD_UART3_TX) |         \
+                                     PIN_PUPDR_PULLDOWN(GPIOD_UART3_RX) |         \
                                      PIN_PUPDR_PULLUP(GPIOD_KEY) |        \
                                      PIN_PUPDR_FLOATING(GPIOD_PIN11) |        \
                                      PIN_PUPDR_PULLDOWN(GPIOD_TIM4_CH1) |       \
@@ -1014,7 +1014,7 @@
                                      PIN_MODE_INPUT(GPIOG_PIN10) |          \
                                      PIN_MODE_INPUT(GPIOG_PIN11) |          \
                                      PIN_MODE_INPUT(GPIOG_PIN12) |          \
-                                     PIN_MODE_INPUT(GPIOG_PIN13) |          \
+                                     PIN_MODE_OUTPUT(GPIOG_PIN13) |          \
                                      PIN_MODE_INPUT(GPIOG_PIN14) |          \
                                      PIN_MODE_INPUT(GPIOG_PIN15))
 #define VAL_GPIOG_OTYPER            (PIN_OTYPE_PUSHPULL(GPIOG_PIN0) |       \
