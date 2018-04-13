@@ -16,7 +16,7 @@
     (can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
         0, 0, 0, 0))
 
-static uint8_t        feeder_fire_mode = FEEDER_BURST; //User selection of firing mode
+static uint8_t        feeder_fire_mode = FEEDER_SINGLE; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
 static float          feeder_brakePos = 0.0f;
 static systime_t      feeder_start_time;
@@ -62,9 +62,6 @@ void feeder_bulletOut(void)
         {
           case FEEDER_SINGLE:
             bulletCount_stop = bulletCount;
-            break;
-          case FEEDER_BURST:
-            bulletCount_stop = bulletCount + 2;
             break;
           case FEEDER_AUTO:
             bulletCount_stop = (uint32_t)(-1);  //Never stop!!! KILL THEM ALL!!!
@@ -165,7 +162,6 @@ static void feeder_func(){
             }
             break;
         case FEEDER_SINGLE:
-        case FEEDER_BURST:
             if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(2000))
             {
               feeder_mode = FEEDER_FINISHED;
@@ -196,7 +192,7 @@ static void feeder_func(){
                 output, 0, 0, 0);
 
             break;
-        #ifdef FEEDER_USE_BOOST:
+        #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
             can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
                 FEEDER_BOOST_POWER, 0, 0, 0);
@@ -231,9 +227,6 @@ static THD_FUNCTION(feeder_control, p){
             {
               case FEEDER_SINGLE:
                 bulletCount_stop = bulletCount + 1;
-                break;
-              case FEEDER_BURST:
-                bulletCount_stop = bulletCount + 3;
                 break;
               case FEEDER_AUTO:
                 bulletCount_stop = (uint32_t)(-1);  //Never stop!!! KILL THEM ALL!!!

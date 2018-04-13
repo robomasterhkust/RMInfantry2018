@@ -23,16 +23,12 @@
 typedef enum{
   FEEDER_STOP = 0,
   FEEDER_SINGLE,    //Single shot
-  FEEDER_BURST,     //Three-round burst
-  FEEDER_AUTO,       //Auto fire
+  FEEDER_AUTO,      //Auto fire
   FEEDER_FINISHED,  //Finished a round of shooting
   #ifdef FEEDER_USE_BOOST
     FEEDER_BOOST
   #endif //FEEDER_USE_BOOST
 }feeder_mode_t;
-
-#define NORMAL_TURN 0
-#define ERROR_TURN  1
 
 typedef struct{
     float kp;
