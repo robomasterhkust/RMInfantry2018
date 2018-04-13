@@ -28,6 +28,7 @@
 
 #include "exti.h"
 #include "imu_temp.h"
+#include "barrelStatus.h"
 
 void shellStart(void);
 

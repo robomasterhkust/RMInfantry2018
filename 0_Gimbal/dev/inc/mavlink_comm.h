@@ -83,6 +83,6 @@ typedef enum{
 #endif
 
 /* This function is private*/
-inline void _mavlinkComm_topic_decode(mavlink_message_t* const message);
+void _mavlinkComm_topic_decode(mavlink_message_t* const message);
 
 #endif

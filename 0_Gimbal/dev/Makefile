@@ -131,7 +131,7 @@ CSRC = $(STARTUPSRC) \
        mpu6500.c attitude.c ist8310.c adis16265.c math_misc.c \
        canBusProcess.c dbus.c gimbal.c params.c usbcfg.c \
        calibrate_sensor.c shoot_pwm.c feeder.c\
-       exti.c imu_temp.c mavlink_comm.c mavlink_topic.c
+       exti.c imu_temp.c mavlink_comm.c mavlink_topic.c barrelStatus.c
 
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global

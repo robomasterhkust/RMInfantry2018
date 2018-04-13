@@ -122,6 +122,7 @@ int main(void)
   can_processInit();
   RC_init();
   mavlinkComm_init();
+  barrelHeatLimitControl_init();
 
   while(!power_check())
     chThdSleepMilliseconds(200);
