@@ -27,7 +27,10 @@
 #include "gimbal.h"
 #include "shoot.h"
 #include "feeder.h"
+#include "barrelStatus.h"
+
 #include "rune.h"
+
 
 void shellStart(void);
 

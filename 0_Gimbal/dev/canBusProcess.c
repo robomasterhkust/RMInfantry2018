@@ -8,9 +8,12 @@
 #include "hal.h"
 
 #include "canBusProcess.h"
+#include "barrelStatus.h"
+#include "halconf.h"
 
 static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
+static volatile BarrelStatus_canStruct chassis_send_barrel;
 
 /*
  * 500KBaud, automatic wakeup, automatic recover
@@ -36,6 +39,10 @@ volatile GimbalEncoder_canStruct* can_getGimbalMotor(void)
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
 {
   return chassis_encoder;
+}
+
+volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void){
+    return &chassis_send_barrel;
 }
 
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
@@ -80,6 +87,15 @@ static inline void can_processGimbalEncoder
   chSysUnlock();
 }
 
+static inline void  can_processSendBarrelStatus
+  (volatile BarrelStatus_canStruct* db, const CANRxFrame* const rxmsg)
+{
+    chSysLock();
+    db->heatLimit           = (uint16_t)(rxmsg->data16[0]);
+    db->currentHeatValue    = (uint16_t)(rxmsg->data16[1]);
+    chSysUnlock();
+}
+
 static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
 {
   switch(rxmsg->SID)
@@ -93,8 +109,13 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
       case CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID:
         can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH] ,rxmsg);
         break;
+      case CAN_CHASSIS_SEND_BARREL_ID:
+              can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
+
   }
 }
+
+
 
 /*
  * Receiver thread.
