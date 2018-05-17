@@ -15,6 +15,9 @@
 
 #define CAN_DBUS_ID                                 0x001
 
+#define CAN_CHASSIS_SEND_BARREL_ID                  0x002
+
+
 #define CAN_ENCODER_RANGE           8192            // 0x2000
 
 typedef enum
@@ -55,8 +58,14 @@ typedef struct{
     uint16_t key_code;
 } dbus_tx_canStruct;
 
+typedef struct{
+  uint16_t heatLimit;
+  uint16_t currentHeatValue;
+} BarrelStatus_canStruct;
+
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void);
+volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void);
 
 void can_processInit(void);
 void can_motorSetCurrent(CANDriver *const CANx,

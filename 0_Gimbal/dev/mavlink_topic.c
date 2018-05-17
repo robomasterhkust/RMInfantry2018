@@ -157,7 +157,7 @@ static systime_t tx_end = 0; //Estimated end_of_transmission time, used to preve
 #endif
 /**/
 
-inline void _mavlinkComm_topic_decode(mavlink_message_t* const message)
+void _mavlinkComm_topic_decode(mavlink_message_t* const message)
 {
   switch(message->msgid)
   {
