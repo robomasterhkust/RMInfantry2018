@@ -450,8 +450,8 @@
                                      PIN_OTYPE_PUSHPULL(GPIOB_PIN15))
 #define VAL_GPIOB_OSPEEDR           (PIN_OSPEED_HIGH(GPIOB_ADC1_IN8) |          \
                                      PIN_OSPEED_HIGH(GPIOB_ADC1_IN9) |          \
-                                     PIN_OSPEED_HIGH(GPIOB_PIN2) |          \
-                                     PIN_OSPEED_HIGH(GPIOB_PIN3) |           \
+                                     PIN_OSPEED_LOW(GPIOB_PIN2) |          \
+                                     PIN_OSPEED_LOW(GPIOB_PIN3) |           \
                                      PIN_OSPEED_HIGH(GPIOB_TIM3_BUZZER) |          \
                                      PIN_OSPEED_HIGH(GPIOB_TIM3_HEAT_PWM) |          \
                                      PIN_OSPEED_HIGH(GPIOB_UART1_TX) |           \

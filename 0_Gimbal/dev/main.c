@@ -125,7 +125,7 @@ int main(void)
   gyro_init();
   can_processInit();
   RC_init();
-  mavlinkComm_init();
+  //mavlinkComm_init();
 
   while(!power_check())
   {
@@ -137,7 +137,7 @@ int main(void)
   gimbal_init();
   shooter_init();
   feederInit();
-  rune_init();
+  //rune_init();
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 

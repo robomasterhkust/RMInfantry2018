@@ -288,7 +288,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
   }
 }
 
-static inline void gimbal_Follow(void)
+static void gimbal_Follow(void)
 {
   gimbal.yaw_atti_cmd = gimbal._pIMU->euler_angle[Yaw];
   gimbal.pitch_atti_cmd = gimbal._pIMU->euler_angle[Pitch];
@@ -667,15 +667,12 @@ static THD_FUNCTION(gimbal_init_thread, p)
         /*exit this thread and start attitude control*/
         chSysLock();
 
+        gimbal_Follow();
         yaw_init_pos = gimbal.motor[GIMBAL_YAW]._angle;
         pitch_init_pos = gimbal.motor[GIMBAL_PITCH]._angle;
-
-        chThdSleepSeconds(2);
-
-        gimbal_Follow();
-
         chThdResumeS(&gimbal_thread_handler, MSG_OK);
         chThdExitS(MSG_OK);
+
         chSysUnlock();
       }
     #endif

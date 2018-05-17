@@ -5,10 +5,10 @@
 #include "mpu6500.h"
 #include "params.h"
 
-#define GIMBAL_CONTROL_FREQ 1000U
-#define GIMBAL_CUTOFF_FREQ    30U
+#define GIMBAL_CONTROL_FREQ   1000U
+#define GIMBAL_CUTOFF_FREQ      30U
 
-#define GIMBAL_ZERO
+//#define GIMBAL_ZERO
 //#define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
 //#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
@@ -16,8 +16,8 @@
 #define GIMBAL_ENCODER_USE_SPEED
 
 //gimbal maximum movement speed in radian
-#define GIMBAL_MAX_SPEED_PITCH      2.0f
-#define GIMBAL_MAX_SPEED_YAW        4.0f
+#define GIMBAL_MAX_SPEED_PITCH      4.0f
+#define GIMBAL_MAX_SPEED_YAW        7.0f
 
 #define GIMBAL_CAN  &CAND1
 #define GIMBAL_CAN_EID  0x1FF
