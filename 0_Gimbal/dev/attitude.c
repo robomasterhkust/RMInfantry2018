@@ -13,6 +13,7 @@
 
 static float _error_int[3] = {0.0f, 0.0f, 0.0f};
 
+
 uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
 {
   float corr[3] = {0.0f, 0.0f, 0.0f};
@@ -20,7 +21,15 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
 
   angle_vel[X] = pIMU->gyroData[X];
   angle_vel[Y] = pIMU->gyroData[Y];
-  angle_vel[Z] = pGyro->angle_vel;
+  
+  //16265 measurement range is 320 degree/sec according to datasheet.
+          // But it can be accurate to 500 degree/sec according to real test
+  if(pGyro->angle_vel >= 8.0f || pGyro->angle_vel <= -8.0f){
+      angle_vel[Z] =pIMU->gyroData[Z];
+  }
+  else{
+      angle_vel[Z] = pGyro->angle_vel;
+  }
 
   float spinRate = vector_norm(angle_vel, 3);
   float accel = vector_norm(pIMU->accelFiltered, 3);
