@@ -16,7 +16,7 @@
     (can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
         0, 0, 0, 0))
 
-static uint8_t        feeder_fire_mode = FEEDER_SINGLE; //User selection of firing mode
+static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
 static float          feeder_brakePos = 0.0f;
 static systime_t      feeder_start_time;
