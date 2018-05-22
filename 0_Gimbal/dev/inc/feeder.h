@@ -4,8 +4,7 @@
 #define FEEDER_SINGLE_TIMEOUT_MS 100U
 
 #define FEEDER_CAN &CAND1
-#define FEEDER_CAN_EID 0x200
-#define FEEDER_CAN_INDEX 0
+#define FEEDER_CAN_EID 0x1FF
 
 #define FEEDER_BULLET_PER_TURN  7U
 #define FEEDER_GEAR             36U
@@ -38,6 +37,7 @@ typedef struct{
     float inte;
 } __attribute__((packed)) pid_struct;
 
+int16_t feeder_canUpdate(void); //In case the feeder ESC is using the same EID as gimbal does
 void feeder_bulletOut(void);  //Used as limit switch EXTI funtion
 void feeder_singleShot(void); //Rune shooting function
 void feederInit(void);

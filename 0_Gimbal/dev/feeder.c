@@ -12,9 +12,7 @@
 #define FEEDER_SPEED_SP_RPM     FEEDER_SET_RPS * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TURNBACK_ANGLE   360.0f / FEEDER_BULLET_PER_TURN     //165.0f;
 
-#define feeder_canStop() \
-    (can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
-        0, 0, 0, 0))
+static int16_t        feeder_output;
 
 static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
@@ -36,6 +34,16 @@ uint16_t error_count = 0;
 
 static uint32_t bulletCount      = 0;
 static uint32_t bulletCount_stop = 0;
+
+int16_t feeder_canUpdate(void)
+{
+  #if (FEEDER_CAN_EID == 0x1FF)
+    return feeder_output;
+  #elif (FEEDER_CAN_EID == 0x200)
+    can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
+        feeder_output, 0, 0, 0);
+  #endif
+}
 
 static void feeder_brake(void)
 {
@@ -104,12 +112,11 @@ static void feeder_rest(void)
     rest_pid.inte = rest_pid.inte > rest_pid.inte_max?  rest_pid.inte_max:rest_pid.inte;
     rest_pid.inte = rest_pid.inte <-rest_pid.inte_max? -rest_pid.inte_max:rest_pid.inte;
 
-    float output = rest_pid.kp * error + rest_pid.inte;
-    output = output > 4000?  4000:output;
-    output = output <-4000? -4000:output;
+    feeder_output = rest_pid.kp * error + rest_pid.inte;
+    feeder_output = feeder_output > 4000?  4000:feeder_output;
+    feeder_output = feeder_output <-4000? -4000:feeder_output;
 
-    can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
-        (int16_t)output, 0, 0, 0);
+    feeder_canUpdate();
 }
 
 static int16_t feeder_controlVel(const float target, const float output_max){
@@ -148,7 +155,7 @@ static int16_t feeder_controlPos(const float target, const float output_max){
 }
 
 static void feeder_func(){
-    int16_t output = 0.0f;
+    feeder_output = 0.0f;
     switch (feeder_mode){
         case FEEDER_FINISHED:
         case FEEDER_STOP:
@@ -156,9 +163,8 @@ static void feeder_func(){
               feeder_rest();
             else
             {
-              output = feeder_controlPos(feeder_brakePos, FEEDER_OUTPUT_MAX);
-              can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
-                  output, 0, 0, 0);
+              feeder_output = feeder_controlPos(feeder_brakePos, FEEDER_OUTPUT_MAX);
+              feeder_canUpdate();
             }
             break;
         case FEEDER_SINGLE:
@@ -180,26 +186,25 @@ static void feeder_func(){
               systime_t error_start_time = chVTGetSystemTime();
               while (chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) )
               {
-                output = feeder_controlPos(error_angle_sp, FEEDER_OUTPUT_MAX_BACK);
-                can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
-                    output, 0, 0, 0);
+                feeder_output = feeder_controlPos(error_angle_sp, FEEDER_OUTPUT_MAX_BACK);
+                feeder_canUpdate();
                 chThdSleepMilliseconds(1);
               }
             }
 
-            output = feeder_controlVel(FEEDER_SPEED_SP_RPM, FEEDER_OUTPUT_MAX);
-            can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
-                output, 0, 0, 0);
+            feeder_output = feeder_controlVel(FEEDER_SPEED_SP_RPM, FEEDER_OUTPUT_MAX);
+            feeder_canUpdate();
 
             break;
         #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
-            can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
-                FEEDER_BOOST_POWER, 0, 0, 0);
+            feeder_output = FEEDER_BOOST_POWER;
+            feeder_canUpdate();
             break;
         #endif //FEEDER_USE_BOOST
         default:
-            feeder_canStop();
+            feeder_output = 0;
+            feeder_canUpdate();
             break;
     }
 }
@@ -254,7 +259,7 @@ static const FEEDER_rest_name = "FEEDER_REST";
 static const char subname_feeder_PID[] = "KP KI KD Imax";
 void feederInit(void){
 
-    feeder_encode = can_getChassisMotor() + FEEDER_CAN_INDEX;
+    feeder_encode = can_getFeederMotor();
     p_dbus = RC_get();
 
     params_set(&vel_pid, 14,4,FEEDER_VEL,subname_feeder_PID,PARAM_PUBLIC);

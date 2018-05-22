@@ -12,8 +12,15 @@
 #include "halconf.h"
 
 static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
-static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
-static volatile BarrelStatus_canStruct chassis_send_barrel;
+static volatile BarrelStatus_canStruct   chassis_send_barrel;
+
+#ifdef RM_CHASSIS_STANDARD
+  static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
+#endif
+
+#ifdef RM_INFANTRY_GIMBAL
+  static volatile ChassisEncoder_canStruct feeder_encoder;
+#endif
 
 /*
  * 500KBaud, automatic wakeup, automatic recover
@@ -36,10 +43,19 @@ volatile GimbalEncoder_canStruct* can_getGimbalMotor(void)
   return gimbal_encoder;
 }
 
-volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
-{
-  return chassis_encoder;
-}
+#ifdef RM_CHASSIS_STANDARD
+  volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
+  {
+    return chassis_encoder;
+  }
+#endif
+
+#ifdef RM_INFANTRY_GIMBAL
+  volatile ChassisEncoder_canStruct* can_getFeederMotor(void)
+  {
+    return &feeder_encoder;
+  }
+#endif
 
 volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void){
     return &chassis_send_barrel;
@@ -101,7 +117,7 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
   switch(rxmsg->SID)
   {
       case CAN_FEEDER_FEEDBACK_MSG_ID:
-        can_processChassisEncoder(&chassis_encoder[0] ,rxmsg);
+        can_processChassisEncoder(&feeder_encoder ,rxmsg);
         break;
       case CAN_GIMBAL_YAW_FEEDBACK_MSG_ID:
         can_processGimbalEncoder(&gimbal_encoder[GIMBAL_YAW] ,rxmsg);
@@ -110,12 +126,9 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
         can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH] ,rxmsg);
         break;
       case CAN_CHASSIS_SEND_BARREL_ID:
-              can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
-
+        can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
   }
 }
-
-
 
 /*
  * Receiver thread.
@@ -186,7 +199,10 @@ void can_motorSetCurrent(CANDriver *const CANx,
 void can_processInit(void)
 {
   memset((void *)gimbal_encoder,  0, sizeof(GimbalEncoder_canStruct) *GIMBAL_MOTOR_NUM);
-  memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct)*CHASSIS_MOTOR_NUM);
+
+  #ifdef RM_CHASSIS_STANDARD
+    memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct)*CHASSIS_MOTOR_NUM);
+  #endif
 
   uint8_t i;
   for (i = 0; i < CAN_FILTER_NUM; i++)
@@ -202,7 +218,7 @@ void can_processInit(void)
   canSTM32SetFilters(14, CAN_FILTER_NUM, canfilter);
 
   canStart(&CAND1, &cancfg);
-  //canStart(&CAND2, &cancfg);
+  canStart(&CAND2, &cancfg);
 
   /*
    * Starting the transmitter and receiver threads.

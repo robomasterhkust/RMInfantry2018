@@ -21,9 +21,10 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
 
   angle_vel[X] = pIMU->gyroData[X];
   angle_vel[Y] = pIMU->gyroData[Y];
-  
+
   //16265 measurement range is 320 degree/sec according to datasheet.
           // But it can be accurate to 500 degree/sec according to real test
+  //Avoid exceeding the measurement range of ADIS16265
   if(pGyro->angle_vel >= 8.0f || pGyro->angle_vel <= -8.0f){
       angle_vel[Z] =pIMU->gyroData[Z];
   }

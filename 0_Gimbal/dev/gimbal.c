@@ -12,6 +12,7 @@
 
 #include "dbus.h"
 #include "adis16265.h"
+#include "feeder.h"
 
 #ifdef GIMBAL_USE_MAVLINK_CMD
   #include "mavlink_comm.h"
@@ -369,6 +370,7 @@ static THD_FUNCTION(gimbal_thread, p)
 
   float pitch_atti_out,yaw_atti_out;
   float sinroll, cosroll, cospitch;
+  int16_t feeder_output = 0;
 
   systime_t tick = chVTGetSystemTimeX();
 
@@ -489,7 +491,14 @@ static THD_FUNCTION(gimbal_thread, p)
       gimbal.pitch_iq_output = 0.0f;
     #endif
 
-    gimbal_canUpdate();
+    #if (FEEDER_CAN_EID == 0x1FF)
+      chSysLock();
+      feeder_output = feeder_canUpdate();
+      chSysUnlock();
+    #endif
+
+    can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
+      gimbal.yaw_iq_output, gimbal.pitch_iq_output, feeder_output, 0);
 
     //Stop the thread while calibrating IMU
     if(gimbal._pIMU->accelerometer_not_calibrated || gimbal._pIMU->gyroscope_not_calibrated)
