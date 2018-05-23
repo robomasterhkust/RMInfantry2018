@@ -87,14 +87,13 @@ int main(void) {
   halInit();
   chSysInit();
 
-
   palSetPad(GPIOE, GPIOE_LED_R);
   palSetPad(GPIOF, GPIOF_LED_G);
   palClearPad(GPIOA, GPIOA_LED_Y);
   palClearPad(GPIOA, GPIOA_LED_B);
 
-
     shellStart();
+    startMiceTrack();
     params_init();
 //    sdlog_init();
     can_processInit();
@@ -125,8 +124,6 @@ int main(void) {
   chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
                     NORMALPRIO + 5,
                     Attitude_thread, NULL); //*
-
-
 
   while (!chThdShouldTerminateX())
   {
