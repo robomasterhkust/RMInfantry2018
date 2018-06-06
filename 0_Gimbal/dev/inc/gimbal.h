@@ -49,7 +49,6 @@ static const char gimbal_error_messages[][GIMBAL_ERROR_COUNT] =
 {
   "E:Gimbal yaw not connected",
   "E:Gimbal pitch not connected",
-  "E:Gimbal init timeout"
 };
 
 static const char gimbal_warning_messages[][GIMBAL_WARNING_COUNT] =
@@ -114,7 +113,9 @@ GimbalStruct* gimbal_get(void);
 void gimbal_setRune(uint8_t cmd);
 GimbalStruct* gimbal_get_sys_iden(void);
 uint32_t gimbal_get_error(void);
+void gimbal_clear_error(void);
 void gimbal_init(void);
+void gimbal_start(void);
 void gimbal_kill(void);
 
 #endif

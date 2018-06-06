@@ -108,35 +108,46 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"LS: %d\r\n",palReadPad(BULLET_LS_GPIO, BULLET_LS_PIN));
 }
 
-void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_error(BaseSequentialStream * chp, int argc, char *argv[])
 {
-  (void) argc,argv;
+  uint32_t error;
 
-  mavlink_attitude_t* attitude = mavlinkComm_attitude_subscribe();
+  //Initialization error
+  error = init_state_get();
+  if(error & INIT_SEQUENCE_3_RETURN_1)
+    chprintf(chp,"E:INIT SEQ 3 FAILED -- GIMBAL YAW NOT CONNECTED\r\n");
+  if(error & INIT_SEQUENCE_3_RETURN_2)
+    chprintf(chp,"E:INIT SEQ 3 FAILED -- GIMBAL PITCH NOT CONNECTED\r\n");
 
-  float pitchSpeed = 0.0f, yawSpeed = 0.0f;
+  //IMU error
+  PIMUStruct pIMU = imu_get();
+  if(pIMU->state == IMU_STATE_HEATING)
+    chprintf(chp,"W:MPU6500 initialization not complete\r\n");
+  if(pIMU->errorCode & IMU_TEMP_ERROR)
+    chprintf(chp,"E:MPU6500 TEMPERATURE ERROR\r\n");
+  if(pIMU->errorCode & IMU_TEMP_WARNING)
+    chprintf(chp,"W:MPU6500 temperature unstable\r\n");
+  if(pIMU->errorCode & IMU_LOSE_FRAME)
+    chprintf(chp,"W:Attitude estimator lose frame\r\n");
+  pIMU->errorCode = 0; //clear IMU Error
 
-  uint8_t i;
-  for (i = 0; i < 100; i++)
-  {
-    if(mavlinkComm_attitude_check())
-    {
-      chSysLock();
-      pitchSpeed = attitude->pitchspeed;
-      yawSpeed = attitude->yawspeed;
-      chSysUnlock();
+  //Gimbal error
+  error = gimbal_get_error();
+  if(error & GIMBAL_YAW_NOT_CONNECTED)
+    chprintf(chp,"E:GIMBAL YAW CONNECTION LOST\r\n");
+  if(error & GIMBAL_PITCH_NOT_CONNECTED)
+    chprintf(chp,"E:GIMBAL PITCH CONNECTION LOST\r\n");
+  if(error & GIMBAL_CONTROL_LOSE_FRAME)
+    chprintf(chp,"W:Gimbal control lose frame\r\n");
 
-      chprintf(chp,"MAVpitchCmd: %f\r\n",pitchSpeed);
-      chprintf(chp,"MAVyawCmd: %f\r\n",yawSpeed);
-    }
-    else
-    {
-      pitchSpeed = 0.0f;
-      yawSpeed = 0.0f;
-    }
+  gimbal_clear_error();
 
-    chThdSleepMilliseconds(100);
-  }
+  //feeder error
+  if(feeder_get_error())
+    chprintf(chp, "E: FEEDER MOTOR NOT CONNECTED\r\n");
+  feeder_clear_error();
+
+  system_clearWarningFlag();
 }
 
 void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
@@ -213,6 +224,10 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
 
   if(argc)
   {
+    gimbal_kill();
+    chprintf(chp, "Calibration in process...\r\n");
+    chThdSleepMilliseconds(500);
+
     if(!strcmp(argv[0], "accl"))
     {
       if(pIMU->state == IMU_STATE_READY)
@@ -290,7 +305,7 @@ void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
 static const ShellCommand commands[] =
 {
   {"test", cmd_test},
-  {"mavlink", cmd_mavlink},
+  {"WTF", cmd_error},
   {"cal", cmd_calibrate},
   {"temp", cmd_temp},
   {"rune", cmd_rune},

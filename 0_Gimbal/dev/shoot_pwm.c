@@ -131,7 +131,7 @@ static void pwm12_start(void)
   PWMD12.state = PWM_READY;
 }
 
-void shooter_init(void)
+void shooter_start(void)
 {
     rc = RC_get();
     pwm12_start();

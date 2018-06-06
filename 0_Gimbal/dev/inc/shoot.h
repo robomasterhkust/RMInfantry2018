@@ -7,6 +7,6 @@
 void pwm12_setWidth(uint16_t width);
 
 void shooter_control(uint16_t setpoint);
-void shooter_init(void);
+void shooter_start(void);
 
 #endif

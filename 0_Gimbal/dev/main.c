@@ -16,6 +16,7 @@
 #include "main.h"
 
 static BaseSequentialStream* chp = (BaseSequentialStream*)&SDU1;
+static system_init_state_t init_state;
 
 #define MPU6500_UPDATE_PERIOD_US 1000000U/MPU6500_UPDATE_FREQ
 static THD_WORKING_AREA(Attitude_thread_wa, 4096);
@@ -32,25 +33,16 @@ static THD_FUNCTION(Attitude_thread, p)
     {&SPID5, MPU6500_ACCEL_SCALE_8G, MPU6500_GYRO_SCALE_1000, MPU6500_AXIS_REV_X};
   imuInit(pIMU, &imu1_conf);
 
-  //static const magConfigStruct mag1_conf =
-  //  {IST8310_ADDR_FLOATING, 200, IST8310_AXIS_REV_NO};
-  //ist8310_init(&mag1_conf);
-
   //Check temperature feedback before starting temp controller
   imuGetData(pIMU);
   if(pIMU->temperature > 0.0f)
     tempControllerInit();
   else
-    pIMU->errorCode |= IMU_TEMP_ERROR;
-
-/*
-  while(pIMU->temperature < 61.0f)
   {
-    imuGetData(pIMU);
-    chThdSleepMilliseconds(50);
+    pIMU->errorCode |= IMU_TEMP_ERROR;
+    system_setErrorFlag();
   }
 
-  pIMU->state = IMU_STATE_READY;*/
   attitude_imu_init(pIMU);
 
   uint32_t tick = chVTGetSystemTimeX();
@@ -63,16 +55,21 @@ static THD_FUNCTION(Attitude_thread, p)
     else
     {
       tick = chVTGetSystemTimeX();
+      system_setTempWarningFlag();
       pIMU->errorCode |= IMU_LOSE_FRAME;
     }
 
     if(pIMU->state == IMU_STATE_HEATING && pIMU->temperature > 61.0f)
       pIMU->state = IMU_STATE_READY;
     else if(pIMU->temperature < 55.0f || pIMU->temperature > 70.0f)
+    {
       pIMU->errorCode |= IMU_TEMP_WARNING;
+      system_setWarningFlag();
+    }
+    else
+      system_setTempWarningFlag(); //IMU Initialization not complete
 
     imuGetData(pIMU);
-    //ist8310_update();
     attitude_update(pIMU, pGyro);
 
     if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
@@ -119,27 +116,39 @@ int main(void)
 
   //sdlog_init();
   extiinit();
+  system_error_init();
 
-  /* Init sequence 2: sensors, comm*/
+  /* Init sequence 2: sensors, comm, actuators, display*/
   attitude_init();
   gyro_init();
   can_processInit();
   RC_init();
-  mavlinkComm_init();
   barrelHeatLimitControl_init();
 
-  while(!power_check())
-  {
-    LEDY_TOGGLE();
-    chThdSleepMilliseconds(200);
-  }
-
-  /* Init sequence 3: actuators, display*/
   gimbal_init();
-  shooter_init();
-  feederInit();
+  feeder_init();
+
+  /*
+   * Init sequence 3: start all actuator controllers,
+   * NOTE: ONLY after verifying the presence of 24V power
+   */
+
+  do
+  {
+    init_state = power_check();
+    if(init_state)
+      system_setErrorFlag();
+
+    chThdSleepMilliseconds(200);
+
+  } while(init_state & (INIT_SEQUENCE_3_RETURN_1 | INIT_SEQUENCE_3_RETURN_2));
+
+  gimbal_start();
+  feeder_start();
+  shooter_start();
   //rune_init();
 
+  init_state = INIT_COMPLETE;
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
   while (true)
@@ -159,14 +168,25 @@ int main(void)
   return 0;
 }
 
+system_init_state_t init_state_get(void)
+{
+  return init_state;
+}
+
 /**
   *   @brief Check whether the 24V power is on
   */
-bool power_check(void)
+uint8_t power_check(void)
 {
   GimbalEncoder_canStruct* can = can_getGimbalMotor();
 
-  return can->updated;
+  system_init_state_t result = 0;
+  if(!(can[0].updated))
+    result |= INIT_SEQUENCE_3_RETURN_1;
+  if(!(can[1].updated))
+    result |= INIT_SEQUENCE_3_RETURN_2;
+
+  return result;
 }
 
 /**

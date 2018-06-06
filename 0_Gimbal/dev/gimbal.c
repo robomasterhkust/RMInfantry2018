@@ -14,6 +14,8 @@
 #include "adis16265.h"
 #include "feeder.h"
 
+#include "system_error.h"
+
 #ifdef GIMBAL_USE_MAVLINK_CMD
   #include "mavlink_comm.h"
   mavlink_attitude_t* mavlink_attitude;
@@ -33,6 +35,9 @@ static float yaw_init_pos = 0.0f, pitch_init_pos = 0.0f;
 static PGyroStruct pGyro;
 static PIMUStruct pIMU;
 static bool rune_state = false;
+
+static thread_t* gimbal_thread_p = NULL;
+static thread_t* gimbal_init_thread_p = NULL;
 
 #define gimbal_canUpdate()   \
   (can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
@@ -55,6 +60,11 @@ uint32_t gimbal_get_error(void)
   return gimbal.errorFlag;
 }
 
+void gimbal_clear_error(void)
+{
+  gimbal.errorFlag = 0;
+}
+
 void gimbal_setRune(uint8_t cmd)
 {
   rune_state = cmd == DISABLE ? false : true;
@@ -66,6 +76,19 @@ void gimbal_kill(void)
   gimbal.pitch_iq_output = 0;
   gimbal_canUpdate();
   gimbal.state = GIMBAL_STATE_UNINIT;
+
+  if(gimbal_thread_p != NULL)
+  {
+    chThdTerminate(gimbal_thread_p);
+    gimbal_thread_p = NULL;
+  }
+
+  if(gimbal_init_thread_p != NULL)
+  {
+    chThdTerminate(gimbal_init_thread_handler);
+    gimbal_init_thread_p = NULL;
+  }
+
 }
 
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
@@ -285,6 +308,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
     {
       gimbal.errorFlag |= (GIMBAL_YAW_NOT_CONNECTED << (id == GIMBAL_YAW ? 0 : 1));
       gimbal_kill();
+      system_setErrorFlag();
       motor->_wait_count = 1;
     }
   }
@@ -382,6 +406,7 @@ static THD_FUNCTION(gimbal_thread, p)
     else
     {
       tick = chVTGetSystemTimeX();
+      system_setTempWarningFlag();
       gimbal.errorFlag |= GIMBAL_CONTROL_LOSE_FRAME;
     }
 
@@ -737,7 +762,6 @@ void gimbal_init(void)
   pGyro = gyro_get();
   rc = RC_get();
   gimbal._encoder = can_getGimbalMotor();
-  chThdSleepMilliseconds(100);
 
   lpfilter_init(&lp_angle[GIMBAL_YAW], GIMBAL_CONTROL_FREQ, GIMBAL_CUTOFF_FREQ);
   lpfilter_init(&lp_angle[GIMBAL_PITCH], GIMBAL_CONTROL_FREQ, GIMBAL_CUTOFF_FREQ);
@@ -764,16 +788,18 @@ void gimbal_init(void)
 
   params_set(&_yaw_atti,     7, 3, _yaw_atti_name,   subname_PID,      PARAM_PUBLIC);
   params_set(&_pitch_atti,   8, 3, _pitch_atti_name, subname_PID,      PARAM_PUBLIC);
+}
 
-  #ifdef GIMBAL_USE_MAVLINK_CMD
-    mavlink_attitude = mavlinkComm_attitude_subscribe();
-  #endif
+void gimbal_start(void)
+{
+  gimbal_encoderUpdate(&gimbal.motor[GIMBAL_YAW], GIMBAL_YAW);
+  gimbal_encoderUpdate(&gimbal.motor[GIMBAL_PITCH], GIMBAL_PITCH);
 
-  chThdCreateStatic(gimbal_init_thread_wa, sizeof(gimbal_init_thread_wa),
+  gimbal_init_thread_p = chThdCreateStatic(gimbal_init_thread_wa, sizeof(gimbal_init_thread_wa),
                     NORMALPRIO - 5, gimbal_init_thread, NULL);
 
   #ifndef GIMBAL_INIT_TEST
-    chThdCreateStatic(gimbal_thread_wa, sizeof(gimbal_thread_wa),
+    gimbal_thread_p = chThdCreateStatic(gimbal_thread_wa, sizeof(gimbal_thread_wa),
                       NORMALPRIO - 5, gimbal_thread, NULL);
   #endif
 
