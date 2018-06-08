@@ -733,7 +733,7 @@ const char subname_axis[]  = "Yaw Pitch";
 const char subname_init_pos[]  = "Pitch0 Pitch1";
 const char subname_ff[]    = "Yaw_w1 Pitch_w Yaw_SD Pitch_a Yaw_w2 Yaw_th";
 const char subname_accl[]  = "YawX YawY YawZ PitchX PitchY PitchZ";
-const char limit_subname[] = "Yaw_min Yaw_max Pitch_min Pitch_max";
+const char limit_subname[] = "Yaw_range Pitch_range";
 
 
 /*
@@ -778,7 +778,7 @@ void gimbal_init(void)
   params_set(gimbal.axis_ff_ext,    2, 6,   axis_ff_name,   subname_ff,       PARAM_PUBLIC);
   params_set(gimbal.axis_ff_accel,  6, 6,   accl_name,      subname_accl,     PARAM_PUBLIC);
   params_set(gimbal.axis_ff_int,    9, 2,   ff_int_name,    subname_axis,     PARAM_PUBLIC);
-  params_set(gimbal.axis_limit,     10, 4,  limit_name,     limit_subname,    PARAM_PUBLIC);
+  params_set(gimbal.axis_limit,     10, 2,  limit_name,     limit_subname,    PARAM_PUBLIC);
 
   params_set(&_yaw_pos,   3, 3, yaw_pos_name,   subname_PID,   PARAM_PUBLIC);
   params_set(&_pitch_pos, 4, 3, pitch_pos_name, subname_PID,   PARAM_PUBLIC);
