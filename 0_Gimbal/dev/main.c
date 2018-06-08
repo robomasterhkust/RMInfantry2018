@@ -117,10 +117,13 @@ int main(void)
   //sdlog_init();
   extiinit();
   system_error_init();
+  LASER_ON();
 
   /* Init sequence 2: sensors, comm, actuators, display*/
-  attitude_init();
-  gyro_init();
+  adis16470_init();
+
+  //attitude_init();
+  //gyro_init();
   can_processInit();
   RC_init();
   barrelHeatLimitControl_init();

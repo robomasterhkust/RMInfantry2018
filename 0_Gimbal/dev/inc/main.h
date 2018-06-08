@@ -20,6 +20,7 @@
 #include "mpu6500.h"
 #include "ist8310.h"
 #include "adis16265.h"
+#include "adis16470.h"
 #include "attitude.h"
 #include "imu_temp.h"
 #include "calibrate_sensor.h"
@@ -30,6 +31,9 @@
 #include "barrelStatus.h"
 
 #include "rune.h"
+
+#define LASER_ON()  (palSetPad(GPIOA, GPIOA_PIN0))
+#define LASER_OFF() (palClearPad(GPIOA, GPIOA_PIN0))
 
 typedef enum {
   INIT_DUMMY = 0,
