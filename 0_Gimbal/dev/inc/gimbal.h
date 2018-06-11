@@ -2,7 +2,7 @@
 #define _GIMBAL_H_
 
 #include "canBusProcess.h"
-#include "mpu6500.h"
+#include "adis16470.h"
 #include "params.h"
 
 #define GIMBAL_CONTROL_FREQ   1000U

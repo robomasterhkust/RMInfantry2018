@@ -17,12 +17,8 @@
 #include "sdlog.h"
 #include "exti.h"
 
-#include "mpu6500.h"
-#include "ist8310.h"
-#include "adis16265.h"
-#include "adis16470.h"
+
 #include "attitude.h"
-#include "imu_temp.h"
 #include "calibrate_sensor.h"
 
 #include "gimbal.h"

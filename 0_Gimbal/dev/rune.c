@@ -6,6 +6,7 @@
 #include "gimbal.h"
 #include "feeder.h"
 #include "shoot.h"
+#include "math_misc.h"
 
 static GimbalStruct* gimbal;
 static PIMUStruct pIMU;
@@ -14,7 +15,7 @@ static bool rune_state = false;
 void rune_init(void)
 {
   gimbal = gimbal_get();
-  pIMU = imu_get();
+  pIMU = adis16470_get();
 }
 
 void rune_cmd(uint8_t cmd)

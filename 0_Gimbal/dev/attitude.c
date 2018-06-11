@@ -12,31 +12,35 @@
 #include "math_misc.h"
 
 static float _error_int[3] = {0.0f, 0.0f, 0.0f};
+static uint32_t prev_timestamp;
 
+/*
+ *  @brief  Update timestamp
+ *  @NOTE   there may be jumps between the direct
+ */
+void attitude_update_timestamp(uint32_t timestamp)
+{
+  prev_timestamp = timestamp;
+}
 
-uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
+uint8_t attitude_update(PIMUStruct pIMU)
 {
   float corr[3] = {0.0f, 0.0f, 0.0f};
   float angle_vel[3];
 
   angle_vel[X] = pIMU->gyroData[X];
   angle_vel[Y] = pIMU->gyroData[Y];
-
-  //16265 measurement range is 320 degree/sec according to datasheet.
-          // But it can be accurate to 500 degree/sec according to real test
-  //Avoid exceeding the measurement range of ADIS16265
-  if(pGyro->angle_vel >= 8.0f || pGyro->angle_vel <= -8.0f){
-      angle_vel[Z] =pIMU->gyroData[Z];
-  }
-  else{
-      angle_vel[Z] = pGyro->angle_vel;
-  }
+  angle_vel[Z] = pIMU->gyroData[Z];
 
   float spinRate = vector_norm(angle_vel, 3);
-  float accel = vector_norm(pIMU->accelFiltered, 3);
+  float accel = vector_norm(pIMU->accelData, 3);
 
   vector_normalize(pIMU->qIMU, 4);
   uint8_t i;
+
+  //Calculate delta t to perform gyro integration
+  float dt = prev_timestamp ?
+    ((float)(pIMU->stamp - prev_timestamp))/ADIS16470_SAMPLE_FREQ : 0.0f;
 
   if(accel < 12.81f && accel > 6.81f)
   {
@@ -50,7 +54,7 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
             pIMU->qIMU[3] * pIMU->qIMU[3];
 
     for (i = 0; i < 3; i++)
-      norm_accel[i] = pIMU->accelFiltered[i]/accel;
+      norm_accel[i] = pIMU->accelData[i]/accel;
 
     vector3_cross(norm_accel, v2, accel_corr);
     for (i = 0; i < 3; i++)
@@ -59,7 +63,7 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
     if(spinRate < 0.175f)
       for (i = 0; i < 3; i++)
       {
-        _error_int[i] += corr[i] * (ATT_W_GYRO * pIMU->dt);
+        _error_int[i] += corr[i] * (ATT_W_GYRO * dt);
 
         if(_error_int[i] > GYRO_BIAS_MAX)
           _error_int[i] = GYRO_BIAS_MAX;
@@ -76,7 +80,7 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
 
   float q[4] = {pIMU->qIMU[0], pIMU->qIMU[1], pIMU->qIMU[2], pIMU->qIMU[3]};
   for (i = 0; i < 4; i++)
-    q[i] += dq[i] * pIMU->dt;
+    q[i] += dq[i] * dt;
   vector_normalize(q,4);
 
   if(isfinite(q[0]) && isfinite(q[1]) && isfinite(q[2]) && isfinite(q[3]))
@@ -97,28 +101,36 @@ uint8_t attitude_update(PIMUStruct pIMU, PGyroStruct pGyro)
       pIMU->euler_angle[Pitch] = euler_angle[Pitch];
       pIMU->euler_angle[Yaw] = pIMU->rev*2*M_PI + euler_angle[Yaw];
 
-      pIMU->d_euler_angle[Pitch] = cosf(pIMU->euler_angle[Roll])*pIMU->gyroData[Y] -
-        sinf(pIMU->euler_angle[Roll]) * pGyro->angle_vel;
-      pIMU->d_euler_angle[Yaw] = (sinf(pIMU->euler_angle[Roll])*pIMU->gyroData[Y] +
-        cosf(pIMU->euler_angle[Roll]) * pGyro->angle_vel) / cosf(pIMU->euler_angle[Pitch]);
+      pIMU->d_euler_angle[Pitch] = cosf(pIMU->euler_angle[Roll])*angle_vel[Y] -
+        sinf(pIMU->euler_angle[Roll]) * angle_vel[Z];
+      pIMU->d_euler_angle[Yaw] = (sinf(pIMU->euler_angle[Roll])*angle_vel[Y] +
+        cosf(pIMU->euler_angle[Roll]) * angle_vel[Z]) / cosf(pIMU->euler_angle[Pitch]);
 
       pIMU->prev_yaw = euler_angle[Yaw];
     #endif
 
-    return IMU_OK;
+    return 0;
   }
   else
-    return IMU_CORRUPTED_Q_DATA;
+    return ADIS16470_CORRUPT_Q_DATA;
 }
 
 uint8_t attitude_imu_init(PIMUStruct pIMU)
 {
+  uint8_t i;
+  while(pIMU->state != ADIS16470_READY)
+  {
+    chThdSleepMilliseconds(100);
+    if(i++ > 20)
+      return;
+  }
+
   float rot_matrix[3][3];
 
-  float norm = vector_norm(pIMU->accelFiltered,3);
-  uint8_t i;
+  float norm = vector_norm(pIMU->accelData,3);
+  
   for (i = 0; i < 3; i++)
-    rot_matrix[2][i] = pIMU->accelFiltered[i] / norm;
+    rot_matrix[2][i] = pIMU->accelData[i] / norm;
 
   norm = sqrtf(rot_matrix[2][2]*rot_matrix[2][2] +
     rot_matrix[2][0]*rot_matrix[2][0]);
@@ -134,5 +146,5 @@ uint8_t attitude_imu_init(PIMUStruct pIMU)
     pIMU->prev_yaw = 0.0f;         /* used to detect zero-crossing */
   #endif
 
-  return IMU_OK;
+  return 0;
 }

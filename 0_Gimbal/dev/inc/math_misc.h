@@ -26,6 +26,18 @@ typedef struct {
   float data[2];
 } lpfilterStruct;
 
+typedef enum {
+  X = 0U,
+  Y = 1U,
+  Z = 2U,
+} axis_mask_t;
+
+typedef enum {
+  Roll = 0U,
+  Pitch = 1U,
+  Yaw = 2U
+} euler_angle_t;
+
 static inline void bound(float* input, const float max)
 {
   if(*input > max)

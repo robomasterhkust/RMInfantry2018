@@ -32,7 +32,6 @@ static pid_controller_t _pitch_pos;
 
 static float yaw_init_pos = 0.0f, pitch_init_pos = 0.0f;
 
-static PGyroStruct pGyro;
 static PIMUStruct pIMU;
 static bool rune_state = false;
 
@@ -422,7 +421,7 @@ static THD_FUNCTION(gimbal_thread, p)
     float yaw_theta1 = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
 
     gimbal.motor[GIMBAL_PITCH]._speed = gimbal._pIMU->gyroData[Y];
-    gimbal.motor[GIMBAL_YAW]._speed = pGyro->angle_vel * cosf(yaw_theta1) -
+    gimbal.motor[GIMBAL_YAW]._speed = pIMU->gyroData[Z] * cosf(yaw_theta1) -
       gimbal._pIMU->gyroData[X] * sinf(yaw_theta1);                 //             ^
                                                                     //             |
     /* TODO Check the sign here----------------------------------------------------- */
@@ -526,7 +525,7 @@ static THD_FUNCTION(gimbal_thread, p)
       gimbal.yaw_iq_output, gimbal.pitch_iq_output, feeder_output, 0);
 
     //Stop the thread while calibrating IMU
-    if(gimbal._pIMU->accelerometer_not_calibrated || gimbal._pIMU->gyroscope_not_calibrated)
+    if(gimbal._pIMU->state == ADIS16470_CALIBRATING)
     {
       gimbal_kill();
       chThdExit(MSG_OK);
@@ -756,10 +755,9 @@ void gimbal_init(void)
 
   gimbal_kill();
 
-  gimbal._pIMU = imu_get();
-  pIMU = imu_get();
+  gimbal._pIMU = adis16470_get();
+  pIMU = gimbal._pIMU;
 
-  pGyro = gyro_get();
   rc = RC_get();
   gimbal._encoder = can_getGimbalMotor();
 

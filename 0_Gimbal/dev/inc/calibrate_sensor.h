@@ -1,8 +1,7 @@
 #ifndef __CALIBRATE_IMU_H_
 #define __CALIBRATE_IMU_H_
 
-#include "mpu6500.h"
-#include "adis16265.h"
+#include "adis16470.h"
 /**
  *  @brief calibration states record
  */
@@ -29,8 +28,7 @@ enum calibration_state  // Declare the calibration enum states
     STATE_CALIBRATION_ERROR
 };
 
-void calibrate_gyroscope(PIMUStruct pIMU);
-void calibrate_accelerometer(PIMUStruct pIMU);
-uint8_t calibrate_adi(PGyroStruct pGyro, const uint8_t full_cal);
+void calibrate_gyroscope(PIMUStruct pIMU, int32_t gyroBias[3]);
+void calibrate_accelerometer(PIMUStruct pIMU, int32_t accelBias[3]);
 
 #endif

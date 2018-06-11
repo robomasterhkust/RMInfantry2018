@@ -8,18 +8,6 @@
 #include "params.h"
 
 typedef enum {
-  X = 0U,
-  Y = 1U,
-  Z = 2U
-} axis_mask_t;
-
-typedef enum {
-  Roll = 0U,
-  Pitch = 1U,
-  Yaw = 2U
-} mpu_euler_angle_t;
-
-typedef enum {
   MPU6500_I2C_ADDR_A0_LOW = 0x68,
   MPU6500_I2C_ADDR_A0_HIGH = 0x69
 } mpu_i2c_addr_t;

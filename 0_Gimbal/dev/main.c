@@ -18,7 +18,7 @@
 static BaseSequentialStream* chp = (BaseSequentialStream*)&SDU1;
 static system_init_state_t init_state;
 
-#define MPU6500_UPDATE_PERIOD_US 1000000U/MPU6500_UPDATE_FREQ
+#define ATTITUDE_UPDATE_PERIOD_US 1000000U/ATTITUDE_UPDATE_FREQ
 static THD_WORKING_AREA(Attitude_thread_wa, 4096);
 static THD_FUNCTION(Attitude_thread, p)
 {
@@ -26,58 +26,34 @@ static THD_FUNCTION(Attitude_thread, p)
 
   (void)p;
 
-  PIMUStruct pIMU = imu_get();
-  PGyroStruct pGyro = gyro_get();
-
-  static const IMUConfigStruct imu1_conf =
-    {&SPID5, MPU6500_ACCEL_SCALE_8G, MPU6500_GYRO_SCALE_1000, MPU6500_AXIS_REV_X};
-  imuInit(pIMU, &imu1_conf);
+  PIMUStruct pIMU = adis16470_get();
+  adis16265_conf_t imu_conf = {0x01, ADIS16470_X_REV,
+                                     ADIS16470_Y,
+                                     ADIS16470_Z_REV};
+  adis16470_init(&imu_conf);
+  chThdSleepSeconds(1);
 
   //Check temperature feedback before starting temp controller
-  imuGetData(pIMU);
-  if(pIMU->temperature > 0.0f)
-    tempControllerInit();
-  else
-  {
-    pIMU->errorCode |= IMU_TEMP_ERROR;
-    system_setErrorFlag();
-  }
-
   attitude_imu_init(pIMU);
 
   uint32_t tick = chVTGetSystemTimeX();
 
   while(true)
   {
-    tick += US2ST(MPU6500_UPDATE_PERIOD_US);
+    tick += US2ST(ATTITUDE_UPDATE_PERIOD_US);
     if(chVTGetSystemTimeX() < tick)
       chThdSleepUntil(tick);
     else
     {
       tick = chVTGetSystemTimeX();
       system_setTempWarningFlag();
-      pIMU->errorCode |= IMU_LOSE_FRAME;
+      pIMU->error |= ADIS16470_LOSE_FRAME;
     }
 
-    if(pIMU->state == IMU_STATE_HEATING && pIMU->temperature > 61.0f)
-      pIMU->state = IMU_STATE_READY;
-    else if(pIMU->temperature < 55.0f || pIMU->temperature > 70.0f)
-    {
-      pIMU->errorCode |= IMU_TEMP_WARNING;
-      system_setWarningFlag();
-    }
-    else
-      system_setTempWarningFlag(); //IMU Initialization not complete
+    if(pIMU->state == ADIS16470_READY)
+      attitude_update(pIMU);
 
-    imuGetData(pIMU);
-    attitude_update(pIMU, pGyro);
-
-    if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
-    {
-      chSysLock();
-      chThdSuspendS(&(pIMU->imu_Thd));
-      chSysUnlock();
-    }
+    attitude_update_timestamp(pIMU->stamp); //Update timestamp anyway
   }
 }
 
@@ -120,10 +96,7 @@ int main(void)
   LASER_ON();
 
   /* Init sequence 2: sensors, comm, actuators, display*/
-  adis16470_init();
-
-  //attitude_init();
-  //gyro_init();
+  attitude_init();
   can_processInit();
   RC_init();
   barrelHeatLimitControl_init();
@@ -149,15 +122,13 @@ int main(void)
   gimbal_start();
   feeder_start();
   shooter_start();
-  //rune_init();
+  rune_init();
 
   init_state = INIT_COMPLETE;
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
   while (true)
   {
-    uint32_t error = gimbal_get_error();
-
     if(!power_failure())
     {
       wdgReset(&WDGD1);

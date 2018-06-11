@@ -56,8 +56,10 @@ static THD_FUNCTION(matlab_thread, p)
   float txbuf_f[16];
   BaseSequentialStream* chp = (BaseSequentialStream*)SERIAL_DATA;
 
-  PIMUStruct pIMU = imu_get();
-  GimbalStruct* gimbal = gimbal_get();
+  //================Initialization of transmission data ==========================//
+  PIMUStruct pIMU = adis16470_get();
+  float timestamp_prev =  pIMU->stamp / 2000.0f;
+  //==============================================================================//
 
   uint32_t tick = chVTGetSystemTimeX();
   const uint16_t period = US2ST(1000000/HOST_TRANSMIT_FREQ);
@@ -71,10 +73,15 @@ static THD_FUNCTION(matlab_thread, p)
       tick = chVTGetSystemTimeX();
     }
 
-    txbuf_f[0] = (float)(gimbal->motor[GIMBAL_YAW]._speed);
-    txbuf_f[1] = (float)(gimbal->motor[GIMBAL_PITCH]._speed);
+    //==============================Set the data to transmit=========================//
+    txbuf_f[0] = pIMU->euler_angle[Roll];
+    txbuf_f[1] = pIMU->euler_angle[Pitch];
+    txbuf_f[2] = pIMU->euler_angle[Yaw];
 
-    transmit_matlab(chp, NULL, txbuf_f, 0, 2);
+    //timestamp_prev =  pIMU->stamp / 2000.0f;
+    //===============================================================================//
+
+    transmit_matlab(chp, NULL, txbuf_f, 0, 3);
   }
 }
 
@@ -85,27 +92,16 @@ static THD_WORKING_AREA(Shell_thread_wa, 1024);
 void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 {
   (void) argc,argv;
-  PIMUStruct PIMU = imu_get();
-  PGyroStruct PGyro = gyro_get();
-  GimbalStruct* gimbal = gimbal_get();
+  PIMUStruct pIMU = adis16470_get();
 
-  chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
-  chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
-  chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
+  chprintf(chp, "Roll: %f\r\n", pIMU->euler_angle[X]);
+  chprintf(chp, "Pitch: %f\r\n", pIMU->euler_angle[Y]);
+  chprintf(chp, "Yaw: %f\r\n", pIMU->euler_angle[Z]);
 
-  chprintf(chp,"Roll:  %f\r\n",PIMU->euler_angle[Roll]);
-  chprintf(chp,"Pitch: %f\r\n",PIMU->euler_angle[Pitch]);
-  chprintf(chp,"Yaw:   %f\r\n",PIMU->euler_angle[Yaw]);
+  chprintf(chp, "AccelX: %f\r\n", pIMU->accelData[X]);
+  chprintf(chp, "AccelY: %f\r\n", pIMU->accelData[Y]);
+  chprintf(chp, "AccelZ: %f\r\n", pIMU->accelData[Z]);
 
-  chprintf(chp,"gimbalPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
-  chprintf(chp,"gimbalYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._angle);
-
-  chprintf(chp,"VelPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed);
-  chprintf(chp,"VelYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
-  chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
-  chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
-
-  chprintf(chp,"LS: %d\r\n",palReadPad(BULLET_LS_GPIO, BULLET_LS_PIN));
 }
 
 void cmd_error(BaseSequentialStream * chp, int argc, char *argv[])
@@ -119,28 +115,34 @@ void cmd_error(BaseSequentialStream * chp, int argc, char *argv[])
   if(error & INIT_SEQUENCE_3_RETURN_2)
     chprintf(chp,"E:INIT SEQ 3 FAILED -- GIMBAL PITCH NOT CONNECTED\r\n");
 
-  //IMU error
-  PIMUStruct pIMU = imu_get();
-  if(pIMU->state == IMU_STATE_HEATING)
-    chprintf(chp,"W:MPU6500 initialization not complete\r\n");
-  if(pIMU->errorCode & IMU_TEMP_ERROR)
-    chprintf(chp,"E:MPU6500 TEMPERATURE ERROR\r\n");
-  if(pIMU->errorCode & IMU_TEMP_WARNING)
-    chprintf(chp,"W:MPU6500 temperature unstable\r\n");
-  if(pIMU->errorCode & IMU_LOSE_FRAME)
-    chprintf(chp,"W:Attitude estimator lose frame\r\n");
-  pIMU->errorCode = 0; //clear IMU Error
-
   //Gimbal error
-  error = gimbal_get_error();
-  if(error & GIMBAL_YAW_NOT_CONNECTED)
-    chprintf(chp,"E:GIMBAL YAW CONNECTION LOST\r\n");
-  if(error & GIMBAL_PITCH_NOT_CONNECTED)
-    chprintf(chp,"E:GIMBAL PITCH CONNECTION LOST\r\n");
-  if(error & GIMBAL_CONTROL_LOSE_FRAME)
-    chprintf(chp,"W:Gimbal control lose frame\r\n");
+//error = gimbal_get_error();
+//  if(error & GIMBAL_YAW_NOT_CONNECTED)
+//    chprintf(chp,"E:GIMBAL YAW CONNECTION LOST\r\n");
+//  if(error & GIMBAL_PITCH_NOT_CONNECTED)
+  //  chprintf(chp,"E:GIMBAL PITCH CONNECTION LOST\r\n");
+//  if(error & GIMBAL_CONTROL_LOSE_FRAME)
+//    chprintf(chp,"W:Gimbal control lose frame\r\n");
+    //gimbal_clear_error();
 
-  gimbal_clear_error();
+  //IMU error
+  error = adis16470_get_error();
+  PIMUStruct pIMU = adis16470_get();
+  if(error & ADIS16470_AXIS_CONF_ERROR)
+    chprintf(chp,"E:IMU COORDINATE CONFIGURATION ERROR\r\n");
+  if(error & ADIS16470_SENSOR_ERROR)
+    chprintf(chp,"E:ADIS16470 SENSOR ERROR: %X\r\n", pIMU->diag_stat);
+  if(error & ADIS16470_READING_ERROR)
+    chprintf(chp,"E:ADIS16470 READING ERROR\r\n");
+  if(error & ADIS16470_UNCONNECTED)
+    chprintf(chp,"E:ADIS16470 SENSOR UNCONNECTED\r\n");
+  if(error & ADIS16470_ACCEL_NOT_CALIBRATED)
+    chprintf(chp,"W:ADIS16470 Accelerometer not calibrated\r\n");
+  if(error & ADIS16470_GYRO_NOT_CALIBRATED)
+    chprintf(chp,"W:ADIS16470 Gyroscope not calibrated\r\n");
+  if(error & ADIS16470_DATA_INVALID)
+    chprintf(chp,"W:ADIS16470 has invalid reading\r\n");
+  adis16470_clear_error();
 
   //feeder error
   if(feeder_get_error())
@@ -207,7 +209,7 @@ void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
     chThdSleepSeconds(sec);
 
     matlab_thread_handler = chThdCreateStatic(matlab_thread_wa, sizeof(matlab_thread_wa),
-        NORMALPRIO - 3,
+        NORMALPRIO + 3,
         matlab_thread, NULL);
   }
   else if(matlab_thread_handler != NULL)
@@ -219,8 +221,23 @@ void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
 
 void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
 {
-  PIMUStruct pIMU = imu_get();
-  PGyroStruct pGyro = gyro_get();
+  PIMUStruct pIMU = adis16470_get();
+
+  int32_t accelBias[3], gyroBias[3];
+
+  if(pIMU->state == ADIS16470_READY)
+  {
+    pIMU->state = ADIS16470_CALIBRATING;
+    chThdSleepMilliseconds(10);
+
+    adis16470_get_gyro_bias(gyroBias);
+    adis16470_get_accel_bias(accelBias);
+  }
+  else
+  {
+    chprintf(chp, "IMU initialization not complete \\ Error occured\r\n");
+    return;
+  }
 
   if(argc)
   {
@@ -230,72 +247,37 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
 
     if(!strcmp(argv[0], "accl"))
     {
-      if(pIMU->state == IMU_STATE_READY)
-      {
-        pIMU->accelerometer_not_calibrated = true;
+      adis16470_reset_calibration();
+      calibrate_accelerometer(pIMU, accelBias);
 
-        pIMU->state == IMU_STATE_CALIBRATING;
-
-        chThdSleepMilliseconds(10);
-        calibrate_accelerometer(pIMU);
-        chThdResume(&(pIMU->imu_Thd), MSG_OK);
-
-        pIMU->state == IMU_STATE_READY;
-      }
-      else
-        chprintf(chp, "IMU initialization not complete\r\n");
+      chprintf(chp, "Saving to ADIS16470 flash...\r\n");
+      adis16470_set_calibration_id(pIMU->calibration_id, 0);
+      adis16470_bias_update(accelBias, gyroBias);
     }
     else if(!strcmp(argv[0], "gyro"))
     {
-      if(pIMU->state == IMU_STATE_READY)
-      {
-        pIMU->gyroscope_not_calibrated = true;
+      adis16470_reset_calibration();
 
-        pIMU->state == IMU_STATE_CALIBRATING;
+      calibrate_gyroscope(pIMU, gyroBias);
 
-        chThdSleepMilliseconds(10);
-        calibrate_gyroscope(pIMU);
-        chThdResume(&(pIMU->imu_Thd), MSG_OK);
-
-        pIMU->state == IMU_STATE_READY;
-      }
-      else
-        chprintf(chp, "IMU initialization not complete\r\n");
-
+      chprintf(chp, "Saving to ADIS16470 flash...\r\n");
+      adis16470_set_calibration_id(0, pIMU->calibration_id);
+      adis16470_bias_update(accelBias, gyroBias);
     }
-    else if(!strcmp(argv[0], "adi"))
+    else if(!strcmp(argv[0], "res"))
     {
-      pGyro->adis_gyroscope_not_calibrated = true;
-      chThdSleepMilliseconds(10);
-      calibrate_adi(pGyro,false); //fast calibration ~30s
-      chThdResume(&(pGyro->adis_Thd), MSG_OK);
+      chprintf(chp, "Restoring factory calibration\r\n");
+      adis16470_reset_calibration();
+      adis16470_bias_update(accelBias, gyroBias);
+      chprintf(chp, "Saving to ADIS16470 flash...\r\n");
     }
-    else if(!strcmp(argv[0], "adi-full"))
-    {
-      pGyro->adis_gyroscope_not_calibrated = true;
-      chThdSleepMilliseconds(10);
-      calibrate_adi(pGyro,true); //full calibration ~5min
-      chThdResume(&(pGyro->adis_Thd), MSG_OK);
-    }
-    param_save_flash();
   }
   else
-    chprintf(chp,"Calibration: gyro, accl, adi, adi-full\r\n");
-}
+    chprintf(chp,"Calibration: gyro, accl\r\n");
 
-void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
-{
-  (void) argc,argv;
-
-  //while(1){ // you can uncomment this so that it continuously send the data out.
-  //            // this is useful in tuning the Temperature PID
-      PIMUStruct _pimu = imu_get();
-      TPIDStruct* _tempPID = TPID_get();
-      chprintf(chp,"Temperature: %f\r\n", _pimu->temperature);
-      chprintf(chp,"PID_value: %d\r\n", _tempPID->PID_Value);
-
-      chThdSleepMilliseconds(500);
-  //}
+  pIMU->state = ADIS16470_READY;
+  chThdResume(&(pIMU->imu_Thd), MSG_OK);
+  pIMU->imu_Thd = NULL;
 }
 
 /**
@@ -306,8 +288,7 @@ static const ShellCommand commands[] =
 {
   {"test", cmd_test},
   {"WTF", cmd_error},
-  {"cal", cmd_calibrate},
-  {"temp", cmd_temp},
+  //{"cal", cmd_calibrate},
   {"rune", cmd_rune},
   {"\xEE", cmd_data},
   #ifdef PARAMS_USE_USB
