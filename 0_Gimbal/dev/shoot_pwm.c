@@ -16,7 +16,7 @@ RC_Ctl_t* rc;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
-
+static speed_mode_t speed_mode;
 static PWMDriver PWMD12;
 void pwm12_setWidth(uint16_t width)
 {
@@ -65,14 +65,14 @@ static THD_FUNCTION(pwm_thd, arg) {
       #ifdef SHOOTER_USE_RC
       switch (rc->rc.s2) {
         case RC_S_UP:
-          shooter_control(175);
+          shooter_control(speed_mode.fast_speed);
           break;
         case RC_S_MIDDLE:
-          shooter_control(135);
+          shooter_control(speed_mode.slow_speed);
           break;
         case RC_S_DOWN:
           safe = true;
-          shooter_control(100);
+          shooter_control(speed_mode.stop);
           break;
       }
       #endif
@@ -135,7 +135,9 @@ void shooter_init(void)
 {
     rc = RC_get();
     pwm12_start();
-
+    speed_mode.fast_speed=175;
+    speed_mode.slow_speed=110;
+    speed_mode.stop = 100;
     #ifndef SHOOTER_SETUP
       pwm12_setWidth(900);
       chThdSleepSeconds(3);

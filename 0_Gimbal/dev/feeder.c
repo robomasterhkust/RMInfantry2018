@@ -13,7 +13,7 @@ static int16_t FEEDER_SPEED_SP_RPM  = 0;
 #define FEEDER_TURNBACK_ANGLE   360.0f / FEEDER_BULLET_PER_TURN     //165.0f;
 
 static int16_t        feeder_output;
-
+static uint8_t        level;
 static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
 static float          feeder_brakePos = 0.0f;
@@ -226,12 +226,26 @@ static THD_FUNCTION(feeder_control, p){
     chRegSetThreadName("feeder controller");
     while(!chThdShouldTerminateX())
     {
-          //FEEDER_SPEED_SP_RPM = ((barrel_info->heatLimit + barrel_info->heatLimit*18/90)/20)  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-        FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        //FEEDER_SPEED_SP_RPM = ((barrel_info->heatLimit + barrel_info->heatLimit*18/90)/20)  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
 
           //feeder_func();
+
+        if(barrel_info->heatLimit == LEVEL1_HEATLIMIT){
+          level = 1;
+          FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        }
+        else if(barrel_info->heatLimit == LEVEL2_HEATLIMIT){
+          level =2;
+          FEEDER_SPEED_SP_RPM = 6  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        }
+        else if(barrel_info->heatLimit == LEVEL3_HEATLIMIT){
+          level =3;
+          FEEDER_SPEED_SP_RPM = 10  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        }
+        //FEEDER_SPEED_SP_RPM = 20 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+
         if(feeder_mode == SAVE_LIFE){
-          if(barrel_info->currentHeatValue < barrel_info->heatLimit - 30){
+          if(barrel_info->currentHeatValue < barrel_info->heatLimit - 40){
             feeder_mode = FEEDER_STOP;
           }
         }

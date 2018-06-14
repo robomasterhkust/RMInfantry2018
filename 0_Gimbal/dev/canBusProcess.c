@@ -108,7 +108,7 @@ static inline void  can_processSendBarrelStatus
 {
     chSysLock();
     db->heatLimit           = (uint16_t)(rxmsg->data16[0]);
-    //db->heatLimit           = 90;
+    //db->heatLimit           = 1600;
     db->currentHeatValue    = (uint16_t)(rxmsg->data16[1]);
     chSysUnlock();
 }
