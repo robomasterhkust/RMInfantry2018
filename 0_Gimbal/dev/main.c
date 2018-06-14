@@ -138,6 +138,7 @@ int main(void)
   gimbal_init();
   shooter_init();
   feederInit();
+  keyboardInit();
   //rune_init();
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog

@@ -8,7 +8,7 @@
 
 #include "shoot.h"
 #include "dbus.h"
-
+#include "keyboard.h"
 #define MIN_SHOOT_SPEED 100U
 #define MAX_SHOOT_SPEED 900U
 
@@ -16,7 +16,9 @@ RC_Ctl_t* rc;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
+static bool Press =false;
 static speed_mode_t speed_mode;
+static uint8_t shooting_speed = 0;
 static PWMDriver PWMD12;
 void pwm12_setWidth(uint16_t width)
 {
@@ -62,21 +64,48 @@ static THD_FUNCTION(pwm_thd, arg) {
 
     while (!chThdShouldTerminateX())
     {
-      #ifdef SHOOTER_USE_RC
-      switch (rc->rc.s2) {
+      switch (rc->rc.s1){
         case RC_S_UP:
-          shooter_control(speed_mode.fast_speed);
-          break;
-        case RC_S_MIDDLE:
-          shooter_control(speed_mode.slow_speed);
-          break;
-        case RC_S_DOWN:
-          safe = true;
-          shooter_control(speed_mode.stop);
-          break;
+        {
+          #ifdef SHOOTER_USE_RC
+          switch (rc->rc.s2) {
+            case RC_S_UP:
+              shooting_speed = speed_mode.fast_speed;
+             // shooter_control(speed_mode.fast_speed);
+              break;
+            case RC_S_MIDDLE:
+              shooting_speed = speed_mode.slow_speed;
+              //shooter_control(speed_mode.slow_speed);
+              break;
+            case RC_S_DOWN:
+              shooting_speed = speed_mode.stop;
+              safe = true;
+              //shooter_control(speed_mode.stop);
+              break;
+          }
+          #endif
+        }break;
+        case RC_S_MIDDLE:{
+          if(bitmap[KEY_Z] == 1){
+            Press = true;
+          }
+          else{
+            if(Press == true){
+              if(shooting_speed == speed_mode.slow_speed){
+                shooting_speed = speed_mode.fast_speed;
+              }
+              else{
+                shooting_speed = speed_mode.slow_speed;
+              }
+              Press = false;
+            }
+          }
+        }break;
       }
-      #endif
 
+
+
+      shooter_control(shooting_speed);
       speed = alpha * (float)speed_sp + (1-alpha) * speed;
       pwm12_setWidth((uint16_t)speed);
       chThdSleepMilliseconds(5);

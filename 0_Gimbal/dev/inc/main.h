@@ -30,8 +30,7 @@
 #include "barrelStatus.h"
 
 #include "rune.h"
-
-
+#include "keyboard.h"
 void shellStart(void);
 
 bool power_check(void);
