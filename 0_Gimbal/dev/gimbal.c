@@ -11,7 +11,6 @@
 #include "math_misc.h"
 
 #include "dbus.h"
-#include "adis16265.h"
 #include "feeder.h"
 
 #include "system_error.h"

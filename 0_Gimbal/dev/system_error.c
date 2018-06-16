@@ -6,6 +6,7 @@
 #include "system_error.h"
 
 static system_error_t system_error = 0;
+static systime_t system_error_start_time;
 static systime_t system_warning_start_time;
 
 /*
@@ -29,6 +30,12 @@ void system_setErrorFlag(void)
 void system_setWarningFlag(void)
 {
   system_error |= SYSTEM_WARNING;
+}
+
+void system_setTempErrorFlag(void)
+{
+  system_error_start_time = chVTGetSystemTimeX();
+  system_error |= SYSTEM_TEMP_ERROR;
 }
 
 void system_setTempWarningFlag(void)
@@ -82,7 +89,7 @@ static THD_FUNCTION(system_error_thd, p)
         )
         {
           led_on = !led_on;
-          if(!(system_error & SYSTEM_ERROR))
+          if(!(system_error & (SYSTEM_ERROR | SYSTEM_TEMP_ERROR)))
             led_on ? LEDG_ON() : LEDG_OFF();
           else
             LEDG_OFF();
@@ -97,6 +104,8 @@ static THD_FUNCTION(system_error_thd, p)
     count++;
     if(chVTGetSystemTimeX() > system_warning_start_time + S2ST(SYSTEM_TEMP_WARNING_DURATION))
       system_error &= ~(SYSTEM_TEMP_WARNING);
+    if(chVTGetSystemTimeX() > system_error_start_time + S2ST(SYSTEM_TEMP_WARNING_DURATION))
+      system_error &= ~(SYSTEM_TEMP_ERROR);
 
     chThdSleepMilliseconds(25);
   }

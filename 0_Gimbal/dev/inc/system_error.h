@@ -5,16 +5,18 @@
 
 void system_setErrorFlag(void);
 void system_setWarningFlag(void);
+void system_setTempErrorFlag(void);
 void system_setTempWarningFlag(void);
 void system_clearWarningFlag(void);
 
 void system_error_init(void);
 
 typedef enum{
-  SYSTEM_ERROR_DUMMY = 0,
-  SYSTEM_ERROR = 1,
-  SYSTEM_WARNING = 2,
-  SYSTEM_TEMP_WARNING = 4
+  SYSTEM_ERROR_DUMMY  = 0,
+  SYSTEM_ERROR        = 1,
+  SYSTEM_WARNING      = 2,
+  SYSTEM_TEMP_ERROR   = 4,
+  SYSTEM_TEMP_WARNING = 8,
 } system_error_t;
 
 #endif

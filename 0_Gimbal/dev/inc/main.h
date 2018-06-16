@@ -17,7 +17,6 @@
 #include "sdlog.h"
 #include "exti.h"
 
-
 #include "attitude.h"
 #include "calibrate_sensor.h"
 
@@ -36,6 +35,7 @@ typedef enum {
   INIT_SEQUENCE_3_RETURN_1 = 1,
   INIT_SEQUENCE_3_RETURN_2 = 2,
   INIT_SEQUENCE_3_RETURN_3 = 4,
+  INIT_ATTITUDE_COMPLETE = 16,
   INIT_COMPLETE = 32,
 } system_init_state_t;
 

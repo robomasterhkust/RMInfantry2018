@@ -105,7 +105,6 @@ include $(CHIBIOS)/os/rt/ports/ARMCMx/compilers/GCC/mk/port_v7m.mk
 include $(CHIBIOS)/os/various/fatfs_bindings/fatfs.mk
 # Other files (optional).
 #include $(CHIBIOS)/test/rt/test.mk
-include $(CHIBIOS)/dsp/dsp.mk
 
 # Define linker script file here
 LDSCRIPT= $(STARTUPLD)/STM32F429xI.ld
@@ -131,7 +130,7 @@ CSRC = $(STARTUPSRC) \
        attitude.c adis16470.c math_misc.c \
        canBusProcess.c dbus.c gimbal.c params.c usbcfg.c \
        calibrate_sensor.c shoot_pwm.c feeder.c rune.c\
-       exti.c imu_temp.c barrelStatus.c
+       exti.c barrelStatus.c
 
 
 

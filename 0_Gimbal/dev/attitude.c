@@ -39,8 +39,15 @@ uint8_t attitude_update(PIMUStruct pIMU)
   uint8_t i;
 
   //Calculate delta t to perform gyro integration
-  float dt = prev_timestamp ?
-    ((float)(pIMU->stamp - prev_timestamp))/ADIS16470_SAMPLE_FREQ : 0.0f;
+  float dt;
+  #ifdef ATTITUDE_USE_ADIS16470_TIMESTAMP
+    dt = prev_timestamp ?
+      ((float)(pIMU->stamp - prev_timestamp))/ADIS16470_SAMPLE_FREQ : 0.0f;
+  #else
+    systime_t curr_time = chVTGetSystemTimeX();
+    dt = ST2US(curr_time - prev_timestamp)/1e6f;
+    prev_timestamp = curr_time;
+  #endif
 
   if(accel < 12.81f && accel > 6.81f)
   {
@@ -128,7 +135,7 @@ uint8_t attitude_imu_init(PIMUStruct pIMU)
   float rot_matrix[3][3];
 
   float norm = vector_norm(pIMU->accelData,3);
-  
+
   for (i = 0; i < 3; i++)
     rot_matrix[2][i] = pIMU->accelData[i] / norm;
 

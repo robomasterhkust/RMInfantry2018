@@ -23,7 +23,7 @@
 //=================================
 
 #define ADIS16470_BURST_SIZE         10U
-#define ADIS16470_MAX_ERROR_COUNT    20U
+#define ADIS16470_MAX_ERROR_COUNT    200U
 
 #define ADIS16470_BURST_CMD                    0x6800
 #define ADIS16470_X_GYRO_LOW                   0x04
@@ -227,7 +227,7 @@ void adis16470_bias_update(int32_t accelBias[3], int32_t gyroBias[3])
   writeword(ADIS16470_MSC_CTRL, mscCtrl);                                   //set MSC_CTRL with new command
 
   //set filter to be the same in beck's code
-  writeword(ADIS16470_FILT_CTRL, 0x0005);
+  writeword(ADIS16470_FILT_CTRL, ADIS16470_FILTER_SETTING);
 }
 
 void adis16470_get_gyro_raw(int32_t gyroRawData[3])
@@ -342,7 +342,7 @@ static void adis16470_update(void)
     prev_data_cnt = burst_data.data_cnt;
     int32_t dt = stamp - adis16470.stamp;
 
-    if(dt > 50 || dt < 0) //Indicates incorrect timestamp
+    if(dt > 50 || dt < 0 || burst_data.data_cnt == 0) //Indicates incorrect timestamp
     {
       adis16470.error |= ADIS16470_DATA_INVALID;
       system_setTempWarningFlag();
@@ -383,9 +383,9 @@ static THD_FUNCTION(adis16470Thd, p) {
   writeword(ADIS16470_MSC_CTRL, mscCtrl);                                   //set MSC_CTRL with new command
 
   //set filter to be the same in beck's code
-  writeword(ADIS16470_FILT_CTRL, 0x0005);
+  writeword(ADIS16470_FILT_CTRL, ADIS16470_FILTER_SETTING);
 
-  adis16470.state = ADIS16470_READY;
+  adis16470.state = ADIS16470_NOT_READY;
 
   uint32_t count = 1;
   while(!chThdShouldTerminateX())
@@ -398,16 +398,18 @@ static THD_FUNCTION(adis16470Thd, p) {
     }
     else
     {
+      adis16470_update();
+
       if(adis16470.error & (ADIS16470_ERROR | ADIS16470_DATA_INVALID))
         adis16470.state = ADIS16470_NOT_READY;
       else
         adis16470.state = ADIS16470_READY;
     }
 
-    if(!(count % (ADIS16470_SAMPLE_FREQ * ADIS16470_BIAS_UPDATE_PERIOD_S)))
-      adis16470_update_CBR();
+    if(!(count++ % (ADIS16470_SAMPLE_FREQ * ADIS16470_BIAS_UPDATE_PERIOD_S)))
+    //  adis16470_update_CBR();
+    ;
 
-    adis16470_update();
     chThdSleep(ADIS16470_UPDATE_PERIOD);
   }
 }

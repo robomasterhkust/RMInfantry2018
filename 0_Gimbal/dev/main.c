@@ -31,10 +31,12 @@ static THD_FUNCTION(Attitude_thread, p)
                                      ADIS16470_Y,
                                      ADIS16470_Z_REV};
   adis16470_init(&imu_conf);
-  chThdSleepSeconds(1);
+  while(pIMU->state != ADIS16470_READY)
+    chThdSleepMilliseconds(100);
 
   //Check temperature feedback before starting temp controller
   attitude_imu_init(pIMU);
+  init_state = INIT_ATTITUDE_COMPLETE;
 
   uint32_t tick = chVTGetSystemTimeX();
 
@@ -53,7 +55,7 @@ static THD_FUNCTION(Attitude_thread, p)
     if(pIMU->state == ADIS16470_READY)
       attitude_update(pIMU);
 
-    attitude_update_timestamp(pIMU->stamp); //Update timestamp anyway
+    //attitude_update_timestamp(pIMU->stamp); //Update timestamp anyway
   }
 }
 
@@ -96,10 +98,9 @@ int main(void)
   LASER_ON();
 
   /* Init sequence 2: sensors, comm, actuators, display*/
-  attitude_init();
   can_processInit();
-  RC_init();
   barrelHeatLimitControl_init();
+  RC_init();
 
   gimbal_init();
   feeder_init();
@@ -113,15 +114,20 @@ int main(void)
   {
     init_state = power_check();
     if(init_state)
-      system_setErrorFlag();
+      system_setTempErrorFlag();
 
-    chThdSleepMilliseconds(200);
+    chThdSleepMilliseconds(100);
 
   } while(init_state & (INIT_SEQUENCE_3_RETURN_1 | INIT_SEQUENCE_3_RETURN_2));
 
+  attitude_init();
+
+  while (init_state != INIT_ATTITUDE_COMPLETE)
+    chThdSleepMilliseconds(100);//Wait for ADIS16470 Initialization
+
   gimbal_start();
-  feeder_start();
-  shooter_start();
+//  feeder_start();
+//  shooter_start();
   rune_init();
 
   init_state = INIT_COMPLETE;
@@ -154,13 +160,14 @@ uint8_t power_check(void)
 {
   GimbalEncoder_canStruct* can = can_getGimbalMotor();
 
-  system_init_state_t result = 0;
+  system_init_state_t result = INIT_DUMMY;
   if(!(can[0].updated))
     result |= INIT_SEQUENCE_3_RETURN_1;
   if(!(can[1].updated))
     result |= INIT_SEQUENCE_3_RETURN_2;
 
   return result;
+  //return INIT_DUMMY;
 }
 
 /**
