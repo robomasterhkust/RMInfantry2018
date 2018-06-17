@@ -28,6 +28,8 @@
 #include "rune.h"
 #include "keyboard.h"
 
+//#define SYSTEM_POWER_CHECK_OVERRIDE
+
 #define LASER_ON()  (palSetPad(GPIOA, GPIOA_PIN0))
 #define LASER_OFF() (palClearPad(GPIOA, GPIOA_PIN0))
 

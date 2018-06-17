@@ -55,7 +55,9 @@ static THD_FUNCTION(Attitude_thread, p)
     if(pIMU->state == ADIS16470_READY)
       attitude_update(pIMU);
 
-    //attitude_update_timestamp(pIMU->stamp); //Update timestamp anyway
+    #ifdef ATTITUDE_USE_ADIS16470_TIMESTAMP
+      attitude_update_timestamp(pIMU->stamp); //Update timestamp anyway
+    #endif
   }
 }
 
@@ -128,6 +130,8 @@ int main(void)
   while (init_state != INIT_ATTITUDE_COMPLETE)
     chThdSleepMilliseconds(100);//Wait for ADIS16470 Initialization
 
+  chThdSleepSeconds(1);
+  RC_init();
   gimbal_start();
   feeder_start();
   shooter_start();
@@ -164,14 +168,20 @@ uint8_t power_check(void)
 {
   GimbalEncoder_canStruct* can = can_getGimbalMotor();
 
-  system_init_state_t result = INIT_DUMMY;
-  if(!(can[0].updated))
-    result |= INIT_SEQUENCE_3_RETURN_1;
-  if(!(can[1].updated))
-    result |= INIT_SEQUENCE_3_RETURN_2;
+  #ifndef SYSTEM_POWER_CHECK_OVERRIDE
 
-  return result;
-  //return INIT_DUMMY;
+    system_init_state_t result = INIT_DUMMY;
+    if(!(can[0].updated))
+      result |= INIT_SEQUENCE_3_RETURN_1;
+    if(!(can[1].updated))
+      result |= INIT_SEQUENCE_3_RETURN_2;
+
+    return result;
+
+  #else
+    return INIT_DUMMY;
+
+  #endif
 }
 
 /**
@@ -181,6 +191,6 @@ bool power_failure(void)
 {
   uint32_t error = gimbal_get_error();
 
-  return error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED) ==
+  return (error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED)) ==
     (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED);
 }
