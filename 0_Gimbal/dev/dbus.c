@@ -164,13 +164,23 @@ static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
   txmsg.DLC = 0x08;
 
   chSysLock();
-  txCan.channel0 = RC_Ctl.rc.channel0;
-  txCan.channel1 = RC_Ctl.rc.channel1;
-  txCan.s1 = RC_Ctl.rc.s1;
-  txCan.s2 = RC_Ctl.rc.s2;
-  txCan.key_code = RC_Ctl.keyboard.key_code;
-
-  memcpy(&(txmsg.data8), &txCan ,8);
+  if(rc_can_flag)
+  {
+    txCan.channel0 = RC_Ctl.rc.channel0;
+    txCan.channel1 = RC_Ctl.rc.channel1;
+    txCan.s1 = RC_Ctl.rc.s1;
+    txCan.s2 = RC_Ctl.rc.s2;
+    txCan.key_code = RC_Ctl.keyboard.key_code;
+    memcpy(&(txmsg.data8), &txCan ,8);
+  }
+  else{
+    txCan.channel0 = -1;
+    txCan.channel1 = -1;
+    txCan.s1 = RC_Ctl.rc.s1;
+    txCan.s2 = RC_Ctl.rc.s2;
+    txCan.key_code = RC_Ctl.keyboard.key_code;
+    memcpy(&(txmsg.data8), &txCan ,8);
+  }
   chSysUnlock();
 
   canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
@@ -194,7 +204,6 @@ static THD_FUNCTION(uart_dbus_thread, p)
 
   uartStart(UART_DBUS, &uart_cfg);
   dmaStreamRelease(*UART_DBUS.dmatx);
-
   msg_t rxmsg;
   systime_t timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
   uint32_t count = 0;

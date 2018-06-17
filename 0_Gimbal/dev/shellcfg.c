@@ -171,12 +171,12 @@ void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
     {
       if(!strcmp(argv[0], "set1"))
       {
-        pwm12_setWidth(900);
+        pwm9_setWidth(900);
         chprintf(chp,"Set pwm to max\r\n");
       }
       else if(!strcmp(argv[0], "set2"))
       {
-        pwm12_setWidth(100);
+        pwm9_setWidth(100);
         chprintf(chp,"Set pwm to min\r\n");
       }
     }

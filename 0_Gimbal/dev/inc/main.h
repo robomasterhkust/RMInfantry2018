@@ -26,6 +26,7 @@
 #include "barrelStatus.h"
 
 #include "rune.h"
+#include "keyboard.h"
 
 #define LASER_ON()  (palSetPad(GPIOA, GPIOA_PIN0))
 #define LASER_OFF() (palClearPad(GPIOA, GPIOA_PIN0))
