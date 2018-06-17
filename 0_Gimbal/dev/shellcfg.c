@@ -74,14 +74,17 @@ static THD_FUNCTION(matlab_thread, p)
     }
 
     //==============================Set the data to transmit=========================//
-    txbuf_f[0] = pIMU->euler_angle[Roll];
-    txbuf_f[1] = pIMU->euler_angle[Pitch];
-    txbuf_f[2] = pIMU->euler_angle[Yaw];
+    txbuf_f[0] = pIMU->accelData[X];
+    txbuf_f[1] = pIMU->accelData[Y];
+    txbuf_f[2] = pIMU->accelData[Z];
+    txbuf_f[3] = pIMU->gyroData[X];
+    txbuf_f[4] = pIMU->gyroData[Y];
+    txbuf_f[5] = pIMU->gyroData[Z];
 
     //timestamp_prev =  pIMU->stamp / 2000.0f;
     //===============================================================================//
 
-    transmit_matlab(chp, NULL, txbuf_f, 0, 3);
+    transmit_matlab(chp, NULL, txbuf_f, 0, 6);
   }
 }
 

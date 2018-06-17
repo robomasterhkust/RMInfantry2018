@@ -96,7 +96,7 @@ static void pwm12_start(void)
   PWMD12.clock = STM32_TIMCLK1;
 
   PWMD12.tim->CCMR1 = STM32_TIM_CCMR1_OC1M(6) | STM32_TIM_CCMR1_OC1PE |
-                     STM32_TIM_CCMR1_OC2M(6) | STM32_TIM_CCMR1_OC2PE;
+                      STM32_TIM_CCMR1_OC2M(6) | STM32_TIM_CCMR1_OC2PE;
 
   psc = (PWMD12.clock / pwm12cfg.frequency) - 1;
 

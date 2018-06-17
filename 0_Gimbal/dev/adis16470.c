@@ -91,6 +91,10 @@ static const SPIConfig adis16470SpiCfg = {
 
 };
 
+#if defined (ADIS16470_USE_SW_FILTER) && (ADIS16470_FILTER_SETTING == 0)
+  static lpfilterStruct lp_accel[3], lp_gyro[3];
+#endif
+
 adis16470Struct* adis16470_get(void)
 {
   return &adis16470;
@@ -226,8 +230,11 @@ void adis16470_bias_update(int32_t accelBias[3], int32_t gyroBias[3])
   mscCtrl = (mscCtrl & (~0x001C)) | ADIS16470_INTERNAL_CLK;   //set bits [2:4], mask the rest
   writeword(ADIS16470_MSC_CTRL, mscCtrl);                                   //set MSC_CTRL with new command
 
-  //set filter to be the same in beck's code
-  writeword(ADIS16470_FILT_CTRL, ADIS16470_FILTER_SETTING);
+  #if (ADIS16470_FILTER_SETTING != 0)
+    //set filter to be the same in beck's code
+    writeword(ADIS16470_FILT_CTRL, ADIS16470_FILTER_SETTING);
+  #endif
+
 }
 
 void adis16470_get_gyro_raw(int32_t gyroRawData[3])
@@ -285,48 +292,65 @@ static void adis16470_update(void)
   {
     chSysLock();
 
+    float accelRawData[3], gyroRawData[3];
+    #if defined (ADIS16470_USE_SW_FILTER) && (ADIS16470_FILTER_SETTING == 0)
+      accelRawData[0] = lpfilter_apply(&lp_accel[0], burst_data.accelData[0]);
+      accelRawData[1] = lpfilter_apply(&lp_accel[1], burst_data.accelData[1]);
+      accelRawData[2] = lpfilter_apply(&lp_accel[2], burst_data.accelData[2]);
+      gyroRawData[0] = lpfilter_apply(&lp_gyro[0], burst_data.gyroData[0]);
+      gyroRawData[1] = lpfilter_apply(&lp_gyro[1], burst_data.gyroData[1]);
+      gyroRawData[2] = lpfilter_apply(&lp_gyro[2], burst_data.gyroData[2]);
+    #else
+      accelRawData[0] = burst_data.accelData[0];
+      accelRawData[1] = burst_data.accelData[1];
+      accelRawData[2] = burst_data.accelData[2];
+      gyroRawData[0] = burst_data.gyroData[0];
+      gyroRawData[1] = burst_data.gyroData[1];
+      gyroRawData[2] = burst_data.gyroData[2];
+    #endif
+
     if(axis_rev[X])
     {
-      adis16470.gyroData[X] = -burst_data.gyroData[axis_conf[X]]
+      adis16470.gyroData[X] = -gyroRawData[axis_conf[X]]
         * ADIS16470_GYRO_DATA_PSC_16;
-      adis16470.accelData[X] = -burst_data.accelData[axis_conf[X]]
+      adis16470.accelData[X] = -accelRawData[axis_conf[X]]
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
     else
     {
-      adis16470.gyroData[X] = burst_data.gyroData[axis_conf[X]]
+      adis16470.gyroData[X] = gyroRawData[axis_conf[X]]
         * ADIS16470_GYRO_DATA_PSC_16;
-      adis16470.accelData[X] = burst_data.accelData[axis_conf[X]]
+      adis16470.accelData[X] = accelRawData[axis_conf[X]]
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
 
     if(axis_rev[Y])
     {
-      adis16470.gyroData[Y] = -burst_data.gyroData[axis_conf[Y]]
+      adis16470.gyroData[Y] = -gyroRawData[axis_conf[Y]]
         * ADIS16470_GYRO_DATA_PSC_16;
-      adis16470.accelData[Y] = -burst_data.accelData[axis_conf[Y]]
+      adis16470.accelData[Y] = -accelRawData[axis_conf[Y]]
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
     else
     {
-      adis16470.gyroData[Y] = burst_data.gyroData[axis_conf[Y]]
+      adis16470.gyroData[Y] = gyroRawData[axis_conf[Y]]
         * ADIS16470_GYRO_DATA_PSC_16;
-      adis16470.accelData[Y] = burst_data.accelData[axis_conf[Y]]
+      adis16470.accelData[Y] = accelRawData[axis_conf[Y]]
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
 
     if(axis_rev[Z])
     {
-      adis16470.gyroData[Z] = -burst_data.gyroData[axis_conf[Z]]
+      adis16470.gyroData[Z] = -gyroRawData[axis_conf[Z]]
         * ADIS16470_GYRO_DATA_PSC_16;
-      adis16470.accelData[Z] = -burst_data.accelData[axis_conf[Z]]
+      adis16470.accelData[Z] = -accelRawData[axis_conf[Z]]
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
     else
     {
-      adis16470.gyroData[Z] = burst_data.gyroData[axis_conf[Z]]
+      adis16470.gyroData[Z] = gyroRawData[axis_conf[Z]]
         * ADIS16470_GYRO_DATA_PSC_16;
-      adis16470.accelData[Z] = burst_data.accelData[axis_conf[Z]]
+      adis16470.accelData[Z] = accelRawData[axis_conf[Z]]
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
 
@@ -382,8 +406,10 @@ static THD_FUNCTION(adis16470Thd, p) {
   mscCtrl = (mscCtrl & (~0x001C)) | ADIS16470_INTERNAL_CLK;   //set bits [2:4], mask the rest
   writeword(ADIS16470_MSC_CTRL, mscCtrl);                                   //set MSC_CTRL with new command
 
-  //set filter to be the same in beck's code
-  writeword(ADIS16470_FILT_CTRL, ADIS16470_FILTER_SETTING);
+  #if (ADIS16470_FILTER_SETTING != 0)
+    //set filter to be the same in beck's code
+    writeword(ADIS16470_FILT_CTRL, ADIS16470_FILTER_SETTING);
+  #endif
 
   adis16470.state = ADIS16470_NOT_READY;
 
@@ -407,8 +433,8 @@ static THD_FUNCTION(adis16470Thd, p) {
     }
 
     if(!(count++ % (ADIS16470_SAMPLE_FREQ * ADIS16470_BIAS_UPDATE_PERIOD_S)))
-    //  adis16470_update_CBR();
-    ;
+      adis16470_update_CBR();
+    //;
 
     chThdSleep(ADIS16470_UPDATE_PERIOD);
   }
@@ -551,6 +577,16 @@ void adis16470_init(const adis16265_conf_t* sensor_conf) {
   uint16_t calibration_id = readword(ADIS16470_GYRO_CAL_ID);
   adis16470.calibration_id = sensor_conf->calibration_id;
   onboard_calibration_id = calibration_id;
+
+  #if defined (ADIS16470_USE_SW_FILTER) && (ADIS16470_FILTER_SETTING == 0)
+    lpfilter_init(&lp_accel[0], ADIS16470_SAMPLE_FREQ, ADIS16470_ACCEL_CUTOFF_FREQ);
+    lpfilter_init(&lp_accel[1], ADIS16470_SAMPLE_FREQ, ADIS16470_ACCEL_CUTOFF_FREQ);
+    lpfilter_init(&lp_accel[2], ADIS16470_SAMPLE_FREQ, ADIS16470_ACCEL_CUTOFF_FREQ);
+    lpfilter_init(&lp_gyro[0], ADIS16470_SAMPLE_FREQ, ADIS16470_GYRO_CUTOFF_FREQ);
+    lpfilter_init(&lp_gyro[1], ADIS16470_SAMPLE_FREQ, ADIS16470_GYRO_CUTOFF_FREQ);
+    lpfilter_init(&lp_gyro[2], ADIS16470_SAMPLE_FREQ, ADIS16470_GYRO_CUTOFF_FREQ);
+  #endif
+
   chThdCreateStatic(adis16470Thd_wa, sizeof(adis16470Thd_wa),
                     NORMALPRIO + 7, adis16470Thd, NULL);
 
