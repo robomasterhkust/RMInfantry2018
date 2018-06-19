@@ -16,6 +16,10 @@
 
 #define CAN_DBUS_ID                                 0x001
 #define CAN_CHASSIS_SEND_BARREL_ID                  0x002
+#define CAN_NVIDIA_TX2_BOARD_ID                     0x103
+
+#define CAN_UWB_MSG_ID                              0x259
+
 
 #define CAN_ENCODER_RANGE           8192            // 0x2000
 
@@ -62,6 +66,12 @@ typedef struct{
   uint16_t currentHeatValue;
 } BarrelStatus_canStruct;
 
+typedef struct{
+  double vx;
+  double vy;
+  double vz;
+} Ros_msg_canStruct;
+
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 
 #ifdef RM_INFANTRY_GIMBAL
@@ -73,6 +83,8 @@ volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 #endif
 
 volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void);
+
+volatile Ros_msg_canStruct* can_get_ros_msg(void);
 
 void can_processInit(void);
 void can_motorSetCurrent(CANDriver *const CANx,
