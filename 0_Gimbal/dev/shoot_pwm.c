@@ -27,18 +27,6 @@ void pwm9_setWidth(uint16_t width){
   pwmEnableChannelI(&PWMD9, 1, width);
 }
 
-// void pwm9_setWidth(uint16_t width)
-// {
-//   PWMD9.tim->CCR[0] = width;
-//   PWMD9.tim->CCR[1] = width;
-// }
-// // static PWMDriver PWMD12;
-// void pwm12_setWidth(uint16_t width)
-// {
-//   PWMD12.tim->CCR[0] = width;
-//   PWMD12.tim->CCR[1] = width;
-// }
-
 /**
  * 2017/12/17 PWM test
  * @return
@@ -126,54 +114,6 @@ static void pwm9_start(void){
    pwmStart(&PWMD9, &pwm9cfg);
 }
 
-// static void pwm9_start(void)
-// {
-//   PWMD9.tim = STM32_TIM9;
-//   PWMD9.channels = 2;
-
-//   uint32_t psc;
-//   uint32_t ccer;
-//   rccEnableTIM9(FALSE);
-//   rccResetTIM9();
-
-//   PWMD9.clock = STM32_TIMCLK1;
-
-//   PWMD9.tim->CCMR1 = STM32_TIM_CCMR1_OC1M(6) | STM32_TIM_CCMR1_OC1PE |
-//                      STM32_TIM_CCMR1_OC2M(6) | STM32_TIM_CCMR1_OC2PE;
-
-//   psc = (PWMD9.clock / pwm9cfg.frequency) - 1;
-
-//   PWMD9.tim->PSC  = psc;
-//   PWMD9.tim->ARR  = pwm9cfg.period - 1;
-//   PWMD9.tim->CR2  = pwm9cfg.cr2;
-//   PWMD9.period = pwm9cfg.period;
-
-//   ccer = 0;
-//   switch (pwm9cfg.channels[0].mode & PWM_OUTPUT_MASK) {
-//   case PWM_OUTPUT_ACTIVE_LOW:
-//     ccer |= STM32_TIM_CCER_CC1P;
-//   case PWM_OUTPUT_ACTIVE_HIGH:
-//     ccer |= STM32_TIM_CCER_CC1E;
-//   default:
-//     ;
-//   }
-//   switch (pwm9cfg.channels[1].mode & PWM_OUTPUT_MASK) {
-//   case PWM_OUTPUT_ACTIVE_LOW:
-//     ccer |= STM32_TIM_CCER_CC2P;
-//   case PWM_OUTPUT_ACTIVE_HIGH:
-//     ccer |= STM32_TIM_CCER_CC2E;
-//   default:
-//     ;
-//   }
-
-//   PWMD9.tim->CCER  = ccer;
-//   PWMD9.tim->SR    = 0;
-
-//   PWMD9.tim->CR1   = STM32_TIM_CR1_ARPE | STM32_TIM_CR1_CEN;
-
-//   PWMD9.state = PWM_READY;
-// }
-
 void shooter_start(void)
 {
     rc = RC_get();
@@ -183,11 +123,12 @@ void shooter_start(void)
     speed_mode.stop = 100;
     #ifndef SHOOTER_SETUP
       pwm9_setWidth(900);
-      chThdSleepMilliseconds(7350);
+      chThdSleepSeconds(3);
 
       pwm9_setWidth(100);
       chThdSleepSeconds(3);
 
+      // pwm9_setWidth(110);
       chThdCreateStatic(pwm_thd_wa, sizeof(pwm_thd_wa), NORMALPRIO + 1, pwm_thd, NULL);
     #endif
 }

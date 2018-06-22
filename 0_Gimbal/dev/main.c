@@ -103,8 +103,8 @@ int main(void)
   can_processInit();
   barrelHeatLimitControl_init();
 
-  chThdSleepSeconds(1);
-  RC_init();
+  // chThdSleepSeconds(1);
+  // RC_init();
   gimbal_init();
   feeder_init();
 

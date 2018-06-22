@@ -23,6 +23,8 @@
   uint8_t bulletType = mm42;
 #endif
 
+static int barrelHeat_int;
+
 static barrelStatus_t bStatus;
 pBarrelStatus barrelStatus_get(void){
   return &bStatus;
@@ -61,6 +63,7 @@ void updateBarrelStatus(void){
 #ifdef GIMBAL
     BarrelStatus_canStruct* can_bStatus = can_get_sent_barrelStatus();
     bStatus.heatLimit = can_bStatus->heatLimit;
+    barrelHeat_int = (int)bStatus.heatLimit;
     bStatus.currentHeatValue = can_bStatus->currentHeatValue;
 #endif
 }
