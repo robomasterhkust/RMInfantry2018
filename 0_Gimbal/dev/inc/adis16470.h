@@ -140,4 +140,10 @@ void adis16470_get_gyro_raw(int32_t gyroRawData[3]);
 
 void adis16470_init(const adis16265_conf_t* sensor_conf);
 
+#if defined(RM_INFANTRY) || defined(RM_HERO)
+    #include "canBusProcess.h"
+    #define ADIS16470_CAN   &CAND2
+#endif
+
 #endif /* INC_ADIS16470_H_ */
+

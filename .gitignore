@@ -11,3 +11,5 @@
 .*.swp
 *.gch
 *.pdf
+.idea/
+cmake-build-debug

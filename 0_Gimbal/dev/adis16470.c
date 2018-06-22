@@ -399,6 +399,42 @@ static void adis16470_update(void)
 
 #define adis16470_update_CBR()    (writeword(ADIS16470_GLOB_CMD, 0x0001))
 
+
+#if defined (RM_INFANTRY) || defined (RM_HERO)
+static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
+  CANTxFrame txmsg;
+  ADIS16470_canStruct_1 txCan1;
+  ADIS16470_canStruct_2 txCan2;
+  ADIS16470_canStruct_3 txCan3;
+
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.SID = CAN_GIMBAL_SEND_16470_ID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x08;
+
+  txCan1.stamp = adis16470.stamp;
+  txCan2.a = adis16470.qIMU[0];
+  txCan2.b = adis16470.qIMU[1];
+  txCan3.c = adis16470.qIMU[2];
+  txCan3.d = adis16470.qIMU[3];
+
+  chSysLock();
+  memcpy(&(txmsg.data8),&txCan1,8);
+  chSysUnlock();
+  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+
+  chSysLock();
+  memcpy(&(txmsg.data8),&txCan2,8);
+  chSysUnlock();
+  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+
+  chSysLock();
+  memcpy(&(txmsg.data8),&txCan3,8);
+  chSysUnlock();
+  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+}
+#endif
+
 static THD_WORKING_AREA(adis16470Thd_wa, 1024);
 static THD_FUNCTION(adis16470Thd, p) {
 
@@ -433,6 +469,10 @@ static THD_FUNCTION(adis16470Thd, p) {
         adis16470.state = ADIS16470_NOT_READY;
       else
         adis16470.state = ADIS16470_READY;
+
+      #if defined (RM_INFANTRY) || defined (RM_HERO)
+        ADIS16470_txcan(ADIS16470_CAN, CAN_GIMBAL_SEND_16470_ID);
+      #endif
     }
 
     #ifdef ADIS16470_USE_CBR
