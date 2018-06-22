@@ -26,6 +26,7 @@
 #include "barrelStatus.h"
 
 #include "rune.h"
+#include "keyboard.h"
 
 //#define SYSTEM_POWER_CHECK_OVERRIDE
 

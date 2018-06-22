@@ -297,17 +297,15 @@ static void adis16470_update(void)
       accelRawData[0] = lpfilter_apply(&lp_accel[0], burst_data.accelData[0]);
       accelRawData[1] = lpfilter_apply(&lp_accel[1], burst_data.accelData[1]);
       accelRawData[2] = lpfilter_apply(&lp_accel[2], burst_data.accelData[2]);
-      gyroRawData[0] = lpfilter_apply(&lp_gyro[0], burst_data.gyroData[0]);
-      gyroRawData[1] = lpfilter_apply(&lp_gyro[1], burst_data.gyroData[1]);
-      gyroRawData[2] = lpfilter_apply(&lp_gyro[2], burst_data.gyroData[2]);
     #else
       accelRawData[0] = burst_data.accelData[0];
       accelRawData[1] = burst_data.accelData[1];
       accelRawData[2] = burst_data.accelData[2];
-      gyroRawData[0] = burst_data.gyroData[0];
-      gyroRawData[1] = burst_data.gyroData[1];
-      gyroRawData[2] = burst_data.gyroData[2];
     #endif
+
+    gyroRawData[0] = burst_data.gyroData[0];
+    gyroRawData[1] = burst_data.gyroData[1];
+    gyroRawData[2] = burst_data.gyroData[2];
 
     if(axis_rev[X])
     {
@@ -354,6 +352,11 @@ static void adis16470_update(void)
         * ADIS16470_ACCEL_DATA_PSC_16;
     }
 
+    /* Use filtered gyro data for angular velocity estimation to suppress noise
+       Use raw gyro data for attitude estimator integration to prevent phase lag */
+    adis16470.gyroDataFiltered[0] = lpfilter_apply(&lp_gyro[0], adis16470.gyroData[0]);
+    adis16470.gyroDataFiltered[1] = lpfilter_apply(&lp_gyro[1], adis16470.gyroData[1]);
+    adis16470.gyroDataFiltered[2] = lpfilter_apply(&lp_gyro[2], adis16470.gyroData[2]);
     adis16470.temperature = burst_data.temperature * ADIS16470_TEMP_PSC;
 
     static uint32_t stamp_upper16; //Timestamp upper 16 bit
@@ -432,9 +435,10 @@ static THD_FUNCTION(adis16470Thd, p) {
         adis16470.state = ADIS16470_READY;
     }
 
-    if(!(count++ % (ADIS16470_SAMPLE_FREQ * ADIS16470_BIAS_UPDATE_PERIOD_S)))
-      adis16470_update_CBR();
-    //;
+    #ifdef ADIS16470_USE_CBR
+      if(!(count++ % (ADIS16470_SAMPLE_FREQ * ADIS16470_BIAS_UPDATE_PERIOD_S)))
+        adis16470_update_CBR();
+    #endif
 
     chThdSleep(ADIS16470_UPDATE_PERIOD);
   }

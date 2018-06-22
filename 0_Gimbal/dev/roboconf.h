@@ -9,6 +9,9 @@
   //#define RM_CHASSIS_STANDARD
   #define CHASSIS_POWER_MAX_W        80U
   #define CHASSIS_POWER_BUFFER_J     60U
+  #define LEVEL1_HEATLIMIT    90
+  #define LEVEL2_HEATLIMIT    180
+  #define LEVEL3_HEATLIMIT    360
 #endif //RM_INFANTRY
 
 #ifdef RM_HERO

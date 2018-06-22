@@ -8,11 +8,12 @@
 
 #define FEEDER_BULLET_PER_TURN    7U
 #define FEEDER_GEAR              36U
-#define FEEDER_SET_RPS            9U     //Rounds per second of feeder
+#define FEEDER_SET_RPS           19U     //Rounds per second of feeder
 
 #define FEEDER_OUTPUT_MAX       10000U
 #define FEEDER_OUTPUT_MAX_BACK   6000U  //output limit for stuck-bullet turning back
 #define FEEDER_ERROR_COUNT        100U
+
 
 //#define FEEDER_USE_BOOST              //Very Violent!!
 #ifdef FEEDER_USE_BOOST
@@ -24,6 +25,7 @@ typedef enum{
   FEEDER_SINGLE,    //Single shot
   FEEDER_AUTO,      //Auto fire
   FEEDER_FINISHED,  //Finished a round of shooting
+  SAVE_LIFE, //OVER HEAT!
   #ifdef FEEDER_USE_BOOST
     FEEDER_BOOST
   #endif //FEEDER_USE_BOOST

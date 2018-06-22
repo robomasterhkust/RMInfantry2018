@@ -4,16 +4,21 @@
 #include "params.h"
 #include "canBusProcess.h"
 #include "dbus.h"
-
+#include "roboconf.h"
 #include "math_misc.h"
 #include "system_error.h"
 
 #include "feeder.h"
 
-#define FEEDER_SPEED_SP_RPM     FEEDER_SET_RPS * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+// #define FEEDER_SPEED_SP_RPM     FEEDER_SET_RPS * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TURNBACK_ANGLE   360.0f / FEEDER_BULLET_PER_TURN     //165.0f;
+static int16_t FEEDER_SPEED_SP_RPM = 0;
+// #define FEEDER_SPEED_SP_RPM     0
+
 
 static int16_t        feeder_output;
+static uint8_t        level;
+
 
 static bool           feeder_error_flag = false;
 static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
@@ -26,6 +31,7 @@ static thread_reference_t rune_singleShot_thread = NULL;
 
 ChassisEncoder_canStruct*   feeder_encode;
 RC_Ctl_t*                   p_dbus;
+BarrelStatus_canStruct*     barrel_info;
 static lpfilterStruct lp_spd_feeder;
 
 pid_struct  vel_pid /*= {0, 0, 0, 0}*/;
@@ -127,6 +133,8 @@ static void feeder_rest(void)
     feeder_output = rest_pid.kp * error + rest_pid.inte;
     feeder_output = feeder_output > 4000?  4000:feeder_output;
     feeder_output = feeder_output <-4000? -4000:feeder_output;
+
+    feeder_canUpdate();
 }
 
 static int16_t feeder_controlVel(const float target, const float output_max){
@@ -171,8 +179,10 @@ static void feeder_func(void){
         case FEEDER_STOP:
             if(chVTGetSystemTimeX() > feeder_stop_time + S2ST(1))
               feeder_rest();
-            else
+            else{
               feeder_output = feeder_controlPos(feeder_brakePos, FEEDER_OUTPUT_MAX);
+              feeder_canUpdate();
+            }
 
             break;
         case FEEDER_SINGLE:
@@ -201,19 +211,30 @@ static void feeder_func(void){
             }
 
             feeder_output = feeder_controlVel(FEEDER_SPEED_SP_RPM, FEEDER_OUTPUT_MAX);
-
+            feeder_canUpdate();
             break;
+
+            case SAVE_LIFE:{
+              if(chVTGetSystemTimeX() > feeder_stop_time + S2ST(1))
+                feeder_rest();
+              else
+              {
+                  feeder_output = feeder_controlPos(feeder_brakePos, FEEDER_OUTPUT_MAX);
+                   feeder_canUpdate();
+              }
+      
+            }break;
         #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
             feeder_output = FEEDER_BOOST_POWER;
+            feeder_canUpdate();
             break;
         #endif //FEEDER_USE_BOOST
         default:
             feeder_output = 0;
+            feeder_canUpdate();
             break;
     }
-
-    feeder_canUpdate();
 }
 
 static THD_WORKING_AREA(feeder_control_wa, 512);
@@ -230,10 +251,46 @@ static THD_FUNCTION(feeder_control, p){
           system_setErrorFlag();
           chThdExit(MSG_OK);
         }
+        //FEEDER_SPEED_SP_RPM = ((barrel_info->heatLimit + barrel_info->heatLimit*18/90)/20)  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
 
-        feeder_func();
+          //feeder_func();
 
-        if(
+        if(barrel_info->heatLimit == LEVEL1_HEATLIMIT){
+          level = 1;
+          FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        }
+        else if(barrel_info->heatLimit == LEVEL2_HEATLIMIT){
+          level =2;
+          FEEDER_SPEED_SP_RPM = 6  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        }
+        else if(barrel_info->heatLimit == LEVEL3_HEATLIMIT){
+          level =3;
+          FEEDER_SPEED_SP_RPM = 10  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        }
+        //FEEDER_SPEED_SP_RPM = 20 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+
+        if(feeder_mode == SAVE_LIFE){
+          if(barrel_info->currentHeatValue < barrel_info->heatLimit - 40){
+            feeder_mode = FEEDER_STOP;
+          }
+        }
+        else if(barrel_info->currentHeatValue > barrel_info->heatLimit - 15){
+          if(feeder_mode != SAVE_LIFE){
+            feeder_brake();
+          }
+          feeder_mode = SAVE_LIFE;
+        }
+        /*
+        if(barrel_info->heatLimit - barrel_info->currentHeatValue < 20){
+
+          if(feeder_mode != FEEDER_STOP){
+            feeder_brake();
+          }
+
+
+          feeder_mode = FEEDER_STOP;
+        }*/
+        else if(
             feeder_mode == FEEDER_STOP &&
             (p_dbus->rc.s1 == RC_S_DOWN || p_dbus->mouse.LEFT)
           )
@@ -265,6 +322,7 @@ static THD_FUNCTION(feeder_control, p){
           else if(feeder_mode == FEEDER_FINISHED)
             feeder_mode = FEEDER_STOP;
         }
+        feeder_func();
         chThdSleepMilliseconds(1);
     }
 }
@@ -277,6 +335,7 @@ static const char subname_feeder_PID[] = "KP KI KD Imax";
 void feeder_init(void)
 {
   feeder_encode = can_getFeederMotor();
+  barrel_info = can_get_sent_barrelStatus();
   p_dbus = RC_get();
 
   params_set(&vel_pid, 14,4,FEEDER_VEL,subname_feeder_PID,PARAM_PUBLIC);

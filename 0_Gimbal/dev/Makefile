@@ -130,7 +130,7 @@ CSRC = $(STARTUPSRC) \
        attitude.c adis16470.c math_misc.c \
        canBusProcess.c dbus.c gimbal.c params.c usbcfg.c \
        calibrate_sensor.c shoot_pwm.c feeder.c rune.c\
-       exti.c barrelStatus.c
+       exti.c barrelStatus.c keyboard.c
 
 
 

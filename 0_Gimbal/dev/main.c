@@ -103,8 +103,13 @@ int main(void)
   can_processInit();
   barrelHeatLimitControl_init();
 
+  // chThdSleepSeconds(1);
+  // RC_init();
   gimbal_init();
   feeder_init();
+  RC_init();
+
+
 
   /*
    * Init sequence 3: start all actuator controllers,
@@ -126,12 +131,11 @@ int main(void)
   while (init_state != INIT_ATTITUDE_COMPLETE)
     chThdSleepMilliseconds(100);//Wait for ADIS16470 Initialization
 
-  chThdSleepSeconds(1);
-  RC_init();
   gimbal_start();
-//  feeder_start();
-//  shooter_start();
+  feeder_start();
+  shooter_start();
   rune_init();
+  keyboardInit();
 
   init_state = INIT_COMPLETE;
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
