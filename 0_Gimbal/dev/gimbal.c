@@ -397,9 +397,9 @@ static THD_FUNCTION(gimbal_thread, p)
      */
     float yaw_theta1 = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
 
-    gimbal.motor[GIMBAL_PITCH]._speed = gimbal._pIMU->gyroData[Y];
-    gimbal.motor[GIMBAL_YAW]._speed = pIMU->gyroData[Z] * cosf(yaw_theta1) -
-      gimbal._pIMU->gyroData[X] * sinf(yaw_theta1);                 //             ^
+    gimbal.motor[GIMBAL_PITCH]._speed = gimbal._pIMU->gyroDataFiltered[Y];
+    gimbal.motor[GIMBAL_YAW]._speed = pIMU->gyroDataFiltered[Z] * cosf(yaw_theta1) -
+      gimbal._pIMU->gyroDataFiltered[X] * sinf(yaw_theta1);                 //             ^
                                                                     //             |
     /* TODO Check the sign here----------------------------------------------------- */
 

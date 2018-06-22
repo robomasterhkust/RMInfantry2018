@@ -92,6 +92,8 @@ typedef struct data_16470_t{
   volatile uint32_t stamp;
 //==============end of sensor data output===================//
 
+volatile float gyroDataFiltered[3];          //1LSB = 0.1deg/s
+
   adis16470_state_t state;
   adis16470_error_t error;
   uint8_t calibration_id;
