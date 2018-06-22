@@ -251,7 +251,6 @@ static THD_FUNCTION(uart_dbus_thread, p)
     }
 
     #if defined (RM_INFANTRY) || defined (RM_HERO)
-      if(rc_can_flag)
         RC_txCan(DBUS_CAN, CAN_DBUS_ID);
     #endif
 
