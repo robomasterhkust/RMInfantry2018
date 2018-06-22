@@ -1,5 +1,10 @@
 # RM Infantry 2018
 
+## Attention
+-- This repo contains code for gimbal ONLY!
+-- master branch(stable) -> New board using ADIS16470
+-- heatlimit_update branch(stable) -> Old board using ADIS16425
+
 ## Note
 This repo is established for integration of RM infantry embedded programs, and should be kept organized.
 For individual R&D projects on ChibiOS application or driver, please commit to the "RMdevBoard_ChibiOS" repo.
