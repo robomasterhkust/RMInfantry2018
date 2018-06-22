@@ -4,7 +4,7 @@
 #include "params.h"
 #include "canBusProcess.h"
 #include "dbus.h"
-
+#include "roboconf.h"
 #include "math_misc.h"
 #include "system_error.h"
 

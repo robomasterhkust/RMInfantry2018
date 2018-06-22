@@ -14,9 +14,6 @@
 #define FEEDER_OUTPUT_MAX_BACK   6000U  //output limit for stuck-bullet turning back
 #define FEEDER_ERROR_COUNT        100U
 
-#define LEVEL1_HEATLIMIT    90
-#define LEVEL2_HEATLIMIT    180
-#define LEVEL3_HEATLIMIT    360
 
 //#define FEEDER_USE_BOOST              //Very Violent!!
 #ifdef FEEDER_USE_BOOST
