@@ -12,7 +12,6 @@
 //#define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
 //#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
-//#define GIMBAL_USE_MAVLINK_CMD
 #define GIMBAL_ENCODER_USE_SPEED
 
 //gimbal maximum movement speed in radian
