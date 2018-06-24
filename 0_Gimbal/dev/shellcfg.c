@@ -74,17 +74,14 @@ static THD_FUNCTION(matlab_thread, p)
     }
 
     //==============================Set the data to transmit=========================//
-    txbuf_f[0] = pIMU->accelData[X];
-    txbuf_f[1] = pIMU->accelData[Y];
-    txbuf_f[2] = pIMU->accelData[Z];
-    txbuf_f[3] = pIMU->gyroData[X];
-    txbuf_f[4] = pIMU->gyroData[Y];
-    txbuf_f[5] = pIMU->gyroData[Z];
+    txbuf_f[0] = pIMU->euler_angle[Roll];
+    txbuf_f[1] = pIMU->euler_angle[Pitch];
+    txbuf_f[2] = pIMU->euler_angle[Yaw];
 
     //timestamp_prev =  pIMU->stamp / 2000.0f;
     //===============================================================================//
 
-    transmit_matlab(chp, NULL, txbuf_f, 0, 6);
+    transmit_matlab(chp, NULL, txbuf_f, 0, 3);
   }
 }
 
@@ -119,14 +116,13 @@ void cmd_error(BaseSequentialStream * chp, int argc, char *argv[])
     chprintf(chp,"E:INIT SEQ 3 FAILED -- GIMBAL PITCH NOT CONNECTED\r\n");
 
   //Gimbal error
-//error = gimbal_get_error();
-//  if(error & GIMBAL_YAW_NOT_CONNECTED)
-//    chprintf(chp,"E:GIMBAL YAW CONNECTION LOST\r\n");
-//  if(error & GIMBAL_PITCH_NOT_CONNECTED)
-  //  chprintf(chp,"E:GIMBAL PITCH CONNECTION LOST\r\n");
-//  if(error & GIMBAL_CONTROL_LOSE_FRAME)
-//    chprintf(chp,"W:Gimbal control lose frame\r\n");
-    //gimbal_clear_error();
+  error = gimbal_get_error();
+  if(error & GIMBAL_YAW_NOT_CONNECTED)
+    chprintf(chp,"E:GIMBAL YAW CONNECTION LOST\r\n");
+  if(error & GIMBAL_PITCH_NOT_CONNECTED)
+    chprintf(chp,"E:GIMBAL PITCH CONNECTION LOST\r\n");
+  if(error & GIMBAL_CONTROL_LOSE_FRAME)
+    chprintf(chp,"W:Gimbal control lose frame\r\n");
 
   //IMU error
   error = adis16470_get_error();
@@ -145,12 +141,13 @@ void cmd_error(BaseSequentialStream * chp, int argc, char *argv[])
     chprintf(chp,"W:ADIS16470 Gyroscope not calibrated\r\n");
   if(error & ADIS16470_DATA_INVALID)
     chprintf(chp,"W:ADIS16470 has invalid reading\r\n");
+  if(error & ADIS16470_LOSE_FRAME)
+    chprintf(chp,"W:Attitude estimator lose frame\r\n");
   adis16470_clear_error();
 
   //feeder error
   if(feeder_get_error())
     chprintf(chp, "E: FEEDER MOTOR NOT CONNECTED\r\n");
-  feeder_clear_error();
 
   system_clearWarningFlag();
 }
@@ -246,7 +243,7 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
   {
     gimbal_kill();
     chprintf(chp, "Calibration in process...\r\n");
-    chThdSleepMilliseconds(500);
+    chThdSleepSeconds(2);
 
     if(!strcmp(argv[0], "accl"))
     {
@@ -254,7 +251,7 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
       calibrate_accelerometer(pIMU, accelBias);
 
       chprintf(chp, "Saving to ADIS16470 flash...\r\n");
-      adis16470_set_calibration_id(pIMU->calibration_id, 0);
+      //adis16470_set_calibration_id(pIMU->calibration_id, 0);
       adis16470_bias_update(accelBias, gyroBias);
     }
     else if(!strcmp(argv[0], "gyro"))
@@ -264,15 +261,15 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
       calibrate_gyroscope(pIMU, gyroBias);
 
       chprintf(chp, "Saving to ADIS16470 flash...\r\n");
-      adis16470_set_calibration_id(0, pIMU->calibration_id);
+      //adis16470_set_calibration_id(0, pIMU->calibration_id);
       adis16470_bias_update(accelBias, gyroBias);
     }
     else if(!strcmp(argv[0], "res"))
     {
       chprintf(chp, "Restoring factory calibration\r\n");
       adis16470_reset_calibration();
-      adis16470_bias_update(accelBias, gyroBias);
       chprintf(chp, "Saving to ADIS16470 flash...\r\n");
+      adis16470_bias_update(accelBias, gyroBias);
     }
   }
   else
@@ -291,7 +288,7 @@ static const ShellCommand commands[] =
 {
   {"test", cmd_test},
   {"WTF", cmd_error},
-  //{"cal", cmd_calibrate},
+  {"cal", cmd_calibrate},
   {"rune", cmd_rune},
   {"\xEE", cmd_data},
   #ifdef PARAMS_USE_USB

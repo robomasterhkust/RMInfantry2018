@@ -19,13 +19,7 @@ static volatile Ros_msg_canStruct ros_msg={
   .vz=0
 };
 
-#ifdef RM_CHASSIS_STANDARD
-  static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
-#endif
-
-#ifdef RM_INFANTRY_GIMBAL
-  static volatile ChassisEncoder_canStruct feeder_encoder;
-#endif
+static volatile ChassisEncoder_canStruct feeder_encoder;
 
 /*
  * 500KBaud, automatic wakeup, automatic recover
@@ -48,19 +42,10 @@ volatile GimbalEncoder_canStruct* can_getGimbalMotor(void)
   return gimbal_encoder;
 }
 
-#ifdef RM_CHASSIS_STANDARD
-  volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
-  {
-    return chassis_encoder;
-  }
-#endif
-
-#ifdef RM_INFANTRY_GIMBAL
-  volatile ChassisEncoder_canStruct* can_getFeederMotor(void)
-  {
-    return &feeder_encoder;
-  }
-#endif
+volatile ChassisEncoder_canStruct* can_getFeederMotor(void)
+{
+  return &feeder_encoder;
+}
 
 volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void){
     return &chassis_send_barrel;

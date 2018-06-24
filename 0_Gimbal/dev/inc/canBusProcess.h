@@ -88,13 +88,7 @@ typedef struct {
 
 volatile GimbalEncoder_canStruct *can_getGimbalMotor(void);
 
-#ifdef RM_INFANTRY_GIMBAL
 volatile ChassisEncoder_canStruct* can_getFeederMotor(void);
-#endif
-
-#ifdef RM_STANDARD_CHASSIS
-volatile ChassisEncoder_canStruct* can_getChassisMotor(void);
-#endif
 
 volatile BarrelStatus_canStruct *can_get_sent_barrelStatus(void);
 

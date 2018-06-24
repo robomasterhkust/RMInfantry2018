@@ -282,6 +282,7 @@ static void adis16470_update(void)
   if(burstRead())
   {
     adis16470.error |= ADIS16470_DATA_INVALID;
+    //system_setTempWarningFlag();
     error_counter++;
     return;
   }
@@ -372,7 +373,7 @@ static void adis16470_update(void)
     if(dt > 50 || dt < 0 || burst_data.data_cnt == 0) //Indicates incorrect timestamp
     {
       adis16470.error |= ADIS16470_DATA_INVALID;
-      system_setTempWarningFlag();
+      //system_setTempWarningFlag();
       error_counter++;
     }
     else

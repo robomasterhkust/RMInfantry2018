@@ -14,6 +14,11 @@
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
 #define GIMBAL_ENCODER_USE_SPEED
 
+#define GIMBAL_YAW_VEL_I_MAX    2000.0f
+#define GIMBAL_PITCH_VEL_I_MAX  2500.0f
+#define GIMBAL_YAW_ATTI_I_MAX    2.0f
+#define GIMBAL_PITCH_ATTI_I_MAX  2.0f
+
 //gimbal maximum movement speed in radian
 #define GIMBAL_MAX_SPEED_PITCH      4.0f
 #define GIMBAL_MAX_SPEED_YAW        7.0f

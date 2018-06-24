@@ -20,6 +20,8 @@ static bool safe = false;
 static bool Press = false;
 static speed_mode_t speed_mode;
 static uint8_t shooting_speed = 0;
+
+static bool rune_state;
 // static PWMDriver PWMD9;
 
 void pwm9_setWidth(uint16_t width){
@@ -31,7 +33,7 @@ void pwm9_setWidth(uint16_t width){
  * 2017/12/17 PWM test
  * @return
  */
-void shooter_control(uint16_t setpoint)
+static void shooter_control(uint16_t setpoint)
 {
   if(setpoint > MAX_SHOOT_SPEED)
     setpoint = MAX_SHOOT_SPEED;
@@ -103,7 +105,12 @@ static THD_FUNCTION(pwm_thd, arg) {
           }
         }break;
       }
-      shooter_control(shooting_speed);
+
+      if(rune_state)
+        shooter_control(speed_mode.rune_speed); //Use the highest possible speed to shoot the rune
+      else
+        shooter_control(shooting_speed);
+
       speed = alpha * (float)speed_sp + (1-alpha) * speed;
       pwm9_setWidth((uint16_t)speed);
       chThdSleepMilliseconds(5);
@@ -114,10 +121,16 @@ static void pwm9_start(void){
    pwmStart(&PWMD9, &pwm9cfg);
 }
 
+void shooter_setRuneState(const uint8_t enable)
+{
+  rune_state = (enable == DISABLE ? false : true );
+}
+
 void shooter_start(void)
 {
     rc = RC_get();
     pwm9_start();
+    speed_mode.rune_speed = 175;
     speed_mode.fast_speed = 175;
     speed_mode.slow_speed = 110;
     speed_mode.stop = 100;

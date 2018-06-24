@@ -250,7 +250,7 @@ static THD_FUNCTION(uart_dbus_thread, p)
       timeout = MS2ST(DBUS_INIT_WAIT_TIME_MS);
     }
 
-    #if defined (RM_INFANTRY) || defined (RM_HERO)
+    #if ( defined (RM_INFANTRY) || defined (RM_HERO) ) && !defined(RM_DEBUG)
         RC_txCan(DBUS_CAN, CAN_DBUS_ID);
     #endif
 

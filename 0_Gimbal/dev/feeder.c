@@ -177,6 +177,7 @@ static void feeder_func(void){
     switch (feeder_mode){
         case FEEDER_FINISHED:
         case FEEDER_STOP:
+        case SAVE_LIFE:
             if(chVTGetSystemTimeX() > feeder_stop_time + S2ST(1))
               feeder_rest();
             else{
@@ -214,16 +215,6 @@ static void feeder_func(void){
             feeder_canUpdate();
             break;
 
-            case SAVE_LIFE:{
-              if(chVTGetSystemTimeX() > feeder_stop_time + S2ST(1))
-                feeder_rest();
-              else
-              {
-                  feeder_output = feeder_controlPos(feeder_brakePos, FEEDER_OUTPUT_MAX);
-                   feeder_canUpdate();
-              }
-      
-            }break;
         #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
             feeder_output = FEEDER_BOOST_POWER;
@@ -327,9 +318,9 @@ static THD_FUNCTION(feeder_control, p){
     }
 }
 
-static const FEEDER_VEL  = "FEEDER_VEL";
-static const FEEDER_POS  = "FEEDER_POS";
-static const FEEDER_rest_name = "FEEDER_REST";
+static const char FEEDER_VEL[]  = "FEEDER_VEL";
+static const char FEEDER_POS[]  = "FEEDER_POS";
+static const char FEEDER_REST[] = "FEEDER_REST";
 static const char subname_feeder_PID[] = "KP KI KD Imax";
 
 void feeder_init(void)
@@ -340,7 +331,7 @@ void feeder_init(void)
 
   params_set(&vel_pid, 14,4,FEEDER_VEL,subname_feeder_PID,PARAM_PUBLIC);
   params_set(&pos_pid, 15,4,FEEDER_POS,subname_feeder_PID,PARAM_PUBLIC);
-  params_set(&rest_pid, 16,4,FEEDER_rest_name,subname_feeder_PID,PARAM_PUBLIC);
+  params_set(&rest_pid, 16,4,FEEDER_REST,subname_feeder_PID,PARAM_PUBLIC);
 
   lpfilter_init(&lp_spd_feeder, 1000, 30);
 }

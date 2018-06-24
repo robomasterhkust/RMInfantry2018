@@ -39,7 +39,7 @@ typedef enum {
   INIT_SEQUENCE_3_RETURN_2 = 2,
   INIT_SEQUENCE_3_RETURN_3 = 4,
   INIT_ATTITUDE_COMPLETE = 16,
-  INIT_COMPLETE = 32,
+  INIT_COMPLETE = 32
 } system_init_state_t;
 
 void shellStart(void);

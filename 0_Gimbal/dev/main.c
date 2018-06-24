@@ -103,8 +103,6 @@ int main(void)
   can_processInit();
   barrelHeatLimitControl_init();
 
-  // chThdSleepSeconds(1);
-  // RC_init();
   gimbal_init();
   feeder_init();
   RC_init();
@@ -188,8 +186,13 @@ uint8_t power_check(void)
   */
 bool power_failure(void)
 {
-  uint32_t error = gimbal_get_error();
+  #ifndef SYSTEM_POWER_CHECK_OVERRIDE
+    uint32_t error = gimbal_get_error();
 
-  return (error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED)) ==
-    (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED);
+    return (error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED)) ==
+      (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED);
+  #else
+    return false;
+
+  #endif
 }

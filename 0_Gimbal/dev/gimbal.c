@@ -363,10 +363,10 @@ static THD_FUNCTION(gimbal_thread, p)
     RC_canTxCmd(ENABLE);
   #endif
 
-  _yaw_vel.error_int_max = 2000.0f;
-  _pitch_vel.error_int_max = 2500.0f;
-  _yaw_atti.error_int_max = 4.0f;
-  _pitch_atti.error_int_max = 4.0f;
+  _yaw_vel.error_int_max =    GIMBAL_YAW_VEL_I_MAX;
+  _pitch_vel.error_int_max =  GIMBAL_PITCH_VEL_I_MAX;
+  _yaw_atti.error_int_max =   GIMBAL_YAW_ATTI_I_MAX;
+  _pitch_atti.error_int_max = GIMBAL_PITCH_ATTI_I_MAX;
 
   float pitch_atti_out,yaw_atti_out;
   float sinroll, cosroll, cospitch;

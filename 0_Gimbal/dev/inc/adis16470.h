@@ -6,7 +6,9 @@
 #define INC_ADIS16470_H_
 
 #define ADIS16470_SPID          &SPID4
+
 #define IMU_USE_EULER_ANGLE
+//#define ADIS16470_USE_CBR
 
 #define ADIS16470_pin           GPIOE_SPI4_ADIS_NSS
 #define ADIS16470_port          GPIOE
@@ -146,4 +148,3 @@ void adis16470_init(const adis16265_conf_t* sensor_conf);
 #endif
 
 #endif /* INC_ADIS16470_H_ */
-
