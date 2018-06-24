@@ -411,7 +411,7 @@ static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   txmsg.IDE = CAN_IDE_STD;
   txmsg.SID = CAN_GIMBAL_SEND_16470_ID;
   txmsg.RTR = CAN_RTR_DATA;
-  txmsg.DLC = 0x08;
+  txmsg.DLC = 0x04;
 
   txCan1.stamp = adis16470.stamp;
   txCan2.a = adis16470.qIMU[0];
@@ -423,6 +423,8 @@ static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   memcpy(&(txmsg.data8),&txCan1,8);
   chSysUnlock();
   canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+
+  txmsg.DLC = 0x08;
 
   chSysLock();
   memcpy(&(txmsg.data8),&txCan2,8);

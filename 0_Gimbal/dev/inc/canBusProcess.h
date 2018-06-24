@@ -16,7 +16,7 @@
 
 #define CAN_DBUS_ID                                 0x001
 #define CAN_CHASSIS_SEND_BARREL_ID                  0x002
-#define CAN_GIMBAL_SEND_16470_ID                    0x003
+#define CAN_GIMBAL_SEND_16470_ID                    0x010
 #define CAN_NVIDIA_TX2_BOARD_ID                     0x103
 
 #define CAN_UWB_MSG_ID                              0x259
