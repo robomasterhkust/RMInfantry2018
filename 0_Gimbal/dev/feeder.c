@@ -236,12 +236,12 @@ static THD_FUNCTION(feeder_control, p){
     uint16_t feeder_error_counter;
     while(!chThdShouldTerminateX())
     {
-        if(state_count(!(feeder_encode->updated), 50, &feeder_error_counter))
-        {
-          feeder_error_flag = true;
-          system_setErrorFlag();
-          chThdExit(MSG_OK);
-        }
+//        if(state_count(!(feeder_encode->updated), 50, &feeder_error_counter))
+//        {
+//          feeder_error_flag = true;
+//          system_setErrorFlag();
+//          chThdExit(MSG_OK);
+//        }
         //FEEDER_SPEED_SP_RPM = ((barrel_info->heatLimit + barrel_info->heatLimit*18/90)/20)  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
 
           //feeder_func();

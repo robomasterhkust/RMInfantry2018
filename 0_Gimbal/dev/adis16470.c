@@ -422,19 +422,19 @@ static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   chSysLock();
   memcpy(&(txmsg.data8),&txCan1,8);
   chSysUnlock();
-  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+//  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 
   txmsg.DLC = 0x08;
 
   chSysLock();
   memcpy(&(txmsg.data8),&txCan2,8);
   chSysUnlock();
-  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+//  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 
   chSysLock();
   memcpy(&(txmsg.data8),&txCan3,8);
   chSysUnlock();
-  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+//  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 }
 #endif
 
