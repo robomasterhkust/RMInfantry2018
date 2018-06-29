@@ -45,6 +45,8 @@ static volatile Ros_msg_canStruct *ros_msg;
 static thread_reference_t gimbal_thread_handler = NULL;
 static thread_reference_t gimbal_init_thread_handler = NULL;
 
+static lpfilterStruct lp_d_yaw;
+
 GimbalStruct* gimbal_get(void)
 {
   return &gimbal;
@@ -87,6 +89,10 @@ void gimbal_kill(void)
 }
 
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
+/*
+    receive gimbal velocity command for both yaw and pitch
+    remote control + cv
+*/
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
   static uint16_t cv_wait_count = 0;
@@ -102,6 +108,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 
   cv_input_y = (float)ros_msg->vy;
   cv_input_z = (float)ros_msg->vz;
+  float cv_pos_y = (float)ros_msg->py;
+  float cv_pos_z = (float)ros_msg->pz;
 
   float input_z, input_y;
   if(cosf(yaw_theta1) > 0.1f)
@@ -131,6 +139,7 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   input_y *= dt;
 */
   float yaw_atti_cmd;
+  float attitude_bias = lpfilter_apply(&lp_d_yaw, (pIMU->euler_angle[Yaw] - gimbal.d_yaw) );
 
   float euler_cmd[3] =
     {pIMU->euler_angle[Roll], gimbal.pitch_atti_cmd, gimbal.yaw_atti_cmd};
@@ -154,7 +163,9 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   {
     yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
                           1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
+    yaw_atti_cmd += cv_pos_z;
     gimbal.pitch_atti_cmd = asinf(2.0f * (q[0] * q[2] - q[3] * q[1]));
+    gimbal.pitch_atti_cmd += cv_pos_y;
 
     if(yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
       gimbal.rev++;
@@ -167,6 +178,31 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 
   //Avoid gimbal-lock point at pitch = M_PI_2
   bound(&gimbal.pitch_atti_cmd, 1.20f);
+}
+
+/*
+    receive gimbal attitude command for both yaw and pitch
+    cv only
+ */
+static void gimbal_attitude_cmd()
+{
+    float cv_input_z = (float) ros_msg->vz;
+    float cv_input_y = (float) ros_msg->vy;
+    gimbal.pitch_atti_cmd = cv_input_y;
+    float attitude_bias = lpfilter_apply(&lp_d_yaw, (pIMU->euler_angle[Yaw] - gimbal.d_yaw) );
+    float yaw_atti_cmd = cv_input_z + attitude_bias; //need filter
+
+    if (yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
+        gimbal.rev++;
+    else if (yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
+        gimbal.rev--;
+
+    gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * (float) M_PI;
+    gimbal.prev_yaw_cmd = yaw_atti_cmd;
+
+    //Avoid gimbal-lock point at pitch = M_PI_2
+    bound(&gimbal.pitch_atti_cmd, 1.20f);
+
 }
 
 #define AXIS_LIMIT_TH2 0.1f //Dual stability threshold to prevent state oscillation
@@ -405,6 +441,7 @@ static THD_FUNCTION(gimbal_thread, p)
 
     gimbal_checkLimit();
     gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    // gimbal_attitude_cmd();
 
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
@@ -741,6 +778,8 @@ void gimbal_init(void)
 
   lpfilter_init(&lp_angle[GIMBAL_YAW], GIMBAL_CONTROL_FREQ, GIMBAL_CUTOFF_FREQ);
   lpfilter_init(&lp_angle[GIMBAL_PITCH], GIMBAL_CONTROL_FREQ, GIMBAL_CUTOFF_FREQ);
+  lpfilter_init(&lp_d_yaw, GIMBAL_CONTROL_FREQ, GIMBAL_DYAW_CUTOFF_FREQ);
+
 
   #ifdef GIMBAL_ENCODER_USE_SPEED
     lpfilter_init(&lp_axis_ff[GIMBAL_YAW], GIMBAL_CONTROL_FREQ, 10);

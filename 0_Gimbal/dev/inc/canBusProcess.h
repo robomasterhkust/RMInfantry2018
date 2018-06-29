@@ -67,7 +67,8 @@ typedef struct {
 } BarrelStatus_canStruct;
 
 typedef struct {
-    double vx;
+    double py;
+    double pz;
     double vy;
     double vz;
 } Ros_msg_canStruct;

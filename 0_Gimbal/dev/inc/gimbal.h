@@ -28,6 +28,8 @@
 
 #define GIMBAL_YAW_GEAR 0.533f
 
+#define GIMBAL_DYAW_CUTOFF_FREQ    2U
+
 typedef enum {
   GIMBAL_STATE_UNINIT = 0,
   GIMBAL_STATE_INITING,
