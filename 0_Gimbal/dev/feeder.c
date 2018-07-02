@@ -22,6 +22,8 @@ static systime_t      bullet_out_time;
 static systime_t      feeder_stop_time;
 static thread_reference_t rune_singleShot_thread = NULL;
 
+static float bullet_delay;
+
 ChassisEncoder_canStruct*   feeder_encode;
 RC_Ctl_t*                   p_dbus;
 BarrelStatus_canStruct*     barrel_info;
@@ -67,6 +69,8 @@ void feeder_bulletOut(void)
         else
           feeder_mode = FEEDER_SINGLE;
 
+        bullet_delay = ST2US(bullet_out_time - feeder_start_time)/1e3f;
+
         switch(feeder_mode)
         {
           case FEEDER_SINGLE:
@@ -79,7 +83,7 @@ void feeder_bulletOut(void)
       }
     #endif
 
-    if(bulletCount > bulletCount_stop)
+    if(bulletCount >= bulletCount_stop)
     {
       if(rune_singleShot_thread != NULL)
       {
@@ -159,6 +163,7 @@ static void feeder_func(){
     feeder_output = 0.0f;
     switch (feeder_mode){
         case FEEDER_FINISHED:
+        case SAVE_LIFE:
         case FEEDER_STOP:
             if(chVTGetSystemTimeX() > feeder_stop_time + S2ST(1))
               feeder_rest();
@@ -197,18 +202,30 @@ static void feeder_func(){
             feeder_canUpdate();
 
             break;
-        case SAVE_LIFE:{
-          if(chVTGetSystemTimeX() > feeder_stop_time + S2ST(1))
-            feeder_rest();
-          else
-          {
-            feeder_output = feeder_controlPos(feeder_brakePos, FEEDER_OUTPUT_MAX);
-            feeder_canUpdate();
-          }
-
-        }break;
         #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
+            if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(200))
+            {
+              feeder_mode = FEEDER_FINISHED;
+              feeder_brake();
+            }
+            else if (
+                 state_count((feeder_encode->raw_speed < 30) &&
+                             (feeder_encode->raw_speed > -30),
+                 FEEDER_ERROR_COUNT, &error_count)
+               )
+            {
+              float error_angle_sp = feeder_encode->total_ecd -
+                FEEDER_TURNBACK_ANGLE / 360.0f * FEEDER_GEAR * 8192;
+              systime_t error_start_time = chVTGetSystemTime();
+              while (chVTIsSystemTimeWithin(error_start_time, (error_start_time + MS2ST(200))) )
+              {
+                feeder_output = feeder_controlPos(error_angle_sp, FEEDER_OUTPUT_MAX_BACK);
+                feeder_canUpdate();
+                chThdSleepMilliseconds(1);
+              }
+            }
+
             feeder_output = FEEDER_BOOST_POWER;
             feeder_canUpdate();
             break;
@@ -229,7 +246,7 @@ static THD_FUNCTION(feeder_control, p){
         //FEEDER_SPEED_SP_RPM = ((barrel_info->heatLimit + barrel_info->heatLimit*18/90)/20)  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
 
           //feeder_func();
-
+/*
         if(barrel_info->heatLimit == LEVEL1_HEATLIMIT){
           level = 1;
           FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
@@ -264,8 +281,11 @@ static THD_FUNCTION(feeder_control, p){
 
 
           feeder_mode = FEEDER_STOP;
-        }*/
-        else if(
+        }
+        else*/
+
+        FEEDER_SPEED_SP_RPM = 20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+        if(
             feeder_mode == FEEDER_STOP &&
             (p_dbus->rc.s1 == RC_S_DOWN || p_dbus->mouse.LEFT)
           )

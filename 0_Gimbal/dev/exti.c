@@ -34,8 +34,8 @@ static void extcb(EXTDriver *extp, expchannel_t channel) {
 
 static const EXTConfig extcfg = {
   {
-    {EXT_CH_MODE_DISABLED, NULL},   //EXTI0
-    {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOC, extcb},
+    {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, extcb},   //EXTI0
+    {EXT_CH_MODE_DISABLED, NULL},
     //EXTI1
     {EXT_CH_MODE_DISABLED, NULL},   //EXTI2
     {EXT_CH_MODE_DISABLED, NULL},   //EXTI3
@@ -64,5 +64,5 @@ static const EXTConfig extcfg = {
 void extiinit(void) {
 
   extStart(&EXTD1, &extcfg);
-  extChannelEnable(&EXTD1, 1);
+  extChannelEnable(&EXTD1, 0);
 }

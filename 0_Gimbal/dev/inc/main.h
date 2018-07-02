@@ -14,7 +14,6 @@
 #include "dbus.h"
 #include "params.h"
 #include "sdlog.h"
-#include "mavlink_comm.h"
 #include "exti.h"
 
 #include "mpu6500.h"

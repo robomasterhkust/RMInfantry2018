@@ -19,7 +19,8 @@ void keyboard_to_bitmap(RC_Ctl_t* pRC){
   uint8_t i = 0;
   //uint32_t n = RC_get()->keyboard.key_code;
   uint32_t n = pRC->keyboard.key_code;
-  for(int j=0 ; j< 15; j++){
+  int j;
+  for(j = 0 ; j < 15; j++){
     bitmap[i] = n % 2;
     n = n/2;
     i++;
@@ -170,6 +171,3 @@ void keyboardInit(){
                    NORMALPRIO - 5, keyboard_decode, NULL);
 
 }
-
-
-

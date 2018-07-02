@@ -298,7 +298,7 @@
  * PA14 - SWCLK                     (alternate 0).
  * PA15 - PIN15                     (input pullup).
  */
-#define VAL_GPIOA_MODER             (PIN_MODE_ALTERNATE(GPIOA_TIM2_CH1) |         \
+#define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_TIM2_CH1) |         \
                                      PIN_MODE_ALTERNATE(GPIOA_TIM2_CH2) |           \
                                      PIN_MODE_OUTPUT(GPIOA_LED_Y) |           \
                                      PIN_MODE_OUTPUT(GPIOA_LED_B) |           \
@@ -346,7 +346,7 @@
                                      PIN_OSPEED_HIGH(GPIOA_SWDIO) |         \
                                      PIN_OSPEED_HIGH(GPIOA_SWCLK) |         \
                                      PIN_OSPEED_HIGH(GPIOA_PIN15))
-#define VAL_GPIOA_PUPDR             (PIN_PUPDR_PULLDOWN(GPIOA_TIM2_CH1) |     \
+#define VAL_GPIOA_PUPDR             (PIN_PUPDR_PULLUP(GPIOA_TIM2_CH1) |     \
                                      PIN_PUPDR_PULLDOWN(GPIOA_TIM2_CH2) |         \
                                      PIN_PUPDR_FLOATING(GPIOA_LED_Y) |         \
                                      PIN_PUPDR_FLOATING(GPIOA_LED_B) |         \
@@ -379,7 +379,7 @@
                                      PIN_ODR_HIGH(GPIOA_SWCLK) |            \
                                      PIN_ODR_HIGH(GPIOA_PIN15))
 
-#define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_TIM2_CH1, 1U) |        \
+#define VAL_GPIOA_AFRL              (PIN_AFIO_AF(GPIOA_TIM2_CH1, 0U) |        \
                                      PIN_AFIO_AF(GPIOA_TIM2_CH2, 1U) |          \
                                      PIN_AFIO_AF(GPIOA_LED_Y, 0U) |             \
                                      PIN_AFIO_AF(GPIOA_LED_B, 0U) |             \
