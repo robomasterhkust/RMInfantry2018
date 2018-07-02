@@ -108,36 +108,6 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"LS: %d\r\n",palReadPad(BULLET_LS_GPIO, BULLET_LS_PIN));
 }
 
-void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
-{
-  (void) argc,argv;
-
-  mavlink_attitude_t* attitude = mavlinkComm_attitude_subscribe();
-
-  float pitchSpeed = 0.0f, yawSpeed = 0.0f;
-
-  uint8_t i;
-  for (i = 0; i < 100; i++)
-  {
-    if(mavlinkComm_attitude_check())
-    {
-      chSysLock();
-      pitchSpeed = attitude->pitchspeed;
-      yawSpeed = attitude->yawspeed;
-      chSysUnlock();
-
-      chprintf(chp,"MAVpitchCmd: %f\r\n",pitchSpeed);
-      chprintf(chp,"MAVyawCmd: %f\r\n",yawSpeed);
-    }
-    else
-    {
-      pitchSpeed = 0.0f;
-      yawSpeed = 0.0f;
-    }
-
-    chThdSleepMilliseconds(100);
-  }
-}
 
 void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
 {
@@ -290,7 +260,6 @@ void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
 static const ShellCommand commands[] =
 {
   {"test", cmd_test},
-  {"mavlink", cmd_mavlink},
   {"cal", cmd_calibrate},
   {"temp", cmd_temp},
   {"rune", cmd_rune},

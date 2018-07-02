@@ -125,7 +125,6 @@ int main(void)
   gyro_init();
   can_processInit();
   RC_init();
-  mavlinkComm_init();
   barrelHeatLimitControl_init();
 
   while(!power_check())

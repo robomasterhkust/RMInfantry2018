@@ -152,6 +152,27 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   bound(&gimbal.pitch_atti_cmd, 1.20f);
 }
 
+static void gimbal_attitude_cmd()
+{
+    float cv_input_z = (float) ros_msg->vz;
+    float cv_input_y = (float) ros_msg->vy;
+    gimbal.pitch_atti_cmd = cv_input_y;
+    float attitude_bias = 0.0;
+    float yaw_atti_cmd = cv_input_z + attitude_bias; //need filter
+
+    if (yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
+        gimbal.rev++;
+    else if (yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
+        gimbal.rev--;
+
+    gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * (float) M_PI;
+    gimbal.prev_yaw_cmd = yaw_atti_cmd;
+
+    //Avoid gimbal-lock point at pitch = M_PI_2
+    bound(&gimbal.pitch_atti_cmd, 1.20f);
+
+}
+
 #define AXIS_LIMIT_TH2 0.1f //Dual stability threshold to prevent state oscillation
 static void gimbal_checkLimit(void)
 {
@@ -385,7 +406,8 @@ static THD_FUNCTION(gimbal_thread, p)
     /* TODO Check the sign here----------------------------------------------------- */
 
     gimbal_checkLimit();
-    gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    // gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    gimbal_attitude_cmd();
 
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
