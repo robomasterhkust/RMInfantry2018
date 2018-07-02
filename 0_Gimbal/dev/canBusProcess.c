@@ -61,6 +61,17 @@ volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void){
     return &chassis_send_barrel;
 }
 
+static volatile Ros_msg_canStruct ros_msg={
+  .py=0,
+  .pz=0,
+  .vy=0,
+  .vz=0
+};
+
+volatile Ros_msg_canStruct* can_get_ros_msg(void){
+  return &ros_msg;
+}
+
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
 static inline void can_processChassisEncoder
   (volatile ChassisEncoder_canStruct* cm, const CANRxFrame* const rxmsg)
@@ -113,6 +124,21 @@ static inline void  can_processSendBarrelStatus
     chSysUnlock();
 }
 
+static inline void can_process_ros_command(volatile Ros_msg_canStruct * msg, const CANRxFrame* const rxmsg)
+{
+    chSysLock();
+    int16_t msg_py = (int16_t)rxmsg->data16[0];
+    int16_t msg_pz = (int16_t)rxmsg->data16[1];
+    int16_t msg_vy = (int16_t)rxmsg->data16[2];
+    int16_t msg_vz = (int16_t)rxmsg->data16[3];
+    msg->py = msg_py * 0.001;
+    msg->pz = msg_pz * 0.001;
+    msg->vy = msg_vy * 0.001;
+    msg->vz = msg_vz * 0.001;
+    chSysUnlock();
+}
+
+
 static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
 {
   switch(rxmsg->SID)
@@ -128,6 +154,10 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
         break;
       case CAN_CHASSIS_SEND_BARREL_ID:
         can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
+        break;
+      case CAN_NVIDIA_TX2_BOARD_ID:
+        can_process_ros_command(&ros_msg,rxmsg);
+        break;
   }
 }
 

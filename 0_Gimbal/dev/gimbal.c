@@ -41,6 +41,7 @@ static bool rune_state = false;
 static lpfilterStruct lp_angle[2];
 static GimbalStruct gimbal;
 static RC_Ctl_t* rc;
+static volatile Ros_msg_canStruct *ros_msg;
 
 static thread_reference_t gimbal_thread_handler = NULL;
 static thread_reference_t gimbal_init_thread_handler = NULL;
@@ -75,27 +76,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float           rc_input_z = 0.0f, rc_input_y = 0.0f;     //RC input
   static float    cv_input_z = 0.0f, cv_input_y = 0.0f;     //CV input
 
-  #if defined (GIMBAL_USE_MAVLINK_CMD)
-    if(mavlinkComm_attitude_check())
-    {
-      cv_wait_count = 0;
-      chSysLock();
-      cv_input_z = mavlink_attitude->yawspeed;
-      cv_input_y = mavlink_attitude->pitchspeed;
-      chSysUnlock();
-    }
-    else
-      cv_wait_count++;
-
-    if(cv_wait_count > (uint16_t)(GIMBAL_CV_CMD_TIMEOUT/dt))
-    {
-      cv_input_z = 0.0f;
-      cv_input_y = 0.0f;
-      cv_wait_count = 0;
-    }
-  #elif defined (GIMBAL_USE_CAN_CMD)
-    /*TODO Use CAN to control gimbal*/
-  #endif
+  cv_input_y = (float)ros_msg->vy;
+  cv_input_z = (float)ros_msg->vz;
 
   rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
                               -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
@@ -736,6 +718,7 @@ void gimbal_init(void)
 
   pGyro = gyro_get();
   rc = RC_get();
+  ros_msg = can_get_ros_msg();
   gimbal._encoder = can_getGimbalMotor();
   chThdSleepMilliseconds(100);
 
