@@ -24,7 +24,7 @@ typedef enum{
   FEEDER_SINGLE,    //Single shot
   FEEDER_AUTO,      //Auto fire
   FEEDER_FINISHED,  //Finished a round of shooting
-  SAVE_LIFE, //OVER HEAT!
+  FEEDER_OVERHEAT, //OVER HEAT!
   #ifdef FEEDER_USE_BOOST
     FEEDER_BOOST
   #endif //FEEDER_USE_BOOST
@@ -39,6 +39,7 @@ typedef struct{
 } __attribute__((packed)) pid_struct;
 
 int16_t feeder_canUpdate(void); //In case the feeder ESC is using the same EID as gimbal does
+float feeder_getDelay(void);
 void feeder_bulletOut(void);  //Used as limit switch EXTI funtion
 void feeder_singleShot(void); //Rune shooting function
 void feederInit(void);

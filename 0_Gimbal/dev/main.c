@@ -125,8 +125,8 @@ int main(void)
   //gyro_init();
   can_processInit();
   RC_init();
-  barrelHeatLimitControl_init();
-
+//  barrelHeatLimitControl_init();
+//
   //while(!power_check())
   //{
   //  LEDR_TOGGLE();
@@ -135,10 +135,12 @@ int main(void)
 
   /* Init sequence 3: actuators, display*/
   //gimbal_init();
-  //shooter_init();
+  shooter_init();
   feederInit();
   //keyboardInit();
   //rune_init();
+
+
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 

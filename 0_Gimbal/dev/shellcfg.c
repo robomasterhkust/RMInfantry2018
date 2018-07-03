@@ -97,15 +97,7 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
   chprintf(chp,"Pitch: %f\r\n",PIMU->euler_angle[Pitch]);
   chprintf(chp,"Yaw:   %f\r\n",PIMU->euler_angle[Yaw]);
 
-  chprintf(chp,"gimbalPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
-  chprintf(chp,"gimbalYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._angle);
-
-  chprintf(chp,"VelPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed);
-  chprintf(chp,"VelYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed);
-  chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
-  chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
-
-  chprintf(chp,"LS: %d\r\n",palReadPad(BULLET_LS_GPIO, BULLET_LS_PIN));
+  chprintf(chp,"Delay: %f\r\n", feeder_getDelay());
 }
 
 void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
