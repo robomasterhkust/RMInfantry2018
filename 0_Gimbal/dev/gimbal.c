@@ -406,8 +406,15 @@ static THD_FUNCTION(gimbal_thread, p)
     /* TODO Check the sign here----------------------------------------------------- */
 
     gimbal_checkLimit();
-    // gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
-    gimbal_attitude_cmd();
+    #ifdef RUNE_REMOTE_CONTROL
+      if(rc->rc.s1 == RC_S_UP){
+            gimbal_attitude_cmd();
+        }else{
+            gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+        }
+    #else
+      gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    #endif
 
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
