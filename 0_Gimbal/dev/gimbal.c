@@ -28,6 +28,7 @@ static pid_controller_t _pitch_atti;
 static pid_controller_t _yaw_pos;
 static pid_controller_t _pitch_pos;
 
+static uint8_t ctrl_state;
 static float yaw_init_pos = 0.0f, pitch_init_pos = 0.0f;
 
 static PGyroStruct pGyro;
@@ -159,14 +160,6 @@ static void gimbal_attitude_cmd()
     gimbal.pitch_atti_cmd = cv_input_y;
     gimbal.yaw_atti_cmd = cv_input_z + (pIMU->euler_angle[Yaw] - gimbal.d_yaw); //need filter
 
-  //  if (yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
-  //      gimbal.rev++;
-  //  else if (yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
-  //      gimbal.rev--;
-
-  //  gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * (float) M_PI;
-  //  gimbal.prev_yaw_cmd = yaw_atti_cmd;
-
     //Avoid gimbal-lock point at pitch = M_PI_2
     bound(&gimbal.pitch_atti_cmd, 1.20f);
 
@@ -295,6 +288,19 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
 static void gimbal_Follow(void)
 {
   gimbal.yaw_atti_cmd = gimbal._pIMU->euler_angle[Yaw];
+  gimbal.prev_yaw_cmd = gimbal.yaw_atti_cmd - 2 * M_PI * gimbal.rev;
+
+  while(gimbal.prev_yaw_cmd > M_PI)
+  {
+    gimbal.prev_yaw_cmd -= 2*M_PI;
+    gimbal.rev++;
+  }
+  while(gimbal.prev_yaw_cmd < -M_PI)
+  {
+    gimbal.prev_yaw_cmd += 2*M_PI;
+    gimbal.rev--;
+  }
+
   gimbal.pitch_atti_cmd = gimbal._pIMU->euler_angle[Pitch];
 }
 
@@ -406,12 +412,27 @@ static THD_FUNCTION(gimbal_thread, p)
 
     gimbal_checkLimit();
     #ifdef RUNE_REMOTE_CONTROL
-      if(rc->rc.s1 == RC_S_UP){
-            gimbal_attitude_cmd();
-        }else{
-            gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+      if(rc->rc.s1 == RC_S_UP)
+      {
+        ctrl_state = GIMBAL_CTRL_ATTI;
+        gimbal_attitude_cmd();
+      }
+      else
+      {
+        if(ctrl_state == GIMBAL_CTRL_ATTI) //Previous state
+        {
+          chSysLock();
+          gimbal_Follow();
+          chSysUnlock();
         }
+        else
+          gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+
+        ctrl_state = GIMBAL_CTRL_VEL;
+      }
+
     #else
+      ctrl_state = GIMBAL_CTRL_VEL;
       gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
     #endif
 

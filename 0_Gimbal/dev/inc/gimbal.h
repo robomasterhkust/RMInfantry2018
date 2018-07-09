@@ -44,6 +44,12 @@ typedef enum {
   GIMBAL_CONTROL_LOSE_FRAME = 1<<31
 } gimbal_error_t;
 
+typedef enum {
+  GIMBAL_CTRL_VEL = 0,
+  GIMBAL_CTRL_ATTI,
+  GIMBAL_CTRL_POS
+} gimbal_ctrl_state_t;
+
 #define GIMBAL_ERROR_COUNT    3U
 #define GIMBAL_WARNING_COUNT  1U
 static const char gimbal_error_messages[][GIMBAL_ERROR_COUNT] =
