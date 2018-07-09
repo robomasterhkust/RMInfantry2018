@@ -20,7 +20,7 @@ void keyboard_to_bitmap(RC_Ctl_t* pRC){
   //uint32_t n = RC_get()->keyboard.key_code;
   uint32_t n = pRC->keyboard.key_code;
   int j;
-  for(j=0 ; j< 15; j++){
+  for(j = 0 ; j < 15; j++){
     bitmap[i] = n % 2;
     n = n/2;
     i++;

@@ -157,16 +157,15 @@ static void gimbal_attitude_cmd()
     float cv_input_z = (float) ros_msg->vz;
     float cv_input_y = (float) ros_msg->vy;
     gimbal.pitch_atti_cmd = cv_input_y;
-    float attitude_bias = 0.0;
-    float yaw_atti_cmd = cv_input_z + attitude_bias; //need filter
+    gimbal.yaw_atti_cmd = cv_input_z + (pIMU->euler_angle[Yaw] - gimbal.d_yaw); //need filter
 
-    if (yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
-        gimbal.rev++;
-    else if (yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
-        gimbal.rev--;
+  //  if (yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
+  //      gimbal.rev++;
+  //  else if (yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
+  //      gimbal.rev--;
 
-    gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * (float) M_PI;
-    gimbal.prev_yaw_cmd = yaw_atti_cmd;
+  //  gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * (float) M_PI;
+  //  gimbal.prev_yaw_cmd = yaw_atti_cmd;
 
     //Avoid gimbal-lock point at pitch = M_PI_2
     bound(&gimbal.pitch_atti_cmd, 1.20f);
@@ -540,8 +539,8 @@ typedef enum{
   INIT_STATE_LOCK_YAW //Lock yaw axis if pitch axis is disturbed
 } gimbal_init_state_t;
 
-#define GIMBAL_INIT_MAX_ERROR         5e-2
-#define GIMBAL_INIT_SCORE_FULL         20U
+#define GIMBAL_INIT_MAX_ERROR         2e-3
+#define GIMBAL_INIT_SCORE_FULL         50U
 static THD_WORKING_AREA(gimbal_init_thread_wa, 2048);
 static THD_FUNCTION(gimbal_init_thread, p)
 {
@@ -688,9 +687,10 @@ static THD_FUNCTION(gimbal_init_thread, p)
         /*exit this thread and start attitude control*/
         chSysLock();
 
-        gimbal_Follow();
         yaw_init_pos = gimbal.motor[GIMBAL_YAW]._angle;
         pitch_init_pos = gimbal.motor[GIMBAL_PITCH]._angle;
+        gimbal_Follow();
+
         chThdResumeS(&gimbal_thread_handler, MSG_OK);
         chThdExitS(MSG_OK);
 
@@ -776,11 +776,10 @@ void gimbal_init(void)
 
   params_set(&_yaw_atti,     7, 3, _yaw_atti_name,   subname_PID,      PARAM_PUBLIC);
   params_set(&_pitch_atti,   8, 3, _pitch_atti_name, subname_PID,      PARAM_PUBLIC);
+}
 
-  #ifdef GIMBAL_USE_MAVLINK_CMD
-    mavlink_attitude = mavlinkComm_attitude_subscribe();
-  #endif
-
+void gimbal_start(void)
+{
   chThdCreateStatic(gimbal_init_thread_wa, sizeof(gimbal_init_thread_wa),
                     NORMALPRIO - 5, gimbal_init_thread, NULL);
 

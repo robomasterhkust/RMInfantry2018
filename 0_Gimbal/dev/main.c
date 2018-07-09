@@ -127,6 +127,9 @@ int main(void)
   RC_init();
   barrelHeatLimitControl_init();
 
+  gimbal_init();
+  feeder_init();
+
   while(!power_check())
   {
     LEDY_TOGGLE();
@@ -134,11 +137,12 @@ int main(void)
   }
 
   /* Init sequence 3: actuators, display*/
-  gimbal_init();
+  gimbal_start();
   shooter_init();
-  feederInit();
+  feeder_start();
+
   keyboardInit();
-  //rune_init();
+  rune_init();
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
