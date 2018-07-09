@@ -12,7 +12,7 @@
 // #define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
 // #define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
-#define RUNE_REMOTE_CONTROL           // turn this on when testing rune 
+//#define RUNE_REMOTE_CONTROL           // turn this on when testing rune 
 #define GIMBAL_ENCODER_USE_SPEED
 
 #define GIMBAL_YAW_VEL_I_MAX    2000.0f

@@ -270,7 +270,7 @@ static THD_FUNCTION(feeder_control, p){
     uint16_t feeder_error_counter;
     while(!chThdShouldTerminateX())
     {
-        if(state_count(!(feeder_encode->updated), 50, &feeder_error_counter))
+        if(state_count(!(feeder_encode->updated), 100, &feeder_error_counter))
         {
           feeder_error_flag = true;
           system_setErrorFlag();

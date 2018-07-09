@@ -130,8 +130,8 @@ void shooter_start(void)
 {
     rc = RC_get();
     pwm9_start();
-    speed_mode.rune_speed = 175;
-    speed_mode.fast_speed = 175;
+    speed_mode.rune_speed = 160;
+    speed_mode.fast_speed = 160;
     speed_mode.slow_speed = 110;
     speed_mode.stop = 100;
     #ifndef SHOOTER_SETUP

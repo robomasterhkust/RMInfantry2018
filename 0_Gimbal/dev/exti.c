@@ -63,5 +63,5 @@ static const EXTConfig extcfg = {
 void extiinit(void) {
 
   extStart(&EXTD1, &extcfg);
-  extChannelEnable(&EXTD1, 1);
+  extChannelEnable(&EXTD1, 2);
 }
