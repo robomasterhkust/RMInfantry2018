@@ -764,11 +764,10 @@ void gimbal_init(void)
 
   params_set(&_yaw_atti,     7, 3, _yaw_atti_name,   subname_PID,      PARAM_PUBLIC);
   params_set(&_pitch_atti,   8, 3, _pitch_atti_name, subname_PID,      PARAM_PUBLIC);
+}
 
-  #ifdef GIMBAL_USE_MAVLINK_CMD
-    mavlink_attitude = mavlinkComm_attitude_subscribe();
-  #endif
-
+void gimbal_start(void)
+{
   chThdCreateStatic(gimbal_init_thread_wa, sizeof(gimbal_init_thread_wa),
                     NORMALPRIO - 5, gimbal_init_thread, NULL);
 

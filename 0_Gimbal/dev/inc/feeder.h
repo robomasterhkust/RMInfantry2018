@@ -12,7 +12,7 @@
 
 #define FEEDER_OUTPUT_MAX       16383U
 #define FEEDER_OUTPUT_MAX_BACK   8000U  //output limit for stuck-bullet turning back
-#define FEEDER_ERROR_COUNT        100U
+#define FEEDER_ERROR_COUNT        300U
 
 #define FEEDER_USE_BOOST              //Very Violent!!
 #ifdef FEEDER_USE_BOOST
@@ -42,6 +42,8 @@ int16_t feeder_canUpdate(void); //In case the feeder ESC is using the same EID a
 float feeder_getDelay(void);
 void feeder_bulletOut(void);  //Used as limit switch EXTI funtion
 void feeder_singleShot(void); //Rune shooting function
-void feederInit(void);
+
+void feeder_init(void);
+void feeder_start(void);
 
 #endif

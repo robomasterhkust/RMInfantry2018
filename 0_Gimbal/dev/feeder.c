@@ -14,7 +14,7 @@ static int16_t FEEDER_SPEED_SP_RPM  = 0;
 
 static int16_t        feeder_output;
 static uint8_t        level;
-static uint8_t        feeder_fire_mode = FEEDER_SINGLE; //User selection of firing mode
+static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
 static float          feeder_brakePos = 0.0f;
 static systime_t      feeder_start_time;
@@ -22,8 +22,10 @@ static systime_t      bullet_out_time;
 static systime_t      feeder_stop_time;
 static thread_reference_t rune_singleShot_thread = NULL;
 
-#define FEEDER_SINGLESHOT_SETSPEED  5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
-#define FEEDER_BOOST_PERIOD_MS      30
+#define FEEDER_BOOST_SETSPEED_SINGLE    20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_AUTO      30  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_TEST_SETSPEED             3  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_PERIOD_MS          30
 
 static float bullet_delay;
 
@@ -56,6 +58,7 @@ float feeder_getDelay(void)
 static void feeder_brake(void)
 {
   feeder_brakePos = (float)feeder_encode->total_ecd;
+  pos_pid.inte = 0; //reset pid integrator
   feeder_stop_time = chVTGetSystemTimeX();
 }
 
@@ -73,6 +76,7 @@ void feeder_bulletOut(void)
         else
           feeder_mode = FEEDER_SINGLE;
 
+        vel_pid.inte = 0; //reset pid integrator
         bullet_delay = ST2US(bullet_out_time - feeder_start_time)/1e3f;
       }
     #endif
@@ -168,13 +172,13 @@ static void feeder_func(){
             }
             break;
         case FEEDER_SINGLE:
-            if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
-            {
-              feeder_mode = FEEDER_FINISHED;
-              feeder_brake();
-            }
-
-            FEEDER_SPEED_SP_RPM = FEEDER_SINGLESHOT_SETSPEED;
+            #ifndef FEEDER_USE_BOOST
+              if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
+              {
+                feeder_mode = FEEDER_FINISHED;
+                feeder_brake();
+              }
+            #endif
         case FEEDER_AUTO:
             //error detecting
             if (
@@ -200,13 +204,28 @@ static void feeder_func(){
             break;
         #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
-            if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(FEEDER_BOOST_PERIOD_MS))
-              feeder_mode = feeder_fire_mode;// TODO: select fire mode using keyboard input
-            else if (
-                 state_count((feeder_encode->raw_speed < 30) &&
-                             (feeder_encode->raw_speed > -30),
-                 FEEDER_ERROR_COUNT, &error_count)
-               )
+            if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000)) //No bullet, exit
+            {
+              feeder_mode = FEEDER_FINISHED;
+              feeder_brake();
+            }
+            else if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(FEEDER_BOOST_PERIOD_MS))
+            {
+              if(feeder_fire_mode == FEEDER_SINGLE)
+                FEEDER_SPEED_SP_RPM = FEEDER_BOOST_SETSPEED_SINGLE;
+              else
+                FEEDER_SPEED_SP_RPM = FEEDER_BOOST_SETSPEED_AUTO;
+              feeder_output = feeder_controlVel(FEEDER_SPEED_SP_RPM, FEEDER_OUTPUT_MAX);
+            }
+            else
+              feeder_output = FEEDER_BOOST_POWER;
+
+            feeder_canUpdate();
+            if(
+                   state_count((feeder_encode->raw_speed < 30) &&
+                               (feeder_encode->raw_speed > -30),
+                   FEEDER_ERROR_COUNT, &error_count)
+              ) //Bullet stuck
             {
               float error_angle_sp = feeder_encode->total_ecd -
                 FEEDER_TURNBACK_ANGLE / 360.0f * FEEDER_GEAR * 8192;
@@ -219,8 +238,6 @@ static void feeder_func(){
               }
             }
 
-            feeder_output = FEEDER_BOOST_POWER;
-            feeder_canUpdate();
             break;
         #endif //FEEDER_USE_BOOST
         default:
@@ -253,7 +270,7 @@ static THD_FUNCTION(feeder_control, p){
           #ifdef RM_DEBUG
             level = -1;
             barrel_info->heatLimit = -1;
-            FEEDER_SPEED_SP_RPM = 10  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+            FEEDER_SPEED_SP_RPM = FEEDER_TEST_SETSPEED;
           #else
             //system_setWarningFlag(); //No judgement system data
           #endif
@@ -303,7 +320,7 @@ static const FEEDER_VEL  = "FEEDER_VEL";
 static const FEEDER_POS  = "FEEDER_POS";
 static const FEEDER_rest_name = "FEEDER_REST";
 static const char subname_feeder_PID[] = "KP KI KD Imax";
-void feederInit(void){
+void feeder_init(void){
 
     feeder_encode = can_getFeederMotor();
     barrel_info = can_get_sent_barrelStatus();
@@ -315,8 +332,10 @@ void feederInit(void){
 
     lpfilter_init(&lp_spd_feeder, 1000, 30);
     feeder_brakePos = (float)feeder_encode->total_ecd;
+}
 
-    chThdCreateStatic(feeder_control_wa, sizeof(feeder_control_wa),
-                     NORMALPRIO - 5, feeder_control, NULL);
-
+void feeder_start(void)
+{
+  chThdCreateStatic(feeder_control_wa, sizeof(feeder_control_wa),
+                   NORMALPRIO - 5, feeder_control, NULL);
 }

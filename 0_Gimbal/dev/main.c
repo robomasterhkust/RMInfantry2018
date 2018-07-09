@@ -121,26 +121,28 @@ int main(void)
   extiinit();
 
   /* Init sequence 2: sensors, comm*/
-  //attitude_init();
-  //gyro_init();
+  attitude_init();
+  gyro_init();
   can_processInit();
   RC_init();
-//  barrelHeatLimitControl_init();
-//
-  //while(!power_check())
-  //{
-  //  LEDR_TOGGLE();
-  //  chThdSleepMilliseconds(200);
-  //}
+  barrelHeatLimitControl_init();
+
+  gimbal_init();
+  feeder_init();
+
+  while(!power_check())
+  {
+    LEDY_TOGGLE();
+    chThdSleepMilliseconds(200);
+  }
 
   /* Init sequence 3: actuators, display*/
-  //gimbal_init();
+  gimbal_start();
   shooter_init();
-  feederInit();
-  //keyboardInit();
-  //rune_init();
+  feeder_start();
 
-
+  keyboardInit();
+  rune_init();
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 

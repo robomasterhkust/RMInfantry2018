@@ -115,6 +115,7 @@ void gimbal_setRune(uint8_t cmd);
 GimbalStruct* gimbal_get_sys_iden(void);
 uint32_t gimbal_get_error(void);
 void gimbal_init(void);
+void gimbal_start(void);
 void gimbal_kill(void);
 
 #endif
