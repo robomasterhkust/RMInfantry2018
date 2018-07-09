@@ -3,8 +3,8 @@
 
 #include "adis16470.h"
 
-#define ATT_W_ACCEL     1.5f
-#define ATT_W_GYRO      1.0f
+#define ATT_W_ACCEL     0.6f
+#define ATT_W_GYRO      0.2f
 #define GYRO_BIAS_MAX   0.05f
 
 #define ATTITUDE_UPDATE_FREQ 1000U
