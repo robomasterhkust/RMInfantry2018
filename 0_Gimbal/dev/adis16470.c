@@ -409,9 +409,9 @@ static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   ADIS16470_canStruct_3 txCan3;
 
   txmsg.IDE = CAN_IDE_STD;
-  txmsg.SID = CAN_GIMBAL_SEND_16470_ID;
+  txmsg.SID = SID;
   txmsg.RTR = CAN_RTR_DATA;
-  txmsg.DLC = 0x08;
+  txmsg.DLC = 0x04;
 
   txCan1.stamp = adis16470.stamp;
   txCan2.a = adis16470.qIMU[0];
@@ -424,6 +424,8 @@ static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   chSysUnlock();
   canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 
+  txmsg.DLC = 0x08;
+
   chSysLock();
   memcpy(&(txmsg.data8),&txCan2,8);
   chSysUnlock();
@@ -435,6 +437,24 @@ static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 }
 #endif
+
+static THD_WORKING_AREA(adis16470_can_Thd_wa,1024);
+static THD_FUNCTION(adis16470_can_Thd, p){
+  (void)p;
+  while(!chThdShouldTerminateX()){
+    if(adis16470.state == ADIS16470_CALIBRATING)
+    {
+      chSysLock();
+      chThdSuspendS(&adis16470.imu_Thd);
+      chSysUnlock();
+    }else{
+      #if defined (RM_INFANTRY) || defined (RM_HERO)
+        ADIS16470_txcan(ADIS16470_CAN, CAN_GIMBAL_SEND_16470_ID);
+      #endif
+    }
+    chThdSleep(ADIS16470_CAN_UPDATE_PERIOD);
+  }
+}
 
 static THD_WORKING_AREA(adis16470Thd_wa, 1024);
 static THD_FUNCTION(adis16470Thd, p) {
@@ -470,10 +490,6 @@ static THD_FUNCTION(adis16470Thd, p) {
         adis16470.state = ADIS16470_NOT_READY;
       else
         adis16470.state = ADIS16470_READY;
-
-      #if defined (RM_INFANTRY) || defined (RM_HERO)
-        ADIS16470_txcan(ADIS16470_CAN, CAN_GIMBAL_SEND_16470_ID);
-      #endif
     }
 
     #ifdef ADIS16470_USE_CBR
@@ -635,4 +651,6 @@ void adis16470_init(const adis16265_conf_t* sensor_conf) {
   chThdCreateStatic(adis16470Thd_wa, sizeof(adis16470Thd_wa),
                     NORMALPRIO + 7, adis16470Thd, NULL);
 
+  chThdCreateStatic(adis16470_can_Thd_wa, sizeof(adis16470_can_Thd_wa),
+                    NORMALPRIO + 7, adis16470_can_Thd, NULL);
 }

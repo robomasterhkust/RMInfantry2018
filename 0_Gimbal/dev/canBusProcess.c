@@ -14,7 +14,8 @@
 static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile BarrelStatus_canStruct   chassis_send_barrel;
 static volatile Ros_msg_canStruct ros_msg={
-  .vx=0,
+  .py=0,
+  .pz=0,
   .vy=0,
   .vz=0
 };
@@ -109,10 +110,12 @@ static inline void  can_processSendBarrelStatus
 static inline void can_process_ros_command(volatile Ros_msg_canStruct * msg, const CANRxFrame* const rxmsg)
 {
     chSysLock();
-    int16_t msg_vx = (int16_t)rxmsg->data16[0];
-    int16_t msg_vy = (int16_t)rxmsg->data16[1];
-    int16_t msg_vz = (int16_t)rxmsg->data16[2];
-    msg->vx = msg_vx * 0.001;
+    int16_t msg_py = (int16_t)rxmsg->data16[0];
+    int16_t msg_pz = (int16_t)rxmsg->data16[1];
+    int16_t msg_vy = (int16_t)rxmsg->data16[2];
+    int16_t msg_vz = (int16_t)rxmsg->data16[3];
+    msg->py = msg_py * 0.001;
+    msg->pz = msg_pz * 0.001;
     msg->vy = msg_vy * 0.001;
     msg->vz = msg_vz * 0.001;
     chSysUnlock();
