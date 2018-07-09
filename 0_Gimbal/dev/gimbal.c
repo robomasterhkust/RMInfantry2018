@@ -539,8 +539,8 @@ typedef enum{
   INIT_STATE_LOCK_YAW //Lock yaw axis if pitch axis is disturbed
 } gimbal_init_state_t;
 
-#define GIMBAL_INIT_MAX_ERROR         2e-3
-#define GIMBAL_INIT_SCORE_FULL         50U
+#define GIMBAL_INIT_MAX_ERROR         5e-2
+#define GIMBAL_INIT_SCORE_FULL         20U
 static THD_WORKING_AREA(gimbal_init_thread_wa, 2048);
 static THD_FUNCTION(gimbal_init_thread, p)
 {

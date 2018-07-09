@@ -417,7 +417,7 @@
  * PB15 - PIN15                     (input pullup).
  */
 #define VAL_GPIOB_MODER             (PIN_MODE_OUTPUT(GPIOB_ADC1_IN8) |           \
-                                     PIN_MODE_ANALOG(GPIOB_ADC1_IN9) |           \
+                                     PIN_MODE_INPUT(GPIOB_ADC1_IN9) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN2) |           \
                                      PIN_MODE_INPUT(GPIOB_PIN3) |        \
                                      PIN_MODE_ALTERNATE(GPIOB_TIM3_BUZZER) |           \
@@ -465,7 +465,7 @@
                                      PIN_OSPEED_HIGH(GPIOB_PIN14) |         \
                                      PIN_OSPEED_HIGH(GPIOB_PIN15))
 #define VAL_GPIOB_PUPDR             (PIN_PUPDR_PULLDOWN(GPIOB_ADC1_IN8) |         \
-                                     PIN_PUPDR_FLOATING(GPIOB_ADC1_IN9) |         \
+                                     PIN_PUPDR_PULLUP(GPIOB_ADC1_IN9) |         \
                                      PIN_PUPDR_FLOATING(GPIOB_PIN2) |         \
                                      PIN_PUPDR_FLOATING(GPIOB_PIN3) |        \
                                      PIN_PUPDR_PULLDOWN(GPIOB_TIM3_BUZZER) |         \

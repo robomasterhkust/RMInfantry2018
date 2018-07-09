@@ -12,7 +12,7 @@
 /* CAN Bus 1 or 2 */
 #define CAN_GIMBAL_YAW_FEEDBACK_MSG_ID              0x205
 #define CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID            0x206
-#define CAN_FEEDER_FEEDBACK_MSG_ID                  0x201
+#define CAN_FEEDER_FEEDBACK_MSG_ID                  0x207
 
 #define CAN_DBUS_ID                                 0x001
 #define CAN_CHASSIS_SEND_BARREL_ID                  0x002

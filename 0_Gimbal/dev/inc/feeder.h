@@ -4,15 +4,15 @@
 #define FEEDER_SINGLE_TIMEOUT_MS 100U
 
 #define FEEDER_CAN &CAND1
-#define FEEDER_CAN_EID 0x200
+#define FEEDER_CAN_EID 0x1FF
 
 #define FEEDER_BULLET_PER_TURN  7U
 #define FEEDER_GEAR             36U
 #define FEEDER_SET_RPS          19U     //Rounds per second of feeder
 
 #define FEEDER_OUTPUT_MAX       16383U
-#define FEEDER_OUTPUT_MAX_BACK   8000U  //output limit for stuck-bullet turning back
-#define FEEDER_ERROR_COUNT        300U
+#define FEEDER_OUTPUT_MAX_BACK  12000U  //output limit for stuck-bullet turning back
+#define FEEDER_ERROR_COUNT        800U
 
 #define FEEDER_USE_BOOST              //Very Violent!!
 #ifdef FEEDER_USE_BOOST
