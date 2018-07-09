@@ -343,7 +343,7 @@ static const FEEDER_VEL  = "FEEDER_VEL";
 static const FEEDER_POS  = "FEEDER_POS";
 static const FEEDER_rest_name = "FEEDER_REST";
 static const char subname_feeder_PID[] = "KP KI KD Imax";
-void feederInit(void){
+void feeder_init(void){
 
     feeder_encode = can_getFeederMotor();
     barrel_info = can_get_sent_barrelStatus();
@@ -355,8 +355,10 @@ void feederInit(void){
 
     lpfilter_init(&lp_spd_feeder, 1000, 30);
     feeder_brakePos = (float)feeder_encode->total_ecd;
+}
 
-    chThdCreateStatic(feeder_control_wa, sizeof(feeder_control_wa),
-                     NORMALPRIO - 5, feeder_control, NULL);
-
+void feeder_start(void)
+{
+  chThdCreateStatic(feeder_control_wa, sizeof(feeder_control_wa),
+                   NORMALPRIO - 5, feeder_control, NULL);
 }

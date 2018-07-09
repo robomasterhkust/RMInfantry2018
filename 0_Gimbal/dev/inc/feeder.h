@@ -42,6 +42,8 @@ int16_t feeder_canUpdate(void); //In case the feeder ESC is using the same EID a
 float feeder_getDelay(void);
 void feeder_bulletOut(void);  //Used as limit switch EXTI funtion
 void feeder_singleShot(void); //Rune shooting function
-void feederInit(void);
+
+void feeder_init(void);
+void feeder_start(void);
 
 #endif
