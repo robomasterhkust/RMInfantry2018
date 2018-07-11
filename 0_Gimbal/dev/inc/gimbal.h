@@ -13,7 +13,7 @@
 //#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
 //#define GIMBAL_USE_MAVLINK_CMD
-#define RUNE_REMOTE_CONTROL         //turn this on when testing rune
+//#define RUNE_REMOTE_CONTROL         //turn this on when testing rune
 #define GIMBAL_ENCODER_USE_SPEED
 
 //gimbal maximum movement speed in radian

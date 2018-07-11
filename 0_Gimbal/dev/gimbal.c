@@ -532,9 +532,10 @@ static THD_FUNCTION(gimbal_thread, p)
       gimbal.yaw_iq_output, gimbal.pitch_iq_output, feeder_output, 0);
 
     //Stop the thread while calibrating IMU
-    if(gimbal._pIMU->accelerometer_not_calibrated || gimbal._pIMU->gyroscope_not_calibrated)
+    if(gimbal._pIMU->accelerometer_not_calibrated || gimbal._pIMU->gyroscope_not_calibrated || pGyro->adis_gyroscope_not_calibrated)
     {
       gimbal_kill();
+      RC_canTxCmd(DISABLE);
       chThdExit(MSG_OK);
     }
   }

@@ -22,8 +22,8 @@ static systime_t      bullet_out_time;
 static systime_t      feeder_stop_time;
 static thread_reference_t rune_singleShot_thread = NULL;
 
-#define FEEDER_BOOST_SETSPEED_SINGLE    20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
-#define FEEDER_BOOST_SETSPEED_AUTO      30  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_SINGLE     5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_AUTO       5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TEST_SETSPEED             3  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_BOOST_PERIOD_MS          30
 

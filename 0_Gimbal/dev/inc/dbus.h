@@ -85,7 +85,7 @@ typedef struct{
 
 #if defined (RM_INFANTRY) || defined (RM_HERO)
 	#include "canBusProcess.h"
-	#define DBUS_CAN 				 &CAND2
+	#define DBUS_CAN 				 &CAND1
 	void RC_canTxCmd(const uint8_t cmd);
 #endif
 
