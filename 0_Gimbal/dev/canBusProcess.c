@@ -14,10 +14,13 @@
 static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile BarrelStatus_canStruct   chassis_send_barrel;
 static volatile Ros_msg_canStruct ros_msg={
-  .py=0,
-  .pz=0,
-  .vy=0,
-  .vz=0
+  .py=0.0,
+  .pz=0.0,
+  .vy=0.0,
+  .vz=0.0,
+  .updated=false,
+  .last_py=0,
+  .last_pz=0
 };
 
 static volatile ChassisEncoder_canStruct feeder_encoder;
@@ -114,7 +117,7 @@ static inline void can_process_ros_command(volatile Ros_msg_canStruct * msg, con
     int16_t msg_pz = (int16_t)rxmsg->data16[1];
     int16_t msg_vy = (int16_t)rxmsg->data16[2];
     int16_t msg_vz = (int16_t)rxmsg->data16[3];
-    if(abs(msg->last_py - msg_py) < 5 && abs(msg->last_pz - msg_pz) < 5){
+    if(abs(msg->last_py - msg_py) < 100 && abs(msg->last_pz - msg_pz) < 100){
       msg->updated = false;
     }else{
       msg->updated = true;
