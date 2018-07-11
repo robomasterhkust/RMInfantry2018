@@ -168,6 +168,7 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
     if (ros_msg->updated){
       gimbal.pitch_atti_cmd += cv_pos_y;
       yaw_atti_cmd += cv_pos_z;
+      ros_msg->updated = false;
     }
     if(yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
       gimbal.rev++;
