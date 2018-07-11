@@ -3,9 +3,9 @@
 
 #include "adis16470.h"
 
-#define ATT_W_ACCEL     1.5f
-#define ATT_W_GYRO      1.0f
-#define GYRO_BIAS_MAX   0.05f
+#define ATT_W_ACCEL     0.3f
+#define ATT_W_GYRO      0.1f
+#define GYRO_BIAS_MAX   0.02f
 
 #define ATTITUDE_UPDATE_FREQ 1000U
 #define ATTITUDE_USE_ADIS16470_TIMESTAMP

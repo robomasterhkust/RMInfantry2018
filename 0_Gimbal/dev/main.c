@@ -130,10 +130,12 @@ int main(void)
     chThdSleepMilliseconds(100);//Wait for ADIS16470 Initialization
 
   gimbal_start();
-  feeder_start();
   shooter_start();
   rune_init();
   keyboardInit();
+
+  chThdSleepSeconds(1);
+  feeder_start();
 
   init_state = INIT_COMPLETE;
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog

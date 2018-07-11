@@ -8,10 +8,11 @@
 #define GIMBAL_CONTROL_FREQ   1000U
 #define GIMBAL_CUTOFF_FREQ      30U
 
-//#define GIMBAL_ZERO
-//#define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
-//#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
+// #define GIMBAL_ZERO
+// #define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
+// #define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
+//#define RUNE_REMOTE_CONTROL           // turn this on when testing rune
 #define GIMBAL_ENCODER_USE_SPEED
 
 #define GIMBAL_YAW_VEL_I_MAX    2000.0f
@@ -48,6 +49,12 @@ typedef enum {
   GIMBAL_INITALIZATION_TIMEOUT = 1<<2,
   GIMBAL_CONTROL_LOSE_FRAME = 1<<31
 } gimbal_error_t;
+
+typedef enum  {
+  GIMBAL_CTRL_VEL=0,
+  GIMBAL_CTRL_ATTI,
+  GIMBAL_CTRL_POS
+} gimbal_ctrl_state_t;
 
 #define GIMBAL_ERROR_COUNT    3U
 #define GIMBAL_WARNING_COUNT  1U

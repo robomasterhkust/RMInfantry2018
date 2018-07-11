@@ -1239,7 +1239,7 @@
  */
 #define VAL_GPIOI_MODER             (PIN_MODE_ALTERNATE(GPIOI_PNEUMATICS6) |           \
                                      PIN_MODE_INPUT(GPIOI_PIN1) |           \
-                                     PIN_MODE_ALTERNATE(GPIOI_PIN2) |           \
+                                     PIN_MODE_INPUT(GPIOI_PIN2) |           \
                                      PIN_MODE_INPUT(GPIOI_PIN3) |           \
                                      PIN_MODE_INPUT(GPIOI_PIN4) |           \
                                      PIN_MODE_ALTERNATE(GPIOI_PIN5) |           \
@@ -1287,7 +1287,7 @@
                                      PIN_OSPEED_HIGH(GPIOI_PIN15))
 #define VAL_GPIOI_PUPDR             (PIN_PUPDR_PULLDOWN(GPIOI_PNEUMATICS6) |       \
                                      PIN_PUPDR_FLOATING(GPIOI_PIN1) |       \
-                                     PIN_PUPDR_PULLDOWN(GPIOI_PIN2) |       \
+                                     PIN_PUPDR_PULLUP(GPIOI_PIN2) |       \
                                      PIN_PUPDR_FLOATING(GPIOI_PIN3) |       \
                                      PIN_PUPDR_FLOATING(GPIOI_PIN4) |       \
                                      PIN_PUPDR_PULLDOWN(GPIOI_PIN5) |       \
@@ -1319,7 +1319,7 @@
                                      PIN_ODR_HIGH(GPIOI_PIN15))
 #define VAL_GPIOI_AFRL              (PIN_AFIO_AF(GPIOI_PNEUMATICS6, 2U) |          \
                                      PIN_AFIO_AF(GPIOI_PIN1, 0U) |          \
-                                     PIN_AFIO_AF(GPIOI_PIN2, 3U) |          \
+                                     PIN_AFIO_AF(GPIOI_PIN2, 0U) |          \
                                      PIN_AFIO_AF(GPIOI_PIN3, 0U) |          \
                                      PIN_AFIO_AF(GPIOI_PIN4, 0U) |          \
                                      PIN_AFIO_AF(GPIOI_PIN5, 3U) |          \
