@@ -50,7 +50,6 @@ void rune_fire(const float yaw, const float pitch)
     chThdSleepMilliseconds(5);
   }
 
-  #ifdef RUNE_FIRE_SAFE
-    feeder_singleShot();
-  #endif
+  feeder_singleShot();
+  gimbal_Follow();
 }
