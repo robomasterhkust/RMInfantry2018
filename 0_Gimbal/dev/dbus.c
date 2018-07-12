@@ -168,8 +168,8 @@ static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
   {
     txCan.channel0 = RC_Ctl.rc.channel0;
     txCan.channel1 = RC_Ctl.rc.channel1;
-    //txCan.s1 = RC_Ctl.rc.s1;
-    txCan.s1 = RC_S_UP;
+    txCan.s1 = RC_Ctl.rc.s1;
+    //txCan.s1 = RC_S_UP;
     txCan.s2 = RC_Ctl.rc.s2;
     txCan.key_code = RC_Ctl.keyboard.key_code;
     memcpy(&(txmsg.data8), &txCan ,8);
