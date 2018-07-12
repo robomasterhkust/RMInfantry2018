@@ -53,7 +53,8 @@ static THD_WORKING_AREA(rune_wa, 256);
 static THD_FUNCTION(rune_thread, p) {
   (void)p;
   while (!chThdShouldTerminateX()) {
-    if(rune_can->updated && rc->rc.s1 == RC_S_UP){
+    // should be modified to keyboard "g"
+    if(rune_can->updated && (rc->rc.s1 == RC_S_UP)){
       rune_cmd(ENABLE);
       rune_fire(rune_can->pz, rune_can->py);
       rune_cmd(DISABLE);
