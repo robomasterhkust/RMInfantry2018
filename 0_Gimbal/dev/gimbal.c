@@ -285,7 +285,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
   }
 }
 
-static void gimbal_Follow(void)
+void gimbal_Follow(void)
 {
   gimbal.yaw_atti_cmd = gimbal._pIMU->euler_angle[Yaw];
   gimbal.prev_yaw_cmd = gimbal.yaw_atti_cmd - 2 * M_PI * gimbal.rev;

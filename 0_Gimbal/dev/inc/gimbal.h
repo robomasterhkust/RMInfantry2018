@@ -124,5 +124,5 @@ uint32_t gimbal_get_error(void);
 void gimbal_init(void);
 void gimbal_start(void);
 void gimbal_kill(void);
-
+void gimbal_Follow(void);
 #endif
