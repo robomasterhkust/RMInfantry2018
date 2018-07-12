@@ -404,35 +404,20 @@ static void adis16470_update(void)
 #if defined (RM_INFANTRY) || defined (RM_HERO)
 static inline void ADIS16470_txcan(CANDriver *const CANx, const uint16_t SID){
   CANTxFrame txmsg;
-  ADIS16470_canStruct_1 txCan1;
-  ADIS16470_canStruct_2 txCan2;
-  ADIS16470_canStruct_3 txCan3;
+  ADIS16470_canStruct txCan;
 
   txmsg.IDE = CAN_IDE_STD;
   txmsg.SID = SID;
   txmsg.RTR = CAN_RTR_DATA;
-  txmsg.DLC = 0x04;
-
-  txCan1.stamp = adis16470.stamp;
-  txCan2.a = adis16470.qIMU[0];
-  txCan2.b = adis16470.qIMU[1];
-  txCan3.c = adis16470.qIMU[2];
-  txCan3.d = adis16470.qIMU[3];
-
-  chSysLock();
-  memcpy(&(txmsg.data8),&txCan1,8);
-  chSysUnlock();
-  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
-
   txmsg.DLC = 0x08;
 
-  chSysLock();
-  memcpy(&(txmsg.data8),&txCan2,8);
-  chSysUnlock();
-  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+  txCan.a = (int16_t) (adis16470.qIMU[0] * 1000);
+  txCan.b = (int16_t) (adis16470.qIMU[1] * 1000);
+  txCan.c = (int16_t) (adis16470.qIMU[2] * 1000);
+  txCan.d = (int16_t) (adis16470.qIMU[3] * 1000);
 
   chSysLock();
-  memcpy(&(txmsg.data8),&txCan3,8);
+  memcpy(&(txmsg.data8),&txCan,8);
   chSysUnlock();
   canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 }

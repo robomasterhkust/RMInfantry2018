@@ -71,21 +71,17 @@ typedef struct {
     double pz;
     double vy;
     double vz;
+    bool updated;
+    int16_t last_py;
+    int16_t last_pz;
 } Ros_msg_canStruct;
 
 typedef struct {
-    uint32_t stamp;
-} ADIS16470_canStruct_1;
-
-typedef struct {
-    float a;
-    float b;
-} ADIS16470_canStruct_2;
-
-typedef struct {
-    float c;
-    float d;
-} ADIS16470_canStruct_3;
+    int16_t a;
+    int16_t b;
+    int16_t c;
+    int16_t d;
+} ADIS16470_canStruct;
 
 volatile GimbalEncoder_canStruct *can_getGimbalMotor(void);
 
