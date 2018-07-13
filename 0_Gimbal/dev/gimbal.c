@@ -280,7 +280,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
   }
 }
 
-static void gimbal_Follow(void)
+void gimbal_Follow(void)
 {
   gimbal.yaw_atti_cmd = gimbal._pIMU->euler_angle[Yaw];
   gimbal.prev_yaw_cmd = gimbal.yaw_atti_cmd - 2 * M_PI * gimbal.rev;
@@ -406,31 +406,31 @@ static THD_FUNCTION(gimbal_thread, p)
     /* TODO Check the sign here----------------------------------------------------- */
 
     gimbal_checkLimit();
-    #ifdef RUNE_REMOTE_CONTROL
-      if(rc->rc.s1 == RC_S_UP)
-      {
-        ctrl_state = GIMBAL_CTRL_ATTI;
-        gimbal_attitude_cmd();
-      }
-      else
-      {
-        if(ctrl_state == GIMBAL_CTRL_ATTI) //Previous state
-        {
-          chSysLock();
-          gimbal_Follow();
-          chSysUnlock();
-        }
-        else
-          gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
-
-        ctrl_state = GIMBAL_CTRL_VEL;
-      }
-
-    #else
-      ctrl_state = GIMBAL_CTRL_VEL;
-      gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
-    #endif
-
+    // #ifdef RUNE_REMOTE_CONTROL
+    //   if(rc->rc.s1 == RC_S_UP)
+    //   {
+    //     ctrl_state = GIMBAL_CTRL_ATTI;
+    //     gimbal_attitude_cmd();
+    //   }
+    //   else
+    //   {
+    //     if(ctrl_state == GIMBAL_CTRL_ATTI) //Previous state
+    //     {
+    //       chSysLock();
+    //       gimbal_Follow();
+    //       chSysUnlock();
+    //     }
+    //     else
+    //       gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    //
+    //     ctrl_state = GIMBAL_CTRL_VEL;
+    //   }
+    //
+    // #else
+    //   ctrl_state = GIMBAL_CTRL_VEL;
+    //   gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    // #endif
+    gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
                                       gimbal._pIMU->euler_angle[Yaw],

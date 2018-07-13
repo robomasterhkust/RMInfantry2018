@@ -17,6 +17,7 @@
 #define CAN_DBUS_ID                                 0x001
 #define CAN_CHASSIS_SEND_BARREL_ID                  0x002
 #define CAN_NVIDIA_TX2_BOARD_ID                     0x103
+#define CAN_RUNE                                    0x104
 
 #define CAN_ENCODER_RANGE           8192            // 0x2000
 
@@ -71,6 +72,12 @@ typedef struct {
     double vz;
 } Ros_msg_canStruct;
 
+typedef struct{
+  float py;
+  float pz;
+  systime_t last_time;
+} Rune_canStruct;
+
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 
 volatile ChassisEncoder_canStruct* can_getFeederMotor(void);
@@ -78,6 +85,8 @@ volatile ChassisEncoder_canStruct* can_getFeederMotor(void);
 volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void);
 
 volatile Ros_msg_canStruct *can_get_ros_msg(void);
+
+volatile Rune_canStruct *can_get_rune(void);
 
 void can_processInit(void);
 void can_motorSetCurrent(CANDriver *const CANx,

@@ -22,6 +22,8 @@ static systime_t      bullet_out_time;
 static systime_t      feeder_stop_time;
 static thread_reference_t rune_singleShot_thread = NULL;
 
+static systime_t rune_time;
+
 #define FEEDER_BOOST_SETSPEED_SINGLE     5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_BOOST_SETSPEED_AUTO       5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TEST_SETSPEED             3  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
@@ -96,6 +98,7 @@ void feeder_bulletOut(void)
 
 void feeder_singleShot(void)
 {
+  /*
   #ifdef FEEDER_USE_BOOST
     feeder_mode = FEEDER_BOOST;
   #else
@@ -104,7 +107,11 @@ void feeder_singleShot(void)
 
   chSysLock();
   chThdSuspendS(&rune_singleShot_thread);
-  chSysUnlock();
+  chSysUnlock();*/
+
+  feeder_start_time = chVTGetSystemTimeX();
+  feeder_mode = FEEDER_AUTO;
+  rune_time = feeder_start_time + MS2ST(50);
 }
 
 static void feeder_rest(void)
@@ -300,7 +307,7 @@ static THD_FUNCTION(feeder_control, p){
             feeder_mode = feeder_fire_mode;// TODO: select fire mode using keyboard input
           #endif
         }
-        else if(p_dbus->rc.s1 != RC_S_DOWN && !p_dbus->mouse.LEFT)
+        else if(p_dbus->rc.s1 != RC_S_DOWN && !p_dbus->mouse.LEFT && rune_time < chVTGetSystemTimeX())
         {
           if(feeder_mode == FEEDER_AUTO)
           {

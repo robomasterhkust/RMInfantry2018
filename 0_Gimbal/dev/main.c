@@ -128,7 +128,9 @@ int main(void)
   feeder_start();
 
   keyboardInit();
-  rune_init();
+  #ifdef RUNE_REMOTE_CONTROL
+    rune_init();
+  #endif
 
   wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 

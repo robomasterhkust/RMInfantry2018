@@ -13,7 +13,6 @@
 //#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
 //#define GIMBAL_USE_MAVLINK_CMD
-//#define RUNE_REMOTE_CONTROL         //turn this on when testing rune
 #define GIMBAL_ENCODER_USE_SPEED
 
 //gimbal maximum movement speed in radian
@@ -124,5 +123,5 @@ uint32_t gimbal_get_error(void);
 void gimbal_init(void);
 void gimbal_start(void);
 void gimbal_kill(void);
-
+void gimbal_Follow(void);
 #endif

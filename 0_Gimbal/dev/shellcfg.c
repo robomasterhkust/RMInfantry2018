@@ -113,7 +113,6 @@ void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
 {
   rune_cmd(ENABLE);
   rune_fire(0.0f, 0.0f);
-  chThdSleepSeconds(1);
   rune_cmd(DISABLE);
 }
 
