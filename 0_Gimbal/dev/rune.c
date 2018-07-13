@@ -6,7 +6,7 @@
 #include "gimbal.h"
 #include "rune.h"
 #include "shoot.h"
-
+#include "keyboard.h"
 #include "canBusProcess.h"
 
 static GimbalStruct *gimbal;
@@ -14,6 +14,11 @@ static volatile Rune_canStruct *rune_can;
 static PIMUStruct pIMU;
 static RC_Ctl_t* rc;
 static bool rune_state = false;
+
+static bool rune_remote_control_enable = false;
+static bool G_press = false;
+
+static bool rune_can_updated = false;
 
 void rune_cmd(uint8_t cmd) {
 #ifdef RUNE_FIRE_SAFE
@@ -54,7 +59,31 @@ static THD_FUNCTION(rune_thread, p) {
   (void)p;
   while (!chThdShouldTerminateX()) {
     // should be modified to keyboard "g"
-    if(rune_can->updated && (rc->rc.s1 == RC_S_UP)){
+    if(bitmap[KEY_G]){
+      if(!G_press){
+        if(rune_remote_control_enable){
+          rune_remote_control_enable = false;
+        }
+        else{
+          rune_remote_control_enable = true;
+        }
+
+      }
+      G_press = true;
+    }
+    else{
+      G_press = false;
+    }
+
+    //
+    systime_t now = chVTGetSystemTimeX();
+    if (now > MS2ST(500) + rune_can->last_time){
+      rune_can_updated = true;
+    }else{
+      rune_can_updated = false;
+    }
+
+    if(rune_can_updated && (rune_remote_control_enable)){
       rune_cmd(ENABLE);
       rune_fire(rune_can->pz, rune_can->py);
       rune_cmd(DISABLE);

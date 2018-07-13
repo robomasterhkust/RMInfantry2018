@@ -47,7 +47,7 @@ static volatile Ros_msg_canStruct ros_msg = {
     .py = 0, .pz = 0, .vy = 0, .vz = 0};
 
 static volatile Rune_canStruct rune_can = {
-    .py = 0.0, .pz = 0.0, .last_time = 0, .updated = false};
+    .py = 0.0, .pz = 0.0, .last_time = 0};
 
 volatile Ros_msg_canStruct *can_get_ros_msg(void) { return &ros_msg; }
 
@@ -133,11 +133,6 @@ static inline void can_process_rune(volatile Rune_canStruct *rune_can,
   rune_can->py = msg_py * 0.001;
   rune_can->pz = msg_pz * 0.001;
   systime_t now = chVTGetSystemTimeX();
-  if (now > MS2ST(500) + rune_can->last_time) {
-    rune_can->updated = true;
-  } else {
-    rune_can->updated = false;
-  }
   rune_can->last_time = now;
   chSysUnlock();
 }
