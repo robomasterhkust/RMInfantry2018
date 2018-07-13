@@ -15,7 +15,7 @@
 */
 #include "main.h"
 
-static BaseSequentialStream* chp = (BaseSequentialStream*)&SDU1;
+static BaseSequentialStream* chp = (BaseSequentialStream*)&SD3;
 
 #define MPU6500_UPDATE_PERIOD_US 1000000U/MPU6500_UPDATE_FREQ
 static THD_WORKING_AREA(Attitude_thread_wa, 4096);
@@ -166,6 +166,5 @@ bool power_failure(void)
 {
   uint32_t error = gimbal_get_error();
 
-  return error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED) ==
-    (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED);
+  return error & (GIMBAL_PITCH_NOT_CONNECTED | GIMBAL_YAW_NOT_CONNECTED);
 }

@@ -14,11 +14,6 @@
 #include "adis16265.h"
 #include "feeder.h"
 
-#ifdef GIMBAL_USE_MAVLINK_CMD
-  #include "mavlink_comm.h"
-  mavlink_attitude_t* mavlink_attitude;
-#endif
-
 #define GIMBAL_IQ_MAX 7000
 
 static pi_controller_t _yaw_vel;
@@ -532,9 +527,12 @@ static THD_FUNCTION(gimbal_thread, p)
       gimbal.yaw_iq_output, gimbal.pitch_iq_output, feeder_output, 0);
 
     //Stop the thread while calibrating IMU
-    if(gimbal._pIMU->accelerometer_not_calibrated || gimbal._pIMU->gyroscope_not_calibrated || pGyro->adis_gyroscope_not_calibrated)
+    if(gimbal._pIMU->accelerometer_not_calibrated ||
+       gimbal._pIMU->gyroscope_not_calibrated || 
+       pGyro->adis_gyroscope_not_calibrated)
     {
       gimbal_kill();
+      gimbal.errorFlag = 0;
       RC_canTxCmd(DISABLE);
       chThdExit(MSG_OK);
     }

@@ -191,7 +191,7 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
 
         pIMU->state == IMU_STATE_CALIBRATING;
 
-        chThdSleepMilliseconds(10);
+        chThdSleepSeconds(2);
         calibrate_accelerometer(pIMU);
         chThdResume(&(pIMU->imu_Thd), MSG_OK);
 
@@ -208,7 +208,7 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
 
         pIMU->state == IMU_STATE_CALIBRATING;
 
-        chThdSleepMilliseconds(10);
+        chThdSleepSeconds(2);
         calibrate_gyroscope(pIMU);
         chThdResume(&(pIMU->imu_Thd), MSG_OK);
 
@@ -221,14 +221,14 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
     else if(!strcmp(argv[0], "adi"))
     {
       pGyro->adis_gyroscope_not_calibrated = true;
-      chThdSleepMilliseconds(10);
+      chThdSleepSeconds(2);
       calibrate_adi(pGyro,false); //fast calibration ~30s
       chThdResume(&(pGyro->adis_Thd), MSG_OK);
     }
     else if(!strcmp(argv[0], "adi-full"))
     {
       pGyro->adis_gyroscope_not_calibrated = true;
-      chThdSleepMilliseconds(10);
+      chThdSleepSeconds(2);
       calibrate_adi(pGyro,true); //full calibration ~5min
       chThdResume(&(pGyro->adis_Thd), MSG_OK);
     }
