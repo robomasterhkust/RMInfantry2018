@@ -16,7 +16,7 @@ RC_Ctl_t* rc;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
-static bool Press =false;
+static bool Z_Press =false;
 static speed_mode_t speed_mode;
 static uint8_t shooting_speed = 0;
 static PWMDriver PWMD12;
@@ -59,11 +59,14 @@ static THD_WORKING_AREA(pwm_thd_wa, 512);
 static THD_FUNCTION(pwm_thd, arg) {
     (void)arg;
 
-    const float alpha = 0.015f;
+    const float alpha = 0.004f;
     float speed = 0;
 
     while (!chThdShouldTerminateX())
     {
+      switch (rc->rc.s1){
+        case RC_S_UP:
+        {
           #ifdef SHOOTER_USE_RC
           switch (rc->rc.s2) {
             case RC_S_UP:
@@ -81,6 +84,26 @@ static THD_FUNCTION(pwm_thd, arg) {
               break;
           }
           #endif
+        }break;
+        case RC_S_MIDDLE:{
+          if(bitmap[KEY_Z] == 1){
+            Z_Press = true;
+          }
+          else{
+            if(Z_Press == true){
+              if(shooting_speed == speed_mode.slow_speed){
+                shooting_speed = speed_mode.fast_speed;
+              }
+              else{
+                shooting_speed = speed_mode.slow_speed;
+              }
+              Z_Press = false;
+            }
+          }
+        }break;
+      }
+
+
 
       shooter_control(shooting_speed);
       speed = alpha * (float)speed_sp + (1-alpha) * speed;
@@ -141,7 +164,7 @@ void shooter_init(void)
 {
     rc = RC_get();
     pwm12_start();
-    speed_mode.fast_speed=150;
+    speed_mode.fast_speed=175;
     speed_mode.slow_speed=110;
     speed_mode.stop = 100;
     #ifndef SHOOTER_SETUP

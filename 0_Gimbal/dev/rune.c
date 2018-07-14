@@ -51,5 +51,5 @@ void rune_fire(const float yaw, const float pitch)
   }
 
   feeder_singleShot();
-  gimbal_Follow();
+//  gimbal_Follow();
 }

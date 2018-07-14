@@ -14,7 +14,7 @@
 #define FEEDER_OUTPUT_MAX_BACK  12000U  //output limit for stuck-bullet turning back
 #define FEEDER_ERROR_COUNT        800U
 
-#define FEEDER_USE_BOOST              //Very Violent!!
+//#define FEEDER_USE_BOOST              //Very Violent!!
 #ifdef FEEDER_USE_BOOST
   #define FEEDER_BOOST_POWER  16383U
 #endif
