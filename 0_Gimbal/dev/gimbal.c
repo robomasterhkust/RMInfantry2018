@@ -14,11 +14,6 @@
 #include "adis16265.h"
 #include "feeder.h"
 
-#ifdef GIMBAL_USE_MAVLINK_CMD
-  #include "mavlink_comm.h"
-  mavlink_attitude_t* mavlink_attitude;
-#endif
-
 #define GIMBAL_IQ_MAX 7000
 
 static pi_controller_t _yaw_vel;
@@ -285,7 +280,7 @@ static void gimbal_encoderUpdate(GimbalMotorStruct* motor, uint8_t id)
   }
 }
 
-static void gimbal_Follow(void)
+void gimbal_Follow(void)
 {
   gimbal.yaw_atti_cmd = gimbal._pIMU->euler_angle[Yaw];
   gimbal.prev_yaw_cmd = gimbal.yaw_atti_cmd - 2 * M_PI * gimbal.rev;
@@ -411,31 +406,31 @@ static THD_FUNCTION(gimbal_thread, p)
     /* TODO Check the sign here----------------------------------------------------- */
 
     gimbal_checkLimit();
-    #ifdef RUNE_REMOTE_CONTROL
-      if(rc->rc.s1 == RC_S_UP)
-      {
-        ctrl_state = GIMBAL_CTRL_ATTI;
-        gimbal_attitude_cmd();
-      }
-      else
-      {
-        if(ctrl_state == GIMBAL_CTRL_ATTI) //Previous state
-        {
-          chSysLock();
-          gimbal_Follow();
-          chSysUnlock();
-        }
-        else
-          gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
-
-        ctrl_state = GIMBAL_CTRL_VEL;
-      }
-
-    #else
-      ctrl_state = GIMBAL_CTRL_VEL;
-      gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
-    #endif
-
+    // #ifdef RUNE_REMOTE_CONTROL
+    //   if(rc->rc.s1 == RC_S_UP)
+    //   {
+    //     ctrl_state = GIMBAL_CTRL_ATTI;
+    //     gimbal_attitude_cmd();
+    //   }
+    //   else
+    //   {
+    //     if(ctrl_state == GIMBAL_CTRL_ATTI) //Previous state
+    //     {
+    //       chSysLock();
+    //       gimbal_Follow();
+    //       chSysUnlock();
+    //     }
+    //     else
+    //       gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    //
+    //     ctrl_state = GIMBAL_CTRL_VEL;
+    //   }
+    //
+    // #else
+    //   ctrl_state = GIMBAL_CTRL_VEL;
+    //   gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    // #endif
+    gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
                                       gimbal._pIMU->euler_angle[Yaw],
@@ -532,9 +527,12 @@ static THD_FUNCTION(gimbal_thread, p)
       gimbal.yaw_iq_output, gimbal.pitch_iq_output, feeder_output, 0);
 
     //Stop the thread while calibrating IMU
-    if(gimbal._pIMU->accelerometer_not_calibrated || gimbal._pIMU->gyroscope_not_calibrated || pGyro->adis_gyroscope_not_calibrated)
+    if(gimbal._pIMU->accelerometer_not_calibrated ||
+       gimbal._pIMU->gyroscope_not_calibrated || 
+       pGyro->adis_gyroscope_not_calibrated)
     {
       gimbal_kill();
+      gimbal.errorFlag = 0;
       RC_canTxCmd(DISABLE);
       chThdExit(MSG_OK);
     }

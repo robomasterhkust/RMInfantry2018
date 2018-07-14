@@ -15,7 +15,7 @@
 #include "chprintf.h"
 #include <string.h>
 
-static BaseSequentialStream* chp = (BaseSequentialStream*)&SDU1;
+static BaseSequentialStream* chp = (BaseSequentialStream*)&SD3;
 
 static uint8_t   side_data_collected[SIDE_COUNT_MAX] = { false, false, false, false, false, false };
 static uint8_t   side_complete_count          = 0;
@@ -392,6 +392,7 @@ void calibrate_gyroscope(PIMUStruct pIMU)
   calibration_state_record = STATE_READ_AVERAGE;
   while (pIMU->gyroscope_not_calibrated)
   {
+
     if ((calibration_state_record == STATE_READ_AVERAGE) && pIMU->gyroscope_not_calibrated)
     {
       chprintf(chp,"reading gyroscope, hold still...\r\n");
