@@ -131,7 +131,9 @@ int main(void)
 
   gimbal_start();
   shooter_start();
-  rune_init();
+  #ifdef RUNE_REMOTE_CONTROL
+    rune_init();
+  #endif
   keyboardInit();
 
   chThdSleepSeconds(1);
