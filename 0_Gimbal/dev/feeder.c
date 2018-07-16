@@ -14,7 +14,7 @@ static int16_t FEEDER_SPEED_SP_RPM  = 0;
 
 static int16_t        feeder_output;
 static uint8_t        level;
-static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
+static uint8_t        feeder_fire_mode = FEEDER_SINGLE; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
 static float          feeder_brakePos = 0.0f;
 static systime_t      feeder_start_time;
@@ -82,7 +82,7 @@ void feeder_bulletOut(void)
   if(chVTGetSystemTimeX() > bullet_out_time + MS2ST(10))
   {
     bullet_out_time = chVTGetSystemTimeX();
-    LEDR_TOGGLE();
+    //LEDR_TOGGLE();
 
     #ifdef FEEDER_USE_BOOST
       if(feeder_mode == FEEDER_BOOST)
