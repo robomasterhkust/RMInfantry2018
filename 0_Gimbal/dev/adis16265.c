@@ -10,6 +10,7 @@
 #include "math_misc.h"
 #include "params.h"
 #include "adis16265.h"
+#include "string.h"
 
 #if !defined(GYRO_ADIS)
 #error "Unknown type of Gyro!"

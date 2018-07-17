@@ -1,0 +1,18 @@
+OpenWindow="Global Data", DockArea=RIGHT, x=0, y=0, w=600, h=294, FilterBarShown=1, 
+OpenWindow="Registers", DockArea=RIGHT, x=0, y=0, w=600, h=294, FilterBarShown=0, 
+OpenWindow="Console", DockArea=BOTTOM, x=1, y=0, w=896, h=118, FilterBarShown=0, 
+OpenWindow="Watched Data", DockArea=RIGHT, x=0, y=1, w=600, h=521, FilterBarShown=0, 
+OpenWindow="Breakpoints", DockArea=LEFT, x=0, y=0, w=387, h=260, FilterBarShown=0, 
+OpenWindow="Functions", DockArea=LEFT, x=0, y=2, w=387, h=305, FilterBarShown=1, 
+OpenWindow="Source Files", DockArea=LEFT, x=0, y=1, w=387, h=265, FilterBarShown=1, 
+OpenWindow="Data Graph", DockArea=BOTTOM, x=0, y=0, w=1023, h=118, FilterBarShown=0, 
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=600, h=294, FilterBarShown=0, ExecCountersShown=0
+OpenToolbar="Debug", Floating=0, x=0, y=0
+TableHeader="Global Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type"], ColWidths=[148;84;84;49;308]
+TableHeader="Registers", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[157;155;271]
+TableHeader="Watched Data", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Location";"Size";"Refresh";"Type"], ColWidths=[132;189;98;44;63;147]
+TableHeader="Breakpoints", SortCol="State", SortOrder="ASCENDING", VisibleCols=["State";"Location";"Permitted Impl.";"Actual Impl.";"Context";"Task Filter";"Skip #";"Condition"], ColWidths=[73;144;149;125;290;109;85;106]
+TableHeader="Functions", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[145;101;66;84;139]
+TableHeader="Source Files", SortCol="File", SortOrder="ASCENDING", VisibleCols=["File";"Status";"Size";"#Insts";"Path"], ColWidths=[150;86;66;84;625]
+TableHeader="Data Graph Samples", SortCol="Index", SortOrder="ASCENDING", VisibleCols=["Index";"Time"], ColWidths=[10;630]
+TableHeader="Data Graph Setup", SortCol="Expression", SortOrder="DESCENDING", VisibleCols=["Expression";"Type";"Value";"Min";"Max";"Average";"# Changes";"Min. Change";"Max. Change"], ColWidths=[128;48;56;41;56;84;78;85;447]

@@ -43,12 +43,6 @@ static THD_FUNCTION(Attitude_thread, p)
   else
     pIMU->errorCode |= IMU_TEMP_ERROR;
 
-  while(pIMU->temperature < 61.0f)
-  {
-    imuGetData(pIMU);
-    chThdSleepMilliseconds(50);
-  }
-
   pIMU->state = IMU_STATE_READY;
   attitude_imu_init(pIMU);
 
@@ -66,7 +60,8 @@ static THD_FUNCTION(Attitude_thread, p)
     }
 
     if(pIMU->temperature < 55.0f || pIMU->temperature < 70.0f)
-    pIMU->errorCode |= IMU_TEMP_WARNING;
+    	pIMU->errorCode |= IMU_TEMP_WARNING;
+
 
     imuGetData(pIMU);
     //ist8310_update();
@@ -122,46 +117,47 @@ int main(void)
   gyro_init();
   can_processInit();
   RC_init();
-  mavlinkComm_init();
+//  mavlinkComm_init();
 
-  while(!power_check())
-    chThdSleepMilliseconds(200);
+//  while(!power_check())
+//    chThdSleepMilliseconds(200);
 
   /* Init sequence 3: actuators, display*/
   gimbal_init();
+  gimbal_start();
   shooter_init();
-  //feederInit();
+//feederInit();
   sen_loader_init();
   palSetPad(GPIOG, 13);
-  wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
+//  wdgStart(&WDGD1, &wdgcfg); //Start the watchdog
 
   while (true)
   {
-    uint32_t error = gimbal_get_error();
-
-    if(!power_failure())
-    {
-      wdgReset(&WDGD1);
-
-      /* REBOOT */
-
-      /*
-      LEDY_ON();
-      chThdSleepMilliseconds(500);
-
-      chSysDisable();
-      {
-        __DSB();
-        SCB->AIRCR  = ((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
-                       (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
-                        SCB_AIRCR_SYSRESETREQ_Msk);      // Keep priority group unchanged
-        __DSB();                               // Ensure completion of memory access
-        while(true);
-      }*/
-    }
-    else
-      gimbal_kill();
-
+//    uint32_t error = gimbal_get_error();
+//
+//    if(!power_failure())
+//    {
+//      wdgReset(&WDGD1);
+//
+//      /* REBOOT */
+//
+//      /*
+//      LEDY_ON();
+//      chThdSleepMilliseconds(500);
+//
+//      chSysDisable();
+//      {
+//        __DSB();
+//        SCB->AIRCR  = ((0x5FA << SCB_AIRCR_VECTKEY_Pos)      |
+//                       (SCB->AIRCR & SCB_AIRCR_PRIGROUP_Msk) |
+//                        SCB_AIRCR_SYSRESETREQ_Msk);      // Keep priority group unchanged
+//        __DSB();                               // Ensure completion of memory access
+//        while(true);
+//      }*/
+//    }
+//    else
+//      gimbal_kill();
+	//judgeDataWrite(100,100,100,2);
     chThdSleepMilliseconds(200);
   }
 

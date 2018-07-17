@@ -274,22 +274,22 @@ size_t judgeDataWrite(float a, float b, float c, uint8_t mask) {
 
   sdtxbuf[0] = JUDGE_FRAMEHEAD;                             //Append frame head
   sdtxbuf[1] = 0;                                           //Append frame length : 1
-  sdtxbuf[2] = 17;                                          //Append frame length : 0
+  sdtxbuf[2] = 13;                                          //Append frame length : 0
   sdtxbuf[3] = outcount;                                    //Append frame count
   outcount++;
   Append_CRC8_Check_Sum(sdtxbuf, 5);    //Append frame CRC8
 
-  sdtxbuf[6] = 1;                                           //Append frame type : 1
-  sdtxbuf[7] = 0;                                           //Append frame type : 0
+  sdtxbuf[5] = 1;                                           //Append frame type : 1
+  sdtxbuf[6] = 0;                                           //Append frame type : 0
 
-  memcpy(sdtxbuf + 8, &a, 4);                         //Append frame data
-  memcpy(sdtxbuf + 12, &b, 4);                        //Append frame data
-  memcpy(sdtxbuf + 16, &c, 4);                        //Append frame data
-  memcpy(sdtxbuf + 17, &mask, 1);                     //Append frame data
+  memcpy(sdtxbuf + 7, &a, 4);                         //Append frame data
+  memcpy(sdtxbuf + 11, &b, 4);                        //Append frame data
+  memcpy(sdtxbuf + 15, &c, 4);                        //Append frame data
+  memcpy(sdtxbuf + 19, &mask, 1);                     //Append frame data
 
-  Append_CRC16_Check_Sum(sdtxbuf, 20);               //Append frame CRC16
+  Append_CRC16_Check_Sum(sdtxbuf, 22);               //Append frame CRC16
 
-  outsize = sdWriteTimeout(SERIAL_JUDGE, sdtxbuf, 20, 20);  //Send frame
+  outsize = sdWriteTimeout(SERIAL_JUDGE, sdtxbuf, 22, 22);  //Send frame
 
   return outsize;
 

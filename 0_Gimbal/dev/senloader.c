@@ -69,7 +69,7 @@ static float senloader_pos_pid(pid_profile_t* setting, sen_pid_controller_t* dat
 
 int32_t SP = 2500;
 int32_t STUCK = 1500;
-uint8_t DEBUG = 0;
+uint8_t DEBUG = 1;
 
 static THD_WORKING_AREA(senloader_control_wa, 2048);
 static THD_FUNCTION(senloader_control, p) {
@@ -80,56 +80,10 @@ static THD_FUNCTION(senloader_control, p) {
 
 	while (!chThdShouldTerminateX()) {
 
-//		if (!DEBUG && control->rc.s1 == 2) {
-//			SP += abs(senloader._encoder->total_ecd - SP) < 2000 ? BULLET_ROTATION_CNT : 0;
-//		}
-//		while ((abs(senloader._encoder->total_ecd - SP) < 2000)) {
-//			senloader.pos_sp = senloader_pos_pid(&senloader.setting,
-//								&senloader.pidcontroller, SP, senloader._encoder->total_ecd);
-//			can_motorSetCurrent(LOADER_CAN, 0x200, senloader.pos_sp, 0, 0, 0);
-//		SUM = 0;
-//		senloader.torque[senloader.torque_last] = senloader._encoder->raw_torque;
-//		senloader.torque_last = senloader.torque_last < (TORQUE_REC_LEN - 1) ? senloader.torque_last + 1 : 0;
-//		for (i = 0; i < TORQUE_REC_LEN; i++) {
-//			SUM += senloader.torque[i];
-//		}
-//		senloader.torque_avg = SUM / TORQUE_REC_LEN;
-//			if (senloader.torque_avg > 1000) {
-//				can_motorSetCurrent(LOADER_CAN, 0x200, -800, 0, 0, 0);
-//				chThdSleep(MS2ST(200));
-//				SP = senloader._encoder->total_ecd;
-//			}
-//			chThdSleep(MS2ST(1));
-//		}
-
-//		if (senloader.torque_avg > 1000) {
-//
-//			can_motorSetCurrent(LOADER_CAN, 0x200, -200, 0, 0, 0);
-//			chThdSleep(MS2ST(400));
-//
-//		} else {
-//
-//			if (!DEBUG && control->rc.s1 == 2) {
-//
-//				can_motorSetCurrent(LOADER_CAN, 0x200, 600, 0, 0, 0);
-//
-//			}
-//
-//		}
-
-//		if (!DEBUG && control->rc.s1 == 2) {
-//			can_motorSetCurrent(LOADER_CAN, 0x200, 600, 0, 0, 0);
-//		} else {
-//			can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, 0, 0);
-//		}
-//
-//		chThdSleep(MS2ST(20));
-
-
-
-		if ((!DEBUG && control->rc.s1 == 2 ||
-			mavv->roll != 0) &&
-			judge_fb->shooter_heat < (SENTRY_HEAT_LIMIT - SENTRY_HEAT_BUFFER)) {
+//		if ((!DEBUG && control->rc.s1 == 2 ||
+//			mavv->roll != 0) &&
+//			judge_fb->shooter_heat < (SENTRY_HEAT_LIMIT - SENTRY_HEAT_BUFFER)) {
+		if(1) {
 
 			for (i = 0; i < 50; i++) {
 				senloader.speed_sp = senloader_pos_pid(&senloader.setting, &senloader.pidcontroller,
@@ -139,7 +93,7 @@ static THD_FUNCTION(senloader_control, p) {
 			}
 
 			if (senloader._encoder->raw_speed < STUCK) {
-				can_motorSetCurrent(LOADER_CAN, 0x200, -600, 0, 0, 0);
+				can_motorSetCurrent(LOADER_CAN, 0x200, -1000, 0, 0, 0);
 				chThdSleep(MS2ST(300));
 			}
 
@@ -168,8 +122,8 @@ void sen_loader_init (void) {
 	memset(&senloader, 0, sizeof(sen_motorStruct));
 
 	senloader._encoder = can_getLoaderMotor();
-	SP = 1600;
-	STUCK = 1000;
+	SP = 2000;
+	STUCK = 400;
 
 	senloader.inverted = 0;
 

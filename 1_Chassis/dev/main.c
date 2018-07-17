@@ -102,6 +102,8 @@ int main(void) {
 //    pGyro = gyro_init();
 //    tempControllerInit(); //*
 
+    adis16470_init();
+
     //mavlinkComm_init();
 
     //chassis_init();

@@ -184,6 +184,8 @@ typedef struct user_data_t{
 
 judge_fb_t* judgeDataGet(void);
 
+size_t judgeDataWrite(float a, float b, float c, uint8_t mask);
+
 void judgedecode(void);
 
 void judgeinit(void);

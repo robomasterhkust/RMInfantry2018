@@ -5,19 +5,24 @@
 #include "mpu6500.h"
 #include "params.h"
 
-#define GIMBAL_CONTROL_FREQ 1000U
-#define GIMBAL_CUTOFF_FREQ    30U
+#define GIMBAL_CONTROL_FREQ   1000U
+#define GIMBAL_CUTOFF_FREQ      30U
 
 //#define GIMBAL_ZERO
+//#define GIMBAL_INIT_TEST_PITCH    //Set Initialization position and PID value
 //#define GIMBAL_INIT_TEST          //Set Initialization position and PID value
 //#define GIMBAL_FF_TEST              //Set Initialization position and PID value
-#define GIMBAL_USE_MAVLINK_CMD
+//#define GIMBAL_USE_MAVLINK_CMD
 #define GIMBAL_ENCODER_USE_SPEED
+
+//gimbal maximum movement speed in radian
+#define GIMBAL_MAX_SPEED_PITCH      4.0f
+#define GIMBAL_MAX_SPEED_YAW        7.0f
 
 #define GIMBAL_CAN  &CAND1
 #define GIMBAL_CAN_EID  0x1FF
 
-#define GIMBAL_YAW_GEAR 0.57143f
+#define GIMBAL_YAW_GEAR 0.25f
 
 typedef enum {
   GIMBAL_STATE_UNINIT = 0,
@@ -37,6 +42,12 @@ typedef enum {
   GIMBAL_INITALIZATION_TIMEOUT = 1<<2,
   GIMBAL_CONTROL_LOSE_FRAME = 1<<31
 } gimbal_error_t;
+
+typedef enum {
+  GIMBAL_CTRL_VEL = 0,
+  GIMBAL_CTRL_ATTI,
+  GIMBAL_CTRL_POS
+} gimbal_ctrl_state_t;
 
 #define GIMBAL_ERROR_COUNT    3U
 #define GIMBAL_WARNING_COUNT  1U
@@ -68,10 +79,11 @@ typedef struct{
 
 typedef struct{
   uint8_t state;
-  uint32_t errorFlag;
 
   int32_t rev;
   float prev_yaw_cmd;
+  uint32_t errorFlag;
+
   volatile IMUStruct* _pIMU;
   volatile GimbalEncoder_canStruct* _encoder;
 
@@ -105,9 +117,11 @@ typedef struct{
 }  GimbalStruct;
 
 GimbalStruct* gimbal_get(void);
+void gimbal_setRune(uint8_t cmd);
 GimbalStruct* gimbal_get_sys_iden(void);
 uint32_t gimbal_get_error(void);
 void gimbal_init(void);
+void gimbal_start(void);
 void gimbal_kill(void);
-
+void gimbal_Follow(void);
 #endif
