@@ -174,13 +174,13 @@ static void gimbal_checkLimit(void)
 //          yaw_diff > -gimbal.axis_limit[GIMBAL_YAW])
 //    gimbal.state &= ~(GIMBAL_YAW_AT_UP_LIMIT | GIMBAL_YAW_AT_LOW_LIMIT);
 
-  if(pitch_diff < -gimbal.axis_limit[GIMBAL_PITCH] - AXIS_LIMIT_TH2)
+
+  //gimbal.axis_limit: 0 = yaw min, yaw max, pitch min , pitch max = 3
+  if(pitch_diff < gimbal.axis_limit[2] - AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_PITCH_AT_LOW_LIMIT;
-  else if(pitch_diff > gimbal.axis_limit[GIMBAL_PITCH] + AXIS_LIMIT_TH2)
+  else if(pitch_diff > gimbal.axis_limit[3] + AXIS_LIMIT_TH2)
     gimbal.state |= GIMBAL_PITCH_AT_UP_LIMIT;
-  else if(pitch_diff < gimbal.axis_limit[GIMBAL_PITCH] &&
-          pitch_diff > -gimbal.axis_limit[GIMBAL_PITCH])
-    gimbal.state &= ~(GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT);
+  else  gimbal.state &= ~(GIMBAL_PITCH_AT_UP_LIMIT | GIMBAL_PITCH_AT_LOW_LIMIT);
 
 }
 
