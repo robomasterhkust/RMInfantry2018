@@ -14,6 +14,8 @@ static int16_t FEEDER_SPEED_SP_RPM  = 0;
 
 static int16_t        feeder_output;
 static uint8_t        level;
+
+static uint8_t        feeder_boost_mode_error;
 static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
 static feeder_mode_t  feeder_mode = FEEDER_STOP;
 static float          feeder_brakePos = 0.0f;
@@ -22,10 +24,10 @@ static systime_t      bullet_out_time;
 static systime_t      feeder_stop_time;
 static thread_reference_t rune_singleShot_thread = NULL;
 
-static systime_t rune_time;
+static feeder_error_t feeder_error_flag;
 
 #define FEEDER_BOOST_SETSPEED_SINGLE    20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
-#define FEEDER_BOOST_SETSPEED_AUTO      20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_AUTO      30  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TEST_SETSPEED             3  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_BOOST_PERIOD_MS          30
 
@@ -40,7 +42,13 @@ pid_struct  vel_pid /*= {0, 0, 0, 0}*/;
 pid_struct  pos_pid /*= {5.0, 0, 0, 0, 0}*/;
 pid_struct  rest_pid /*= {0.45, 0, 0, 0, 0}*/;
 
-uint16_t error_count = 0;
+static uint32_t bulletCount      = 0;
+static uint32_t bulletCount_stop = 0;
+
+feeder_error_t feeder_get_error(void)
+{
+  return feeder_error_flag;
+}
 
 int16_t feeder_canUpdate(void)
 {
@@ -50,14 +58,6 @@ int16_t feeder_canUpdate(void)
     can_motorSetCurrent(FEEDER_CAN, FEEDER_CAN_EID,\
         feeder_output, 0, 0, 0);
   #endif
-}
-
-feeder_mode_t* get_feeder(void){
-  return &feeder_mode;
-}
-
-uint8_t* get_feeder_fire_mode(void){
-  return &feeder_fire_mode;
 }
 
 float feeder_getDelay(void)
@@ -78,25 +78,25 @@ void feeder_bulletOut(void)
   {
     bullet_out_time = chVTGetSystemTimeX();
 
-    #ifdef FEEDER_USE_BOOST
-      if(feeder_mode == FEEDER_BOOST)
-      {
-        if(rune_singleShot_thread == NULL) //Disable mode selection during rune shooting
-          feeder_mode = feeder_fire_mode;// TODO: select fire mode using keyboard input
-        else
-          feeder_mode = FEEDER_SINGLE;
+    if(feeder_mode == FEEDER_BOOST)
+    {
+      if(rune_singleShot_thread == NULL) //Disable mode selection during rune shooting
+        feeder_mode = feeder_fire_mode;// TODO: select fire mode using keyboard input
+      else
+        feeder_mode = FEEDER_SINGLE;
 
-        vel_pid.inte = 0; //reset pid integrator
-        bullet_delay = ST2US(bullet_out_time - feeder_start_time)/1e3f;
-      }
-    #endif
+      vel_pid.inte = 0; //reset pid integrator
+      bullet_delay = ST2US(bullet_out_time - feeder_start_time)/1e3f;
+    }
 
     if(feeder_mode == FEEDER_SINGLE)
     {
       if(rune_singleShot_thread != NULL)
       {
+        chSysLockFromISR();
         chThdResumeI(&rune_singleShot_thread, MSG_OK);
         rune_singleShot_thread = NULL;
+        chSysUnlockFromISR();
       }
       feeder_brake();
       feeder_mode = FEEDER_FINISHED;
@@ -106,21 +106,14 @@ void feeder_bulletOut(void)
 
 void feeder_singleShot(void)
 {
-  /*
-  #ifdef FEEDER_USE_BOOST
+  if(!feeder_boost_mode_error)
     feeder_mode = FEEDER_BOOST;
-  #else
+  else
     feeder_mode = FEEDER_SINGLE;
-  #endif
 
   chSysLock();
   chThdSuspendS(&rune_singleShot_thread);
-  chSysUnlock();*/
-
-  feeder_start_time = chVTGetSystemTimeX();
-  feeder_mode = FEEDER_BOOST;
-  feeder_fire_mode = FEEDER_SINGLE;
-  rune_time = feeder_start_time + MS2ST(50);
+  chSysUnlock();
 }
 
 static void feeder_rest(void)
@@ -173,8 +166,10 @@ static int16_t feeder_controlPos(const float target, const float output_max){
     return feeder_controlVel(speed_sp, output_max);
 }
 
-static void feeder_func(){
+static void feeder_func(BarrelStatus_canStruct* barrel_info){
     feeder_output = 0.0f;
+    static uint16_t error_count;
+
     switch (feeder_mode){
         case FEEDER_FINISHED:
         case FEEDER_OVERHEAT:
@@ -188,15 +183,51 @@ static void feeder_func(){
             }
             break;
         case FEEDER_SINGLE:
-            #ifndef FEEDER_USE_BOOST
-              if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
+            if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
+            {
+              if(rune_singleShot_thread != NULL)
               {
-                feeder_mode = FEEDER_FINISHED;
-                feeder_brake();
+                chSysLock();
+                chThdResumeS(&rune_singleShot_thread, MSG_OK);
+                rune_singleShot_thread = NULL;
+                chSysUnlock();
               }
-            #endif
+
+              feeder_mode = FEEDER_FINISHED;
+              feeder_brake();
+            }
+
+            if(feeder_boost_mode_error)
+              FEEDER_SPEED_SP_RPM = 5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+
+            goto SPEED_CONTROL;
         case FEEDER_AUTO:
             //error detecting
+            if(barrel_info->heatLimit == LEVEL1_HEATLIMIT){
+              level = 1;
+              FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+            }
+            else if(barrel_info->heatLimit == LEVEL2_HEATLIMIT){
+              level =2;
+              FEEDER_SPEED_SP_RPM = 6  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+            }
+            else if(barrel_info->heatLimit == LEVEL3_HEATLIMIT){
+              level =3;
+              FEEDER_SPEED_SP_RPM = 10  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+            }
+            else
+            {
+              #ifdef RM_DEBUG
+                level = -1;
+                barrel_info->heatLimit = -1;
+                FEEDER_SPEED_SP_RPM = FEEDER_TEST_SETSPEED;
+              #else
+                //system_setWarningFlag(); //No judgement system data
+              #endif
+            }
+
+            SPEED_CONTROL:
+
             if (
                  state_count((feeder_encode->raw_speed < 30) &&
                              (feeder_encode->raw_speed > -30),
@@ -218,7 +249,6 @@ static void feeder_func(){
             feeder_canUpdate();
 
             break;
-        #ifdef FEEDER_USE_BOOST
           case FEEDER_BOOST:
             if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000)) //No bullet, exit
             {
@@ -255,7 +285,6 @@ static void feeder_func(){
             }
 
             break;
-        #endif //FEEDER_USE_BOOST
         default:
             feeder_output = 0;
             feeder_canUpdate();
@@ -267,30 +296,73 @@ static THD_WORKING_AREA(feeder_control_wa, 512);
 static THD_FUNCTION(feeder_control, p){
     (void) p;
     chRegSetThreadName("feeder controller");
+    uint16_t feeder_connection_error_counter = 0;
+    uint16_t limit_switch_error_counter[3] = {0, 0, 0};
+
+    uint16_t prev_heat_value = 0;
     while(!chThdShouldTerminateX())
     {
-        if(barrel_info->heatLimit == LEVEL1_HEATLIMIT){
-          level = 1;
-          FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-        }
-        else if(barrel_info->heatLimit == LEVEL2_HEATLIMIT){
-          level =2;
-          FEEDER_SPEED_SP_RPM = 6  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-        }
-        else if(barrel_info->heatLimit == LEVEL3_HEATLIMIT){
-          level =3;
-          FEEDER_SPEED_SP_RPM = 10  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-        }
-        else
+        if(state_count(!(feeder_encode->updated), 100, &feeder_connection_error_counter))
         {
-          #ifdef RM_DEBUG
-            level = -1;
-            barrel_info->heatLimit = -1;
-            FEEDER_SPEED_SP_RPM = FEEDER_TEST_SETSPEED;
-          #else
-            //system_setWarningFlag(); //No judgement system data
-          #endif
+          feeder_error_flag |= FEEDER_CONNECTION_ERROR;
+          chThdExit(MSG_OK);
+        } //Feeder motor error detection
+
+        //Jsystem bullet feedback
+        if(barrel_info->currentHeatValue > prev_heat_value)
+        {
+          if(feeder_boost_mode_error)
+          {
+            if(feeder_mode == FEEDER_SINGLE)
+            {
+              if(rune_singleShot_thread != NULL)
+              {
+                chSysLock();
+                chThdResumeS(&rune_singleShot_thread, MSG_OK);
+                rune_singleShot_thread = NULL;
+                chSysUnlock();
+              }
+
+              feeder_brake();
+              feeder_mode = FEEDER_FINISHED;
+            }
+          }
+          else if(chVTGetSystemTimeX() - bullet_out_time > MS2ST(500))
+          {
+            limit_switch_error_counter[0]++;
+            bullet_out_time = chVTGetSystemTimeX();
+
+            if(limit_switch_error_counter > 3)
+            {
+              feeder_error_flag |= LIMIT_SWITCH_ERROR_0;
+              extChannelDisable(&EXTD1, 1);
+              feeder_boost_mode_error = true;
+            }
+          }
+          else
+            limit_switch_error_counter[0] = 0;
         }
+        prev_heat_value = barrel_info->currentHeatValue;
+
+        if(state_count(//palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NO) &&
+                       palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NC),
+                    500, limit_switch_error_counter + 1))
+        {
+          feeder_error_flag |= LIMIT_SWITCH_ERROR_1;
+          if(!feeder_boost_mode_error)
+            extChannelDisable(&EXTD1, 1);
+          feeder_boost_mode_error = true;
+        }
+
+/*
+        if(state_count(//!palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NO) &&
+                       !palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NC),
+                    500, limit_switch_error_counter + 2))
+        {
+          feeder_error_flag |= LIMIT_SWITCH_ERROR_2;
+          system_setErrorFlag();
+          feeder_boost_mode_error = true;
+        }*/
 
         if(feeder_mode == FEEDER_OVERHEAT){
           if(barrel_info->currentHeatValue < barrel_info->heatLimit - 40){
@@ -310,13 +382,13 @@ static THD_FUNCTION(feeder_control, p){
         {
           feeder_start_time = chVTGetSystemTimeX();
 
-          #ifdef FEEDER_USE_BOOST
+          if(!feeder_boost_mode_error)
             feeder_mode = FEEDER_BOOST;
-          #else
+          else
             feeder_mode = feeder_fire_mode;// TODO: select fire mode using keyboard input
-          #endif
+
         }
-        else if(p_dbus->rc.s1 != RC_S_DOWN && !p_dbus->mouse.LEFT && rune_time < chVTGetSystemTimeX())
+        else if(p_dbus->rc.s1 != RC_S_DOWN && !p_dbus->mouse.LEFT)
         {
           if(feeder_mode == FEEDER_AUTO)
           {
@@ -327,7 +399,7 @@ static THD_FUNCTION(feeder_control, p){
             feeder_mode = FEEDER_STOP;
         }
 
-        feeder_func();
+        feeder_func(barrel_info);
         chThdSleepMilliseconds(1);
     }
 }

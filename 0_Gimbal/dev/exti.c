@@ -35,7 +35,7 @@ static void extcb(EXTDriver *extp, expchannel_t channel) {
 static const EXTConfig extcfg = {
   {
     {EXT_CH_MODE_DISABLED, NULL},   //EXTI0
-    {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOB, extcb},
+    {EXT_CH_MODE_RISING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOB, extcb},
     //EXTI1
     {EXT_CH_MODE_DISABLED, NULL},   //EXTI2
     {EXT_CH_MODE_DISABLED, NULL},   //EXTI3
