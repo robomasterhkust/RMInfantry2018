@@ -146,8 +146,15 @@ void cmd_error(BaseSequentialStream * chp, int argc, char *argv[])
   adis16470_clear_error();
 
   //feeder error
-  if(feeder_get_error())
+  error = feeder_get_error();
+  if(error & FEEDER_CONNECTION_ERROR)
     chprintf(chp, "E: FEEDER MOTOR NOT CONNECTED\r\n");
+  if(error & LIMIT_SWITCH_ERROR_0)
+    chprintf(chp, "E: LIMIT SWITCH ERROR_0, MOUNTING\r\n");
+  if(error & LIMIT_SWITCH_ERROR_1)
+    chprintf(chp, "E: LIMIT SWITCH ERROR_1, CONNECTION\r\n");
+  if(error & LIMIT_SWITCH_ERROR_2)
+    chprintf(chp, "E: LIMIT SWITCH ERROR_2, CONNECTION\r\n");
 
   system_clearWarningFlag();
 }

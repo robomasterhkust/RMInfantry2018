@@ -107,8 +107,6 @@ int main(void)
   feeder_init();
   RC_init();
 
-
-
   /*
    * Init sequence 3: start all actuator controllers,
    * NOTE: ONLY after verifying the presence of 24V power
