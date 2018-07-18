@@ -105,11 +105,17 @@ static THD_FUNCTION(senchassis_control, p) {
 
 	while (!chThdShouldTerminateX()) {
 
-		if (TRUE){
-			SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
+//		if (TRUE){
+//			SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
+//
+//		} else {
+//			SP += 0;
+//		}
 
-		} else {
-			SP += 0;
+		if (TRUE) {
+
+			SP = (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
+
 		}
 
 //		if (!(palReadPad(GPIOC,0) && palReadPad(GPIOC,1))) {
@@ -128,13 +134,24 @@ static THD_FUNCTION(senchassis_control, p) {
 //			}
 //		}
 
+//		for (i = 0; i < SEN_CHASSIS_MOTOR_NUM; i++) {
+//			senchassis._motors[i].pos = senchassis.encoders[i].total_ecd;
+//			senchassis._motors[i].pos_sp = SP / CNT_2_DIS;
+//			senchassis_pos_pid(&senchassis.pospidprofile, &senchassis._motors[i].pidcontroller,
+//							   (senchassis._motors[i].inverted ? -senchassis._motors[i].pos : senchassis._motors[i].pos),
+//							   senchassis._motors[i].pos_sp);
+//		}
+
 		for (i = 0; i < SEN_CHASSIS_MOTOR_NUM; i++) {
-			senchassis._motors[i].pos = senchassis.encoders[i].total_ecd;
-			senchassis._motors[i].pos_sp = SP / CNT_2_DIS;
+
+			senchassis._motors[i].speed = RAW2LINSPEED(senchassis.encoders[i].raw_speed);
+			senchassis._motors[i].speed_sp = SP;
 			senchassis_pos_pid(&senchassis.pospidprofile, &senchassis._motors[i].pidcontroller,
-							   (senchassis._motors[i].inverted ? -senchassis._motors[i].pos : senchassis._motors[i].pos),
-							   senchassis._motors[i].pos_sp);
+								 (senchassis._motors[i].inverted ? -senchassis._motors[i].speed : senchassis._motors[i].speed),
+								  senchassis._motors[i].speed_sp);
+
 		}
+
 		can_motorSetCurrent(CHASSIS_CAN, CHASSIS_CAN_EID, senchassis._motors[0].pidcontroller.cv,
 														  -senchassis._motors[1].pidcontroller.cv, 0, 0);
 

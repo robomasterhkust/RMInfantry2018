@@ -12,6 +12,8 @@
 #define EXTRA_MOTOR_NUM   2U
 
 /* CAN Bus 1 or 2 */
+#define CAN_RM_MOTOR_ID1													  0x1FF
+#define CAN_RM_MOTOR_ID2														0x200
 #define CAN_CHASSIS_FR_FEEDBACK_MSG_ID              0x201
 #define CAN_CHASSIS_FL_FEEDBACK_MSG_ID              0x202
 #define CAN_CHASSIS_BL_FEEDBACK_MSG_ID              0x203
@@ -20,7 +22,16 @@
 #define CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID            0x206
 
 #define CAN_GIMBAL_SEND_DBUS_ID                     0x001
-#define CAN_GIMBAL_TX_GAMEDATA_ID					0x002
+#define CAN_GIMBAL_TX_GAMEDATA_ID					          0x002
+
+#define CAN_NUC_GIMBAL_ENCODER_TXID									0x100		//100HZ
+#define CAN_NUC_GIMBAL_IMU_TXID											0x101		//100HZ
+#define CAN_NUC_POS_DATA_XY_TXID										0x102		//50HZ
+#define CAN_NUC_POS_DATA_ZA_TXID										0x103		//50HZ
+#define CAN_NUC_CHASSIS_DATA_TXID										0x104		//EVENT DRIVEN
+
+#define CAN_NUC_CHASSIS_CONTROL_RXID								0x110		//100HZ
+#define CAN_NUC_GIMBAL_CONTROL_RXID									0x111		//100HZ
 
 #define CAN_ENCODER_RANGE           8192            // 0x2000
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
@@ -62,7 +73,6 @@ typedef struct {
     int16_t  raw_speed;
     int16_t act_current;
     uint8_t temperature;
-
     uint16_t last_raw_angle;
     uint16_t offset_raw_angle;
     uint32_t msg_count;
@@ -80,6 +90,41 @@ typedef struct{
     uint8_t  s2;
     uint16_t key_code;
 } Gimbal_Send_Dbus_canStruct;
+
+typedef struct gimbalStatus_t {
+
+	float pitchEncoder;				//CAN_NUC_GIMBAL_ENCODER_TXID
+	float yawEncoder;
+	float pitchAttitude;			//CAN_NUC_GIMBAL_IMU_TXID
+	float yawAttitude;
+
+}gimbalStatus_t;
+
+typedef struct posStruct_t{	//UWB
+
+	float x;									//CAN_NUC_POS_DATA_XY_TXID
+	float y;
+	float z;									//CAN_NUC_POS_DATA_ZA_TXID
+	float angle;
+
+}posStruct_t;
+
+typedef struct chassisStruct_t{
+
+	int32_t railPos;		//cm, CAN_NUC_CHASSIS_DATA_TXID
+	uint8_t endStop;		//open : 0, left : 1, right : 2
+	uint8_t hitPos;			//not hit : 0, front hit : 1, back hit : 2
+
+}chassisStruct_t;
+
+typedef struct sentryControl_t{
+
+	uint8_t fireBullet;			//Standby : 0, Fire : 1, CAN_NUC_CHASSIS_CONTROL_RXID
+	float chassisVelocity;	//-1 to 1 m/s
+	float yawVelocity;			//CAN_NUC_GIMBAL_CONTROL_RXID
+	float pitchVelocity;
+
+}sentryControl_t;
 
 typedef struct{
 
