@@ -106,6 +106,8 @@ void feeder_bulletOut(void)
 
 void feeder_singleShot(void)
 {
+  feeder_start_time = chVTGetSystemTimeX();
+
   if(!feeder_boost_mode_error)
     feeder_mode = FEEDER_BOOST;
   else
