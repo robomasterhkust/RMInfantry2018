@@ -105,28 +105,28 @@ static THD_FUNCTION(senchassis_control, p) {
 
 	while (!chThdShouldTerminateX()) {
 
-//		if ((palReadPad(GPIOC,0) && palReadPad(GPIOC,1))){
-//			SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
-//
-//		} else {
-//			SP += 0;
-//		}
+		if (TRUE){
+			SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
 
-		if (!(palReadPad(GPIOC,0) && palReadPad(GPIOC,1))) {
-			SP += 0;
 		} else {
-			if (remote->rc.s1 != 0) {
-				SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
-			} else {
-				SP += drift_amount * drift_dir;
-				drift_count++;
-				if (drift_count == drift_count_limit) {
-					drift_dir = drift_dir * -1;
-					drift_count = 0;
-				}
-
-			}
+			SP += 0;
 		}
+
+//		if (!(palReadPad(GPIOC,0) && palReadPad(GPIOC,1))) {
+//			SP += 0;
+//		} else {
+//			if (remote->rc.s1 != 0) {
+//				SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
+//			} else {
+//				SP += drift_amount * drift_dir;
+//				drift_count++;
+//				if (drift_count == drift_count_limit) {
+//					drift_dir = drift_dir * -1;
+//					drift_count = 0;
+//				}
+//
+//			}
+//		}
 
 		for (i = 0; i < SEN_CHASSIS_MOTOR_NUM; i++) {
 			senchassis._motors[i].pos = senchassis.encoders[i].total_ecd;

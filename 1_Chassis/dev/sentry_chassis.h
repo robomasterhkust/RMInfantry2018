@@ -10,7 +10,7 @@
 
 #define SEN_CHASSIS_MOTOR_NUM		2
 
-#define CHASSIS_CAN  				&CAND2
+#define CHASSIS_CAN  				&CAND1
 #define CHASSIS_CAN_EID  			0x200
 
 #define POS_KP						1.0f
@@ -24,7 +24,7 @@
 
 #define STICK_NEUTURAL				1024
 #define STICK_DELTA					660
-#define STICK_GAIN					0.005
+#define STICK_GAIN					0.0025
 
 typedef struct pid_profile_t{
 

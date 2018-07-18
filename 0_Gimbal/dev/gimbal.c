@@ -13,6 +13,7 @@
 #include "dbus.h"
 #include "adis16265.h"
 #include "feeder.h"
+#include "senloader.h"
 
 #define GIMBAL_IQ_MAX 7000
 
@@ -37,6 +38,7 @@ static bool rune_state = false;
 static lpfilterStruct lp_angle[2];
 static GimbalStruct gimbal;
 static RC_Ctl_t* rc;
+static sen_motorStruct* loaderMotor;
 //static volatile Ros_msg_canStruct *ros_msg;
 
 static thread_reference_t gimbal_thread_handler = NULL;
@@ -366,6 +368,8 @@ static THD_FUNCTION(gimbal_thread, p)
     RC_canTxCmd(ENABLE);
   #endif
 
+  loaderMotor = returnLoader();
+
   _yaw_vel.error_int_max = 2000.0f;
   _pitch_vel.error_int_max = 2500.0f;
   _yaw_atti.error_int_max = 4.0f;
@@ -524,7 +528,7 @@ static THD_FUNCTION(gimbal_thread, p)
     // #endif
 
     can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
-    gimbal.yaw_iq_output, gimbal.pitch_iq_output, 0, 0);
+    gimbal.yaw_iq_output, gimbal.pitch_iq_output, loaderMotor->speed_sp, 0);
 
     //Stop the thread while calibrating IMU
 //    if(gimbal._pIMU->accelerometer_not_calibrated ||

@@ -120,15 +120,12 @@ static void can_processEncoderMessage(CANDriver* const canp, const CANRxFrame* c
   {
     switch(rxmsg->SID)
     {
-        case CAN_CHASSIS_FL_FEEDBACK_MSG_ID:
-            chassis_encoder[FRONT_LEFT].msg_count++;
-            chassis_encoder[FRONT_LEFT].msg_count <= 50 ? can_getMotorOffset(&chassis_encoder[FRONT_LEFT],rxmsg)
-            											: can_processChassisEncoder(&chassis_encoder[FRONT_LEFT],rxmsg);
-            break;
-        case CAN_CHASSIS_FR_FEEDBACK_MSG_ID:
-            chassis_encoder[FRONT_RIGHT].msg_count++;
-            chassis_encoder[FRONT_RIGHT].msg_count <= 50 ? can_getMotorOffset(&chassis_encoder[FRONT_RIGHT],rxmsg)
-            											 : can_processChassisEncoder(&chassis_encoder[FRONT_RIGHT],rxmsg);
+    		case CAN_CHASSIS_FL_FEEDBACK_MSG_ID:
+              can_processChassisEncoder(&extra_encoder[FRONT_LEFT] ,rxmsg);
+              break;
+            case CAN_CHASSIS_FR_FEEDBACK_MSG_ID:
+              can_processChassisEncoder(&extra_encoder[FRONT_RIGHT] ,rxmsg);
+              break;
             break;
         case CAN_CHASSIS_BL_FEEDBACK_MSG_ID:
             chassis_encoder[BACK_LEFT].msg_count++;

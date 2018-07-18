@@ -20,6 +20,12 @@ static GameData_rx* judge_fb;
 static RC_Ctl_t* control;
 static mavlink_attitude_t* mavv;
 
+sen_motorStruct* returnLoader(void) {
+
+	return &senloader;
+
+}
+
 static uint8_t abs_limit(float *a, float ABS_MAX)
 {
   if (*a > ABS_MAX) {
@@ -83,24 +89,26 @@ static THD_FUNCTION(senloader_control, p) {
 //		if ((!DEBUG && control->rc.s1 == 2 ||
 //			mavv->roll != 0) &&
 //			judge_fb->shooter_heat < (SENTRY_HEAT_LIMIT - SENTRY_HEAT_BUFFER)) {
-		if(1) {
+		if(control->rc.s1 == 2) {
 
 			for (i = 0; i < 50; i++) {
 				senloader.speed_sp = senloader_pos_pid(&senloader.setting, &senloader.pidcontroller,
 																   SP, senloader._encoder->raw_speed);
-				can_motorSetCurrent(LOADER_CAN, 0x200, senloader.speed_sp, 0, 0, 0);
+
+				//can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, senloader.speed_sp, 0);
 				chThdSleep(MS2ST(1));
 			}
 
 			if (senloader._encoder->raw_speed < STUCK) {
-				can_motorSetCurrent(LOADER_CAN, 0x200, -1000, 0, 0, 0);
+				can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, -1000, 0);
 				chThdSleep(MS2ST(300));
 			}
 
 
 		} else {
 
-			can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, 0, 0);
+			senloader.speed_sp = 0;
+			//can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, 0, 0);
 
 		}
 

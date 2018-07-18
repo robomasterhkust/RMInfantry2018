@@ -76,6 +76,8 @@ typedef struct sen_motorStruct{
 
 }sen_motorStruct;
 
+sen_motorStruct* returnLoader(void);
+
 void sen_loader_init (void);
 
 #endif /* INC_SENLOADER_H_ */
