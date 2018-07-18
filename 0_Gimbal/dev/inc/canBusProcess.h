@@ -75,7 +75,7 @@ typedef struct {
 typedef struct{
   float py;
   float pz;
-  systime_t last_time;
+  bool updated;
 } Rune_canStruct;
 
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);

@@ -8,6 +8,7 @@
 #include "shoot.h"
 #include "keyboard.h"
 #include "canBusProcess.h"
+#include "feeder.h"
 
 static GimbalStruct *gimbal;
 static volatile Rune_canStruct *rune_can;
@@ -19,6 +20,8 @@ static bool rune_remote_control_enable = false;
 static bool G_press = false;
 
 static bool rune_can_updated = false;
+static uint8_t* feeder_fire_mode;
+static feeder_mode_t* feeder_mode;
 
 void rune_cmd(uint8_t cmd) {
 #ifdef RUNE_FIRE_SAFE
@@ -51,7 +54,7 @@ void rune_fire(const float yaw, const float pitch) {
   }
 
   feeder_singleShot();
-//  gimbal_Follow();
+  gimbal_Follow();
 }
 
 static THD_WORKING_AREA(rune_wa, 256);
@@ -75,18 +78,19 @@ static THD_FUNCTION(rune_thread, p) {
       G_press = false;
     }
 
-    //
-    systime_t now = chVTGetSystemTimeX();
-    if (now > MS2ST(500) + rune_can->last_time){
-      rune_can_updated = true;
-    }else{
-      rune_can_updated = false;
-    }
+    // //
+    // systime_t now = chVTGetSystemTimeX();
+    // if (now > MS2ST(500) + rune_can->last_time){
+    //   rune_can_updated = true;
+    // }else{
+    //   rune_can_updated = false;
+    // }
 
-    if(rune_can_updated && (rune_remote_control_enable)){
+    if(rune_remote_control_enable && rune_can->updated){
       rune_cmd(ENABLE);
       rune_fire(rune_can->pz, rune_can->py);
       rune_cmd(DISABLE);
+      rune_can->updated = false;
     }
     else
       chThdSleep(RUNE_THREAD_PERIOD);
@@ -98,6 +102,8 @@ void rune_init(void) {
   rune_can = can_get_rune();
   pIMU = imu_get();
   rc = RC_get();
+  // feeder_fire_mode = get_feeder_fire_mode();
+  // feeder_mode = get_feeder();
   chThdCreateStatic(rune_wa, sizeof(rune_wa), NORMALPRIO - 5, rune_thread,
                     NULL);
 }

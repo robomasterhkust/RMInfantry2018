@@ -52,6 +52,14 @@ int16_t feeder_canUpdate(void)
   #endif
 }
 
+feeder_mode_t* get_feeder(void){
+  return &feeder_mode;
+}
+
+uint8_t* get_feeder_fire_mode(void){
+  return &feeder_fire_mode;
+}
+
 float feeder_getDelay(void)
 {
   return bullet_delay;
@@ -110,7 +118,8 @@ void feeder_singleShot(void)
   chSysUnlock();*/
 
   feeder_start_time = chVTGetSystemTimeX();
-  feeder_mode = FEEDER_AUTO;
+  feeder_mode = FEEDER_BOOST;
+  feeder_fire_mode = FEEDER_SINGLE;
   rune_time = feeder_start_time + MS2ST(50);
 }
 

@@ -46,4 +46,7 @@ void feeder_singleShot(void); //Rune shooting function
 void feeder_init(void);
 void feeder_start(void);
 
+feeder_mode_t* get_feeder(void);
+uint8_t* get_feeder_fire_mode(void);
+
 #endif
