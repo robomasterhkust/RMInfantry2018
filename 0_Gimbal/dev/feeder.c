@@ -26,8 +26,8 @@ static thread_reference_t rune_singleShot_thread = NULL;
 
 static feeder_error_t feeder_error_flag;
 
-#define FEEDER_BOOST_SETSPEED_SINGLE    20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
-#define FEEDER_BOOST_SETSPEED_AUTO      30  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_SINGLE    12  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_AUTO      20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TEST_SETSPEED             3  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_BOOST_PERIOD_MS          30
 
@@ -267,6 +267,7 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
               feeder_output = FEEDER_BOOST_POWER;
 
             feeder_canUpdate();
+
             if(
                    state_count((feeder_encode->raw_speed < 30) &&
                                (feeder_encode->raw_speed > -30),
@@ -330,9 +331,7 @@ static THD_FUNCTION(feeder_control, p){
           else if(chVTGetSystemTimeX() - bullet_out_time > MS2ST(500))
           {
             limit_switch_error_counter[0]++;
-            bullet_out_time = chVTGetSystemTimeX();
-
-            if(limit_switch_error_counter > 3)
+            if(limit_switch_error_counter[0] > 2)
             {
               feeder_error_flag |= LIMIT_SWITCH_ERROR_0;
               extChannelDisable(&EXTD1, 1);
