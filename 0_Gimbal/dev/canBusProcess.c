@@ -23,6 +23,9 @@ static volatile Ros_msg_canStruct ros_msg={
   .last_pz=0
 };
 
+static volatile Rune_canStruct rune_can = {
+.py = 0.0, .pz = 0.0, .last_time = 0};
+
 static volatile ChassisEncoder_canStruct feeder_encoder;
 
 /*
@@ -58,6 +61,8 @@ volatile BarrelStatus_canStruct* can_get_sent_barrelStatus(void){
 volatile Ros_msg_canStruct* can_get_ros_msg(void){
   return &ros_msg;
 }
+
+volatile Rune_canStruct *can_get_rune(void) { return &rune_can; }
 
 #define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
 static inline void can_processChassisEncoder
@@ -132,6 +137,19 @@ static inline void can_process_ros_command(volatile Ros_msg_canStruct * msg, con
     chSysUnlock();
 }
 
+static inline void can_process_rune(volatile Rune_canStruct *rune_can,
+                                    const CANRxFrame *const rxmsg) {
+  chSysLock();
+  int16_t msg_py = (int16_t)rxmsg->data16[0];
+  int16_t msg_pz = (int16_t)rxmsg->data16[1];
+
+  rune_can->py = msg_py * 0.001;
+  rune_can->pz = msg_pz * 0.001;
+  systime_t now = chVTGetSystemTimeX();
+  rune_can->last_time = now;
+  chSysUnlock();
+}
+
 static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
 {
   switch(rxmsg->SID)
@@ -150,6 +168,9 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
         break;
       case CAN_NVIDIA_TX2_BOARD_ID:
         can_process_ros_command(&ros_msg,rxmsg);
+        break;
+      case CAN_RUNE:
+        can_process_rune(&rune_can, rxmsg);
         break;
       default:break;
   }
