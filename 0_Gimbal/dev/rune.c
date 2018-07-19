@@ -16,7 +16,7 @@ static PIMUStruct pIMU;
 static RC_Ctl_t* rc;
 static bool rune_state = false;
 
-static bool rune_remote_control_enable = false;
+bool rune_remote_control_enable = false;
 static bool G_press = false;
 
 static bool rune_can_updated = false;
@@ -65,6 +65,7 @@ static THD_FUNCTION(rune_thread, p) {
     if(bitmap[KEY_G]){
       if(!G_press){
         if(rune_remote_control_enable){
+          rune_fire(0.0f, 0.0f);
           rune_remote_control_enable = false;
         }
         else{

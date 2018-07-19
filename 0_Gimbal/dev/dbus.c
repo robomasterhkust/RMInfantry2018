@@ -6,7 +6,7 @@
 
 #include "ch.h"
 #include "hal.h"
-
+#include "rune.h"
 #include "dbus.h"
 //#include "chprintf.h"
 //static BaseSequentialStream* chp = (BaseSequentialStream*)SERIAL_CMD;
@@ -158,7 +158,7 @@ static inline void RC_txCan(CANDriver *const CANx, const uint16_t SID)
   txmsg.DLC = 0x08;
 
   chSysLock();
-  if(rc_can_flag)
+  if(rc_can_flag && !rune_remote_control_enable)
   {
     txCan.channel0 = RC_Ctl.rc.channel0;
     txCan.channel1 = RC_Ctl.rc.channel1;

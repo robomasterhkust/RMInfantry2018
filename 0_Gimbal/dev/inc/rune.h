@@ -13,7 +13,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+extern bool rune_remote_control_enable;
 void rune_init(void);
 void rune_cmd(uint8_t cmd);
 void rune_fire(const float yaw, const float pitch);
