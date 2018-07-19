@@ -9,7 +9,7 @@
 #define INC_SENLOADER_H_
 
 #define LOADER_CAN  				&CAND1
-#define LOADER_CAN_EID  			0x200
+#define LOADER_CAN_EID  			0x1FF
 
 #define POS_KP						2.0f
 #define POS_KI						0.0f

@@ -73,7 +73,7 @@ static float senloader_pos_pid(pid_profile_t* setting, sen_pid_controller_t* dat
 
 }
 
-int32_t SP = 2500;
+int32_t SP = 3000;
 int32_t STUCK = 1500;
 uint8_t DEBUG = 1;
 
@@ -95,20 +95,20 @@ static THD_FUNCTION(senloader_control, p) {
 				senloader.speed_sp = senloader_pos_pid(&senloader.setting, &senloader.pidcontroller,
 																   SP, senloader._encoder->raw_speed);
 
-				//can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, senloader.speed_sp, 0);
+				can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, senloader.speed_sp, 0);
 				chThdSleep(MS2ST(1));
 			}
 
 			if (senloader._encoder->raw_speed < STUCK) {
-				can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, -1000, 0);
-				chThdSleep(MS2ST(300));
+				can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, -2500, 0);
+				chThdSleep(MS2ST(500));
 			}
 
 
 		} else {
 
 			senloader.speed_sp = 0;
-			//can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, 0, 0);
+			can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, 0, 0);
 
 		}
 
