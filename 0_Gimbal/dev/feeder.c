@@ -26,7 +26,7 @@ static thread_reference_t rune_singleShot_thread = NULL;
 
 static feeder_error_t feeder_error_flag;
 
-#define FEEDER_BOOST_SETSPEED_SINGLE    12  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
+#define FEEDER_BOOST_SETSPEED_SINGLE    20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_BOOST_SETSPEED_AUTO      20  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_TEST_SETSPEED             3  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN
 #define FEEDER_BOOST_PERIOD_MS          30
@@ -78,8 +78,6 @@ void feeder_bulletOut(void)
   {
     bullet_out_time = chVTGetSystemTimeX();
 
-    chSysLockFromISR();
-
     if(feeder_mode == FEEDER_BOOST)
     {
       if(rune_singleShot_thread == NULL) //Disable mode selection during rune shooting
@@ -98,11 +96,10 @@ void feeder_bulletOut(void)
         chThdResumeI(&rune_singleShot_thread, MSG_OK);
         rune_singleShot_thread = NULL;
       }
+
       feeder_brake();
       feeder_mode = FEEDER_FINISHED;
     }
-
-    chSysUnlockFromISR();
   }
 }
 
@@ -113,8 +110,9 @@ void feeder_singleShot(void)
   else
     feeder_mode = FEEDER_SINGLE;
 
-  chSysLock();
   feeder_start_time = chVTGetSystemTimeX();
+
+  chSysLock();
   chThdSuspendS(&rune_singleShot_thread);
   chSysUnlock();
 }
@@ -186,24 +184,23 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
             }
             break;
         case FEEDER_SINGLE:
-            if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
-            {
-              chSysLock();
-              if(rune_singleShot_thread != NULL)
-              {
-                chThdResumeS(&rune_singleShot_thread, MSG_OK);
-                rune_singleShot_thread = NULL;
-              }
-
-              feeder_mode = FEEDER_FINISHED;
-              feeder_brake();
-
-              chSysUnlock();
-            }
-
             if(feeder_boost_mode_error)
-              FEEDER_SPEED_SP_RPM = 5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+            {
+              if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
+              {
+                chSysLock();
+                if(rune_singleShot_thread != NULL)
+                {
+                  chThdResumeS(&rune_singleShot_thread, MSG_OK);
+                  rune_singleShot_thread = NULL;
+                }
+                feeder_mode = FEEDER_FINISHED;
+                chSysUnlock();
 
+                feeder_brake();
+              }
+              FEEDER_SPEED_SP_RPM = 5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+            }
             goto SPEED_CONTROL;
         case FEEDER_AUTO:
             //error detecting
@@ -262,11 +259,10 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
                 chThdResumeS(&rune_singleShot_thread, MSG_OK);
                 rune_singleShot_thread = NULL;
               }
-
               feeder_mode = FEEDER_FINISHED;
-              feeder_brake();
-
               chSysUnlock();
+
+              feeder_brake();
             }
             else if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(FEEDER_BOOST_PERIOD_MS))
             {
@@ -335,10 +331,10 @@ static THD_FUNCTION(feeder_control, p){
                 chThdResumeS(&rune_singleShot_thread, MSG_OK);
                 rune_singleShot_thread = NULL;
               }
-
-              feeder_brake();
               feeder_mode = FEEDER_FINISHED;
               chSysUnlock();
+
+              feeder_brake();
             }
           }
           else if(chVTGetSystemTimeX() - bullet_out_time > MS2ST(500))
@@ -366,11 +362,13 @@ static THD_FUNCTION(feeder_control, p){
         {
           feeder_error_flag |= LIMIT_SWITCH_ERROR_1;
 
+          /*
           chSysLock();
           if(!feeder_boost_mode_error)
             extChannelDisable(&EXTD1, 1);
           feeder_boost_mode_error = true;
           chSysUnlock();
+          */
         }
 
         if(feeder_mode == FEEDER_OVERHEAT){
@@ -382,16 +380,15 @@ static THD_FUNCTION(feeder_control, p){
           barrel_info->currentHeatValue > barrel_info->heatLimit - 15){
 
           chSysLock();
-
           if(rune_singleShot_thread != NULL)
           {
             chThdResumeS(&rune_singleShot_thread, MSG_OK);
             rune_singleShot_thread = NULL;
           }
-          
-          feeder_brake();
           feeder_mode = FEEDER_OVERHEAT;
           chSysUnlock();
+
+          feeder_brake();
         }
 
         if(
