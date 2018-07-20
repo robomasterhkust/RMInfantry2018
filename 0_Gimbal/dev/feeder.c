@@ -90,14 +90,12 @@ void feeder_bulletOut(void)
       bullet_delay = ST2US(bullet_out_time - feeder_start_time)/1e3f;
     }
 
-    if(feeder_mode == FEEDER_SINGLE)
+    if(!feeder_boost_mode_error && feeder_mode == FEEDER_SINGLE)
     {
       if(rune_singleShot_thread != NULL)
       {
-        chSysLockFromISR();
         chThdResumeI(&rune_singleShot_thread, MSG_OK);
         rune_singleShot_thread = NULL;
-        chSysUnlockFromISR();
       }
       feeder_brake();
       feeder_mode = FEEDER_FINISHED;
@@ -186,21 +184,21 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
         case FEEDER_SINGLE:
             if(chVTGetSystemTimeX() - feeder_start_time > MS2ST(1000))
             {
+              chSysLock();
               if(rune_singleShot_thread != NULL)
               {
-                chSysLock();
                 chThdResumeS(&rune_singleShot_thread, MSG_OK);
                 rune_singleShot_thread = NULL;
-                chSysUnlock();
               }
-
               feeder_mode = FEEDER_FINISHED;
+              chSysUnlock();
+
               feeder_brake();
             }
 
             if(feeder_boost_mode_error)
               FEEDER_SPEED_SP_RPM = 5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-              
+
             goto SPEED_CONTROL;
         case FEEDER_AUTO:
             //error detecting
@@ -317,16 +315,16 @@ static THD_FUNCTION(feeder_control, p){
           {
             if(feeder_mode == FEEDER_SINGLE)
             {
+              chSysUnlock();
               if(rune_singleShot_thread != NULL)
               {
-                chSysLock();
                 chThdResumeS(&rune_singleShot_thread, MSG_OK);
                 rune_singleShot_thread = NULL;
-                chSysUnlock();
               }
+              feeder_mode = FEEDER_FINISHED;
+              chSysUnlock();
 
               feeder_brake();
-              feeder_mode = FEEDER_FINISHED;
             }
           }
           else if(chVTGetSystemTimeX() - bullet_out_time > MS2ST(500))
@@ -335,9 +333,12 @@ static THD_FUNCTION(feeder_control, p){
             if(limit_switch_error_counter[0] > 2)
             {
               feeder_error_flag |= LIMIT_SWITCH_ERROR_0;
-              extChannelDisable(&EXTD1, 1);
               system_setErrorFlag();
+
+              chSysLock();
+              extChannelDisable(&EXTD1, 2);
               feeder_boost_mode_error = true;
+              chSysUnlock();
             }
           }
           else
@@ -345,25 +346,19 @@ static THD_FUNCTION(feeder_control, p){
         }
         prev_heat_value = barrel_info->currentHeatValue;
 
+/*
         if(state_count(//palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NO) &&
                        palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NC),
                     500, limit_switch_error_counter + 1))
         {
           feeder_error_flag |= LIMIT_SWITCH_ERROR_1;
           system_setErrorFlag();
-          if(!feeder_boost_mode_error)
-            extChannelDisable(&EXTD1, 1);
-          feeder_boost_mode_error = true;
-        }
 
-/*
-        if(state_count(//!palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NO) &&
-                       !palReadPad(FEEDER_LS_GPIO, FEEDER_LS_PIN_NC),
-                    500, limit_switch_error_counter + 2))
-        {
-          feeder_error_flag |= LIMIT_SWITCH_ERROR_2;
-          system_setErrorFlag();
+          chSysLock();
+          if(!feeder_boost_mode_error)
+            extChannelDisable(&EXTD1, 2);
           feeder_boost_mode_error = true;
+          chSysUnlock();
         }*/
 
         if(feeder_mode == FEEDER_OVERHEAT){
@@ -422,6 +417,10 @@ void feeder_init(void){
 
     lpfilter_init(&lp_spd_feeder, 1000, 30);
     feeder_brakePos = (float)feeder_encode->total_ecd;
+
+    #ifndef FEEDER_USE_BOOST
+      feeder_boost_mode_error = true;
+    #endif
 }
 
 void feeder_start(void)

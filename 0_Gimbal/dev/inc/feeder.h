@@ -18,6 +18,7 @@
 #define FEEDER_OUTPUT_MAX_BACK   8000U  //output limit for stuck-bullet turning back
 #define FEEDER_ERROR_COUNT        800U
 
+#define FEEDER_USE_BOOST
 #define FEEDER_BOOST_POWER  16383U
 
 typedef enum{
