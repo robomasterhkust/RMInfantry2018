@@ -204,17 +204,17 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
             goto SPEED_CONTROL;
         case FEEDER_AUTO:
             //error detecting
-            if(barrel_info->heatLimit == LEVEL1_HEATLIMIT){
+            if(barrel_info->heatLimit <= LEVEL1_HEATLIMIT){
               level = 1;
-              FEEDER_SPEED_SP_RPM = 3 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+              FEEDER_SPEED_SP_RPM = 10 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
             }
-            else if(barrel_info->heatLimit == LEVEL2_HEATLIMIT){
+            else if(barrel_info->heatLimit <= LEVEL2_HEATLIMIT){
               level =2;
-              FEEDER_SPEED_SP_RPM = 6  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+              FEEDER_SPEED_SP_RPM = 17  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
             }
-            else if(barrel_info->heatLimit == LEVEL3_HEATLIMIT){
+            else if(barrel_info->heatLimit <= LEVEL3_HEATLIMIT){
               level =3;
-              FEEDER_SPEED_SP_RPM = 10  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
+              FEEDER_SPEED_SP_RPM = 25  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
             }
             else
             {

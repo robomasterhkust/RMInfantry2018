@@ -119,7 +119,7 @@ int main(void)
   while(!power_check())
   {
     LEDY_TOGGLE();
-    chThdSleepMilliseconds(200);
+    chThdSleepMilliseconds(50);
   }
 
   /* Init sequence 3: actuators, display*/
