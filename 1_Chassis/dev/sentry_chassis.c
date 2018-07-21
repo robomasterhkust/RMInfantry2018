@@ -15,6 +15,10 @@
 
 static volatile senchassisstruct senchassis;
 
+uint8_t count = 0;
+
+sentryControl_t* chassisControl;
+
 static uint8_t abs_limit(float *a, float ABS_MAX)
 {
   if (*a > ABS_MAX) {
@@ -75,10 +79,9 @@ static inline void chassisdata_txCan(CANDriver *const CANx, const uint16_t SID)
   txmsg.DLC = 0x08;
 
   chSysLock();
-  txCan.chassis_pos = (int16_t) SP;
+  txCan.chassis_pos = (int16_t) senchassis._motors[0].pos;
   txCan.shooter_heat = (uint16_t) JudgeData->powerInfo.shooterHeat0;
   txCan.shooter_speed = (float) JudgeData->projectileInfo.bulletSpeed;
-
 
   memcpy(&(txmsg.data8), &txCan ,8);
   chSysUnlock();
@@ -91,11 +94,6 @@ static THD_FUNCTION(senchassis_control, p) {
 
 	(void)p;
 	uint8_t i = 0;
-	int32_t drift = 0;
-	int8_t drift_dir = 1;
-	int32_t drift_count = 0;
-	int32_t drift_count_limit = 4000;
-	float drift_amount = 0.5;
 
 	static Gimbal_Send_Dbus_canStruct* RC_cntrl;
 
@@ -105,6 +103,8 @@ static THD_FUNCTION(senchassis_control, p) {
 
 	while (!chThdShouldTerminateX()) {
 
+		count++;
+
 //		if (TRUE){
 //			SP += (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
 //
@@ -112,9 +112,20 @@ static THD_FUNCTION(senchassis_control, p) {
 //			SP += 0;
 //		}
 
-		if (TRUE) {
+		if (RC_cntrl->s1 != 0) {
 
 			SP = (RC_cntrl->channel0 - STICK_NEUTURAL) * STICK_GAIN;
+			chassisControl->chassisVelocity = 0;
+
+		} else {
+
+			//SP = chassisControl->chassisVelocity;
+
+			if (senchassis._motors[0].pos < 1) {
+				SP = -0.6;
+			} else if(senchassis._motors[0].pos > 4) {
+				SP = 0.6;
+			}
 
 		}
 
@@ -146,6 +157,7 @@ static THD_FUNCTION(senchassis_control, p) {
 
 			senchassis._motors[i].speed = RAW2LINSPEED(senchassis.encoders[i].raw_speed);
 			senchassis._motors[i].speed_sp = SP;
+			senchassis._motors[i].pos = ENC2LINDIST(senchassis.encoders[i].total_ecd);
 			senchassis_pos_pid(&senchassis.pospidprofile, &senchassis._motors[i].pidcontroller,
 								 (senchassis._motors[i].inverted ? -senchassis._motors[i].speed : senchassis._motors[i].speed),
 								  senchassis._motors[i].speed_sp);
@@ -155,12 +167,42 @@ static THD_FUNCTION(senchassis_control, p) {
 		can_motorSetCurrent(CHASSIS_CAN, CHASSIS_CAN_EID, senchassis._motors[0].pidcontroller.cv,
 														  -senchassis._motors[1].pidcontroller.cv, 0, 0);
 
-
 		chassisdata_txCan(&CAND1, CAN_GIMBAL_TX_GAMEDATA_ID);
 
 		chThdSleep(MS2ST(1));
 	}
 
+
+}
+
+static THD_WORKING_AREA(senchassisFeedback_wa, 512);
+static THD_FUNCTION(senchassisFeedback, p) {
+
+  (void)p;
+
+  static systime_t now = 0;
+  static systime_t next = 0;
+
+  CANTxFrame txmsg;
+
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.EID = CAN_NUC_CHASSIS_ENC_POS_TXID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x04;
+
+  while(true) {
+
+    now = chVTGetSystemTime();
+    next = now + MS2ST(10);
+
+    chSysLock();
+	  memcpy(&txmsg.data8[0], &senchassis._motors[0].pos, sizeof(float));
+	  chSysUnlock();
+  	canTransmit(&CAND2, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+
+    chThdSleepUntilWindowed(now, next);
+
+  }
 
 }
 
@@ -177,6 +219,9 @@ void sen_chassis_init (void) {
 	remote = RC_get();
 
 	senchassis.encoders = can_getExtraMotor();
+
+	chassisControl = returnSentryControl();
+
 	SP = 0;
 
 	senchassis._motors[0].inverted = 1;
@@ -189,6 +234,9 @@ void sen_chassis_init (void) {
 
 	chThdCreateStatic(senchassis_control_wa, sizeof(senchassis_control_wa),
 					  HIGHPRIO, senchassis_control, NULL);
+
+	chThdCreateStatic(senchassisFeedback_wa, sizeof(senchassisFeedback_wa),
+										NORMALPRIO, senchassisFeedback, NULL);
 
 }
 

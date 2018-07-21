@@ -13,9 +13,9 @@
 #define CHASSIS_CAN  				&CAND1
 #define CHASSIS_CAN_EID  			0x200
 
-#define POS_KP						3000.0f
+#define POS_KP						8000000.0f
 #define POS_KI						3.0f
-#define POS_KD						20000.0f
+#define POS_KD						10000.0f
 #define POS_ILIM					50000.0f
 #define POS_OUTLIM					10000.0f
 
@@ -23,11 +23,12 @@
 #define GEAR_RATIO				19
 #define WHEEL_CIRCUM			(float) WHEEL_DIA * 3.1415926539
 #define RAW2LINSPEED(x)		(x / 60) * WHEEL_CIRCUM	/ GEAR_RATIO	//x = raw speed from c620, gives m/s
+#define ENC2LINDIST(x)    (x / 8192) * WHEEL_CIRCUM	/ GEAR_RATIO
 #define MAXLINSPEED				1.2
 
 #define STICK_NEUTURAL				1024
 #define STICK_DELTA					660
-#define STICK_GAIN					0.03
+#define STICK_GAIN					0.002
 
 typedef struct pid_profile_t{
 

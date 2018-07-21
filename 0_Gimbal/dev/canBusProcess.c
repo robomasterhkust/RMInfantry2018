@@ -14,6 +14,8 @@ static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
 static volatile Loader_canStruct loader_encoder[1];
 static volatile GameData_rx chassis_data[1];
 
+static sentryControl_t sentryControl;
+
 /*
  * 500KBaud, automatic wakeup, automatic recover
  * from abort mode.
@@ -47,13 +49,20 @@ volatile GameData_rx* can_getChassisdata(void) {
 	return chassis_data;
 }
 
+sentryControl_t* returnSentryControl(void) {
+
+	return &sentryControl;
+
+}
+
+
 static inline void can_processChassisData
   (volatile GameData_rx* cm, const CANRxFrame* const rxmsg)
 {
   chSysLock();
-//  cm->chassis_pos = (int16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
-//  cm->shooter_heat = (uint16_t)(rxmsg->data8[2]) << 8 | rxmsg->data8[3];
-//  memcpy(&cm->shooter_speed, &rxmsg[4], 4);
+  cm->chassis_pos = (int16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
+  cm->shooter_heat = (uint16_t)(rxmsg->data8[2]) << 8 | rxmsg->data8[3];
+  memcpy(&cm->shooter_speed, &rxmsg[4], 4);
   memcpy(cm, rxmsg->data8, 8);
   chSysUnlock();
 }
@@ -118,6 +127,21 @@ static inline void can_processGimbalEncoder
   chSysUnlock();
 }
 
+static void processGimbalControl(const CANRxFrame* const rxmsg) {
+
+	memcpy(&sentryControl.yawVelocity, &rxmsg->data8[0], sizeof(float));
+	memcpy(&sentryControl.pitchVelocity, &rxmsg->data8[4], sizeof(float));
+
+}
+
+static void processSentryControl(const CANRxFrame* const rxmsg) {
+
+	sentryControl.fireBullet = rxmsg->data8[0];
+	memcpy(&sentryControl.chassisVelocity, &rxmsg->data8[1], sizeof(float));
+
+}
+
+
 static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
 {
   switch(rxmsg->SID)
@@ -134,6 +158,15 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
       case CAN_GIMBAL_RX_GAMEDATA_ID:
     	can_processChassisData(&chassis_data[0], rxmsg);
     	break;
+
+      case CAN_NUC_GIMBAL_CONTROL_RXID:
+      	processGimbalControl(rxmsg);
+      	break;
+
+      case CAN_NUC_CHASSIS_CONTROL_RXID:
+      	processSentryControl(rxmsg);
+      	break;
+
   }
 }
 

@@ -67,6 +67,8 @@ void gimbal_kill(void)
   gimbal.state = GIMBAL_STATE_UNINIT;
 }
 
+sentryControl_t* gimbalControl;
+
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
@@ -74,8 +76,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float           rc_input_z = 0.0f, rc_input_y = 0.0f;     //RC input
   static float    cv_input_z = 0.0f, cv_input_y = 0.0f;     //CV input
 
-//  cv_input_y = (float)ros_msg->vy;
-//  cv_input_z = (float)ros_msg->vz;
+  //cv_input_y = gimbalControl->pitchVelocity;
+  //cv_input_z = gimbalControl->yawVelocity;
 
   rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
                               -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
@@ -370,6 +372,8 @@ static THD_FUNCTION(gimbal_thread, p)
 
   loaderMotor = returnLoader();
 
+  gimbalControl = returnSentryControl();
+
   _yaw_vel.error_int_max = 2000.0f;
   _pitch_vel.error_int_max = 2500.0f;
   _yaw_atti.error_int_max = 4.0f;
@@ -528,7 +532,9 @@ static THD_FUNCTION(gimbal_thread, p)
     // #endif
 
     can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
-    gimbal.yaw_iq_output, gimbal.pitch_iq_output, loaderMotor->speed_sp, 0);
+    gimbal.yaw_iq_output, gimbal.pitch_iq_output, 0, 0);
+//		gimbal.pitch_iq_output, gimbal.yaw_iq_output, loaderMotor->speed_sp, 0);
+
 
     //Stop the thread while calibrating IMU
 //    if(gimbal._pIMU->accelerometer_not_calibrated ||

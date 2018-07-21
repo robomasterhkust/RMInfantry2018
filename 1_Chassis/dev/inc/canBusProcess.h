@@ -29,6 +29,7 @@
 #define CAN_NUC_POS_DATA_XY_TXID										0x102		//50HZ
 #define CAN_NUC_POS_DATA_ZA_TXID										0x103		//50HZ
 #define CAN_NUC_CHASSIS_DATA_TXID										0x104		//EVENT DRIVEN
+#define CAN_NUC_CHASSIS_ENC_POS_TXID								0x105
 
 #define CAN_NUC_CHASSIS_CONTROL_RXID								0x110		//100HZ
 #define CAN_NUC_GIMBAL_CONTROL_RXID									0x111		//100HZ
@@ -132,12 +133,13 @@ typedef struct{
 	uint16_t	shooter_heat;
 	float		shooter_speed;
 
-} GameData_tx;
+}__attribute__((packed)) GameData_tx;
 
 volatile GimbalEncoder_canStruct* can_getGimbalMotor(void);
 volatile ChassisEncoder_canStruct* can_getChassisMotor(void);
 volatile ChassisEncoder_canStruct* can_getExtraMotor(void);
 volatile Gimbal_Send_Dbus_canStruct* can_get_sent_dbus(void);
+sentryControl_t* returnSentryControl(void);
 
 void can_processInit(void);
 void can_motorSetCurrent(CANDriver *const CANx,

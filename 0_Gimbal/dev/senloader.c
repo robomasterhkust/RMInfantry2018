@@ -19,6 +19,7 @@ static sen_motorStruct senloader;
 static GameData_rx* judge_fb;
 static RC_Ctl_t* control;
 static mavlink_attitude_t* mavv;
+static sentryControl_t* sentryControl;
 
 sen_motorStruct* returnLoader(void) {
 
@@ -73,7 +74,7 @@ static float senloader_pos_pid(pid_profile_t* setting, sen_pid_controller_t* dat
 
 }
 
-int32_t SP = 3000;
+int32_t SP = 3500;
 int32_t STUCK = 1500;
 uint8_t DEBUG = 1;
 
@@ -82,33 +83,27 @@ static THD_FUNCTION(senloader_control, p) {
 
 	(void)p;
 	static uint8_t i;
-	static int32_t SUM;
 
 	while (!chThdShouldTerminateX()) {
 
-//		if ((!DEBUG && control->rc.s1 == 2 ||
-//			mavv->roll != 0) &&
-//			judge_fb->shooter_heat < (SENTRY_HEAT_LIMIT - SENTRY_HEAT_BUFFER)) {
-		if(control->rc.s1 == 2) {
+		if(control->rc.s1 == 2 || sentryControl->fireBullet == 2 || DEBUG) {
 
-			for (i = 0; i < 50; i++) {
+			for (i = 0; i < 100; i++) {
 				senloader.speed_sp = senloader_pos_pid(&senloader.setting, &senloader.pidcontroller,
 																   SP, senloader._encoder->raw_speed);
 
-				can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, senloader.speed_sp, 0);
 				chThdSleep(MS2ST(1));
 			}
 
 			if (senloader._encoder->raw_speed < STUCK) {
-				can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, -2500, 0);
-				chThdSleep(MS2ST(500));
+				senloader.speed_sp = -2000;
+				chThdSleep(MS2ST(300));
 			}
 
 
 		} else {
 
 			senloader.speed_sp = 0;
-			can_motorSetCurrent(LOADER_CAN, 0x200, 0, 0, 0, 0);
 
 		}
 
@@ -130,8 +125,10 @@ void sen_loader_init (void) {
 	memset(&senloader, 0, sizeof(sen_motorStruct));
 
 	senloader._encoder = can_getLoaderMotor();
-	SP = 2000;
-	STUCK = 400;
+	sentryControl = returnSentryControl();
+	SP = 3000;
+	STUCK = 100;
+	DEBUG = 0;
 
 	senloader.inverted = 0;
 

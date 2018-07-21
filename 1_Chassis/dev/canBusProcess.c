@@ -16,6 +16,8 @@ static volatile ChassisEncoder_canStruct extra_encoder[EXTRA_MOTOR_NUM];
 
 static volatile Gimbal_Send_Dbus_canStruct gimbal_send_dbus;
 
+static sentryControl_t sentryControl;
+
 /*
  * 500KBaud, automatic wakeup, automatic recover
  * from abort mode.
@@ -49,6 +51,12 @@ volatile Gimbal_Send_Dbus_canStruct* can_get_sent_dbus(void){
     return &gimbal_send_dbus;
 }
 
+sentryControl_t* returnSentryControl(void) {
+
+	return &sentryControl;
+
+}
+
 static inline void  can_processSendDbusEncoder
         (volatile Gimbal_Send_Dbus_canStruct* db, const CANRxFrame* const rxmsg)
 {
@@ -73,6 +81,47 @@ static inline void can_getMotorOffset
     chSysUnlock();
 
     cm->offset_raw_angle = cm->raw_angle;
+}
+
+static void processSentryControl(const CANRxFrame* const rxmsg) {
+
+	sentryControl.fireBullet = rxmsg->data8[0];
+	memcpy(&sentryControl.chassisVelocity, &rxmsg->data8[1], sizeof(float));
+
+  CANTxFrame txmsg;
+
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.EID = CAN_NUC_CHASSIS_CONTROL_RXID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x08;
+
+  chSysLock();
+  memcpy(&txmsg.data8, &rxmsg->data8, sizeof(uint8_t) * 8);
+  chSysUnlock();
+
+  canTransmit(&CAND1, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+
+
+}
+
+static void processGimbalControl(const CANRxFrame* const rxmsg) {
+
+	memcpy(&sentryControl.yawVelocity, &rxmsg->data8[0], sizeof(float));
+	memcpy(&sentryControl.pitchVelocity, &rxmsg->data8[4], sizeof(float));
+
+  CANTxFrame txmsg;
+
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.EID = CAN_NUC_GIMBAL_CONTROL_RXID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x08;
+
+  chSysLock();
+  memcpy(&txmsg.data8, &rxmsg->data8, sizeof(uint8_t) * 8);
+  chSysUnlock();
+
+  canTransmit(&CAND1, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+
 }
 
 static inline void can_processChassisEncoder
@@ -158,6 +207,14 @@ static void can_processEncoderMessage(CANDriver* const canp, const CANRxFrame* c
         case CAN_CHASSIS_FR_FEEDBACK_MSG_ID:
           can_processChassisEncoder(&extra_encoder[FRONT_RIGHT] ,rxmsg);
           break;
+
+        case CAN_NUC_CHASSIS_CONTROL_RXID:
+        	processSentryControl(rxmsg);
+        	break;
+
+        case CAN_NUC_GIMBAL_CONTROL_RXID:
+        	processGimbalControl(rxmsg);
+        	break;
 //        case CAN_CHASSIS_BL_FEEDBACK_MSG_ID:
 //          can_processChassisEncoder(&extra_encoder[BACK_LEFT] ,rxmsg);
 //          break;

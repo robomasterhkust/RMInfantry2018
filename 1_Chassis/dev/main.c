@@ -52,7 +52,7 @@ static THD_FUNCTION(Attitude_thread, p)
     imuGetData(pIMU);
     ist8310_update();
     if(pIMU->inited == 2)
-      attitude_update(pIMU);
+      //battitude_update(pIMU);
 
     if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
     {
@@ -93,24 +93,22 @@ int main(void) {
   palClearPad(GPIOA, GPIOA_LED_Y);
   palClearPad(GPIOA, GPIOA_LED_B);
 
-    shellStart();
-    params_init();
+    	//shellStart();
+//    params_init();
 //    sdlog_init();
     can_processInit();
-    RC_init();
-    extiinit(); //*
+//    RC_init();
+    //extiinit(); //*
 //    pGyro = gyro_init();
 //    tempControllerInit(); //*
-
-    adis16470_init();
 
     //mavlinkComm_init();
 
     //chassis_init();
     //gimbal_sys_iden_init(); //*
     //gimbal_init();
-    pwm_shooter_init(); // *
-    error_init();
+    //pwm_shooter_init(); // *
+    //error_init();
 //  pwm12init();
     judgeinit();
     sen_chassis_init();
@@ -122,15 +120,15 @@ int main(void) {
 
 //  tft_init(TFT_HORIZONTAL, CYAN, YELLOW, BLACK);
 
-  pIMU = imu_get(); //*
-  XT30_1_ON();
-  XT30_2_ON();
-  XT30_3_ON();
-  XT30_4_ON();
+//  pIMU = imu_get(); //*
+//  XT30_1_ON();
+//  XT30_2_ON();
+//  XT30_3_ON();
+//  XT30_4_ON();
 
-  chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
-                    NORMALPRIO + 5,
-                    Attitude_thread, NULL); //*
+//  chThdCreateStatic(Attitude_thread_wa, sizeof(Attitude_thread_wa),
+//                    NORMALPRIO + 5,
+//                    Attitude_thread, NULL); //*
 
 
 
