@@ -9,11 +9,13 @@
 #include "shoot.h"
 #include "dbus.h"
 #include "mavlink_comm.h"
+#include "canBusProcess.h"
 
 #define MIN_SHOOT_SPEED 100U
 #define MAX_SHOOT_SPEED 900U
 
 RC_Ctl_t* rc;
+sentryControl_t* sentryControl;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
@@ -63,16 +65,34 @@ static THD_FUNCTION(pwm_thd, arg) {
     const float alpha = 0.004f;
     float speed = 0;
 
+    safe = true;
+
     while (!chThdShouldTerminateX())
     {
-		if (mav->status.msg_received) {
-			shooter_control(SHOOT_SAFE_PWM_VAL);
+		if (rc->rc.s2 == 0) {
+			//shooter_control(SHOOT_SAFE_PWM_VAL);
+			switch (sentryControl->fireBullet) {
+			case 1:
+				safe = true;
+			  shooter_control(SHOOT_SAFE_PWM_VAL);
+			  break;
+			case 2:
+				safe = true;
+			  shooter_control(SHOOT_SAFE_PWM_VAL);
+			  break;
+			default:
+				safe = true;
+				shooter_control(100);
+				break;
+			}
 		} else {
 			switch (rc->rc.s2) {
 				case RC_S_UP:
+					safe = true;
 				  shooter_control(175);   //min 100 max 900
 				  break;
 				case RC_S_MIDDLE:
+					safe = true;
 				  shooter_control(SHOOT_SAFE_PWM_VAL);
 				  break;
 				case RC_S_DOWN:
@@ -141,6 +161,8 @@ void shooter_init(void)
     rc = RC_get();
     mav = mavlinkComm_get();
     pwm12_start();
+
+    sentryControl = returnSentryControl();
 
     #ifndef SHOOTER_SETUP
       pwm12_setWidth(900);

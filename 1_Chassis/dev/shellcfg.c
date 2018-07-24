@@ -67,7 +67,7 @@ static THD_FUNCTION(matlab_thread, p)
   BaseSequentialStream* chp = (BaseSequentialStream*)&SDU1;
 
   PIMUStruct PIMU = imu_get();
-  chassisStruct* chassis = chassis_get();
+  //chassisStruct* chassis = chassis_get();
 //  GimbalStruct* gimbal = gimbal_get();
 
   uint32_t tick = chVTGetSystemTimeX();

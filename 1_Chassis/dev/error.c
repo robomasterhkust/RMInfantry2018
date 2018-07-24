@@ -24,9 +24,9 @@ void EMsg_init(void){
 void EMsg_update(void){
 //  EMsg.imu_error = imu_get_error();
   EMsg.dbus_error = dbus_getError();
-  EMsg.gimbal_error = gimbal_getError();
+  //EMsg.gimbal_error = gimbal_getError();
   EMsg.ist8310_error = ist8310_getError();
-  EMsg.chassis_error = chassis_getError();
+  //EMsg.chassis_error = chassis_getError();
 }
 
 void printError_Gimbal(BaseSequentialStream * chp, gimbal_error_t error_Index){

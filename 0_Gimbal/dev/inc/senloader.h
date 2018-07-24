@@ -15,7 +15,7 @@
 #define POS_KI						0.0f
 #define POS_KD						0.0f
 #define POS_ILIM					50000.0f
-#define POS_OUTLIM					4000.0f
+#define POS_OUTLIM					10000.0f
 
 #define LOADER_TORQUE_LIM			4000
 

@@ -67,6 +67,8 @@ void gimbal_kill(void)
   gimbal.state = GIMBAL_STATE_UNINIT;
 }
 
+sentryControl_t* gimbalControl;
+
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
@@ -96,7 +98,7 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 
   /* software limit position*/
   float yaw_speed_limit = gimbal.motor[GIMBAL_YAW]._speed - gimbal.motor[GIMBAL_YAW]._speed_enc,
-        pitch_speed_limit = -gimbal.motor[GIMBAL_PITCH]._speed + gimbal.motor[GIMBAL_PITCH]._speed_enc;
+        pitch_speed_limit = gimbal.motor[GIMBAL_PITCH]._speed - gimbal.motor[GIMBAL_PITCH]._speed_enc;
 
   //Need to check signs here
   if ((gimbal.state & GIMBAL_YAW_AT_UP_LIMIT && input_z > yaw_speed_limit) ||
@@ -368,6 +370,8 @@ static THD_FUNCTION(gimbal_thread, p)
 #endif
 
   loaderMotor = returnLoader();
+
+  gimbalControl = returnSentryControl();
 
   _yaw_vel.error_int_max = 2000.0f;
   _pitch_vel.error_int_max = 2500.0f;
