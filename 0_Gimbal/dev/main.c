@@ -118,12 +118,12 @@ int main(void)
   can_processInit();
   RC_init();
 //  mavlinkComm_init();
-
-//  while(!power_check())
-//    chThdSleepMilliseconds(200);
+	
+  gimbal_init();
+  while(!power_check())
+    chThdSleepMilliseconds(200);
 
   /* Init sequence 3: actuators, display*/
-  gimbal_init();
   gimbal_start();
   shooter_init();
 //feederInit();
