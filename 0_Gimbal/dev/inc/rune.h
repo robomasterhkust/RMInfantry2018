@@ -3,7 +3,7 @@
 
 #define RUNE_FIRE_SAFE
 #define RUNE_FIRE_POWER 160U
-#define RUNE_REMOTE_CONTROL         //turn this on when testing rune
+//#define RUNE_REMOTE_CONTROL         //turn this on when testing rune
 
 
 #define RUNE_MAX_ERROR 0.03f

@@ -9,6 +9,8 @@
 #include "shoot.h"
 #include "dbus.h"
 #include "keyboard.h"
+#include "feeder.h"
+
 #define MIN_SHOOT_SPEED 100U
 #define MAX_SHOOT_SPEED 900U
 
@@ -16,7 +18,6 @@ RC_Ctl_t* rc;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
-static bool Z_Press =false;
 static speed_mode_t speed_mode;
 static uint8_t shooting_speed = 0;
 static PWMDriver PWMD12;
@@ -55,59 +56,105 @@ static const PWMConfig pwm12cfg = {
         0
 };
 
+#if defined (RM_INFANTRY)
+static void shooter_txCan(const uint16_t shoot_speed, const uint16_t feeder_rps)
+{
+  CANTxFrame txmsg;
+  dbus_tx_canStruct txCan;
+
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.SID = SHOOTER_SID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x08;
+
+  chSysLock();
+
+  txmsg.data16[0] = shoot_speed;
+  txmsg.data16[1] = feeder_rps;
+
+  chSysUnlock();
+
+  canTransmit(SHOOTER_CAN, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+}
+#endif
+
 static THD_WORKING_AREA(pwm_thd_wa, 512);
 static THD_FUNCTION(pwm_thd, arg) {
     (void)arg;
 
     const float alpha = 0.004f;
     float speed = 0;
+    uint8_t  prev_s2  = RC_S_DUMMY;
+    bool     Z_press = false;
+
+    const uint16_t shooting_speed_minigun = speed_mode.slow_speed;
 
     while (!chThdShouldTerminateX())
     {
+      if(rc->rc.s2 == RC_S_DOWN)
+        safe = true; //Release the weapon safe
+
       switch (rc->rc.s1){
         case RC_S_UP:
         {
           #ifdef SHOOTER_USE_RC
-          switch (rc->rc.s2) {
-            case RC_S_UP:
-              shooting_speed = speed_mode.fast_speed;
-             // shooter_control(speed_mode.fast_speed);
-              break;
-            case RC_S_MIDDLE:
-              shooting_speed = speed_mode.slow_speed;
-              //shooter_control(speed_mode.slow_speed);
-              break;
-            case RC_S_DOWN:
-              shooting_speed = speed_mode.stop;
-              safe = true;
-              //shooter_control(speed_mode.stop);
-              break;
-          }
-          #endif
-        }break;
-        case RC_S_MIDDLE:{
-          if(bitmap[KEY_Z] == 1){
-            Z_Press = true;
-          }
-          else{
-            if(Z_Press == true){
-              if(shooting_speed == speed_mode.slow_speed){
+          if(prev_s2 != rc->rc.s2)
+          {
+            switch (rc->rc.s2) {
+              case RC_S_UP:
                 shooting_speed = speed_mode.fast_speed;
-              }
-              else{
+               // shooter_control(speed_mode.fast_speed);
+                break;
+              case RC_S_MIDDLE:
                 shooting_speed = speed_mode.slow_speed;
-              }
-              Z_Press = false;
+                //shooter_control(speed_mode.slow_speed);
+                break;
+              case RC_S_DOWN:
+                shooting_speed = speed_mode.stop;
+                //shooter_control(speed_mode.stop);
+                break;
             }
           }
+          prev_s2 = rc->rc.s2;
+          #endif
+        }break;
+        case RC_S_MIDDLE:
+        {
+          if(bitmap[KEY_Z])
+          {
+            if(!Z_press)
+            {
+              if(shooting_speed == speed_mode.slow_speed)
+                shooting_speed = speed_mode.fast_speed;
+              else
+                shooting_speed = speed_mode.slow_speed;
+            }
+            Z_press = true;
+          }
+          else
+            Z_press = false;
         }break;
       }
 
-
+      if(feeder_getSpeed() >= FEEDER_MINIGUN_RPS)
+        shooting_speed = speed_mode.slow_speed;
 
       shooter_control(shooting_speed);
       speed = alpha * (float)speed_sp + (1-alpha) * speed;
       pwm12_setWidth((uint16_t)speed);
+
+      #if defined (RM_INFANTRY)
+        uint8_t display_speed = 0;
+        if(shooting_speed == speed_mode.fast_speed)
+          display_speed = 25;
+        else if(shooting_speed == speed_mode.slow_speed)
+          display_speed = 15;
+        else
+          display_speed = 0;
+
+        shooter_txCan(display_speed , feeder_getSpeed());
+      #endif
+
       chThdSleepMilliseconds(5);
     }
 }
@@ -164,8 +211,8 @@ void shooter_init(void)
 {
     rc = RC_get();
     pwm12_start();
-    speed_mode.fast_speed=175;
-    speed_mode.slow_speed=110;
+    speed_mode.fast_speed=170;
+    speed_mode.slow_speed=117;
     speed_mode.stop = 100;
     #ifndef SHOOTER_SETUP
       pwm12_setWidth(900);

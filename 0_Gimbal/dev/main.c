@@ -121,6 +121,7 @@ int main(void)
     LEDY_TOGGLE();
     chThdSleepMilliseconds(50);
   }
+  LEDY_OFF();
 
   /* Init sequence 3: actuators, display*/
   gimbal_start();

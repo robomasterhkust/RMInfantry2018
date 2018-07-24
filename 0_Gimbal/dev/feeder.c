@@ -6,14 +6,16 @@
 #include "dbus.h"
 
 #include "math_misc.h"
+#include "keyboard.h"
 
 #include "feeder.h"
 
-static int16_t FEEDER_SPEED_SP_RPM  = 0;
+static int16_t feeder_auto_rps;
+static bool minigun_mode;                        //RAIN FIRE! KILL THEM ALL!!
+
 #define FEEDER_TURNBACK_ANGLE   360.0f / FEEDER_BULLET_PER_TURN     //165.0f;
 
 static int16_t        feeder_output;
-static uint8_t        level;
 
 static uint8_t        feeder_boost_mode_error;
 static uint8_t        feeder_fire_mode = FEEDER_AUTO; //User selection of firing mode
@@ -45,9 +47,16 @@ pid_struct  rest_pid /*= {0.45, 0, 0, 0, 0}*/;
 static uint32_t bulletCount      = 0;
 static uint32_t bulletCount_stop = 0;
 
+static param_t brakepos_offset;
+
 feeder_error_t feeder_get_error(void)
 {
   return feeder_error_flag;
+}
+
+int16_t feeder_getSpeed(void)
+{
+  return feeder_auto_rps;
 }
 
 int16_t feeder_canUpdate(void)
@@ -67,7 +76,7 @@ float feeder_getDelay(void)
 
 static void feeder_brake(void)
 {
-  feeder_brakePos = (float)feeder_encode->total_ecd;
+  feeder_brakePos = (float)feeder_encode->total_ecd + brakepos_offset;
   pos_pid.inte = 0; //reset pid integrator
   feeder_stop_time = chVTGetSystemTimeX();
 }
@@ -167,9 +176,10 @@ static int16_t feeder_controlPos(const float target, const float output_max){
     return feeder_controlVel(speed_sp, output_max);
 }
 
-static void feeder_func(BarrelStatus_canStruct* barrel_info){
+static void feeder_func(void){
     feeder_output = 0.0f;
     static uint16_t error_count;
+    static int16_t FEEDER_SPEED_SP_RPM;
 
     switch (feeder_mode){
         case FEEDER_FINISHED:
@@ -201,34 +211,7 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
               }
               FEEDER_SPEED_SP_RPM = 5  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
             }
-            goto SPEED_CONTROL;
         case FEEDER_AUTO:
-            //error detecting
-            if(barrel_info->heatLimit <= LEVEL1_HEATLIMIT){
-              level = 1;
-              FEEDER_SPEED_SP_RPM = 10 * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-            }
-            else if(barrel_info->heatLimit <= LEVEL2_HEATLIMIT){
-              level =2;
-              FEEDER_SPEED_SP_RPM = 17  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-            }
-            else if(barrel_info->heatLimit <= LEVEL3_HEATLIMIT){
-              level =3;
-              FEEDER_SPEED_SP_RPM = 25  * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN;
-            }
-            else
-            {
-              #ifdef RM_DEBUG
-                level = -1;
-                barrel_info->heatLimit = -1;
-                FEEDER_SPEED_SP_RPM = FEEDER_TEST_SETSPEED;
-              #else
-                //system_setWarningFlag(); //No judgement system data
-              #endif
-            }
-
-            SPEED_CONTROL:
-
             if (
                  state_count((feeder_encode->raw_speed < 30) &&
                              (feeder_encode->raw_speed > -30),
@@ -246,7 +229,8 @@ static void feeder_func(BarrelStatus_canStruct* barrel_info){
               }
             }
 
-            feeder_output = feeder_controlVel(FEEDER_SPEED_SP_RPM, FEEDER_OUTPUT_MAX);
+            feeder_output = feeder_controlVel(feeder_auto_rps * FEEDER_GEAR * 60 / FEEDER_BULLET_PER_TURN,
+                                              FEEDER_OUTPUT_MAX);
             feeder_canUpdate();
 
             break;
@@ -309,7 +293,10 @@ static THD_FUNCTION(feeder_control, p){
     uint16_t feeder_connection_error_counter = 0;
     uint16_t limit_switch_error_counter[3] = {0, 0, 0};
 
+    uint8_t  prev_s2         = RC_S_DUMMY;
     uint16_t prev_heat_value = 0;
+    bool     G_press         = false;
+    bool     Z_press         = false;
     while(!chThdShouldTerminateX())
     {
         if(state_count(!(feeder_encode->updated), 100, &feeder_connection_error_counter))
@@ -376,7 +363,7 @@ static THD_FUNCTION(feeder_control, p){
             feeder_mode = FEEDER_STOP;
           }
         }
-        else if(level != -1 && feeder_mode != FEEDER_OVERHEAT &&
+        else if(feeder_mode != FEEDER_OVERHEAT &&
           barrel_info->currentHeatValue > barrel_info->heatLimit - 15){
 
           chSysLock();
@@ -389,6 +376,39 @@ static THD_FUNCTION(feeder_control, p){
           chSysUnlock();
 
           feeder_brake();
+        }
+
+        if(prev_s2 != p_dbus->rc.s2)
+          minigun_mode = p_dbus->rc.s2 == RC_S_MIDDLE ? true : false;
+        prev_s2 = p_dbus->rc.s2;
+
+        if(bitmap[KEY_G])
+        {
+          if(!G_press)
+            minigun_mode = !minigun_mode;
+          G_press = true;
+        }
+        else
+          G_press = false;
+
+        if(bitmap[KEY_Z])
+        {
+          if(!Z_press && minigun_mode)
+            minigun_mode = false;
+          Z_press = true;
+        }
+        else
+          Z_press = false;
+
+        //error detecting
+        if(barrel_info->heatLimit <= LEVEL1_HEATLIMIT)
+          feeder_auto_rps = 7;
+        else if(barrel_info->heatLimit <= LEVEL3_HEATLIMIT)
+        {
+          if(!minigun_mode)
+            feeder_auto_rps = 10;
+          else
+            feeder_auto_rps = FEEDER_MINIGUN_RPS;
         }
 
         if(
@@ -415,7 +435,7 @@ static THD_FUNCTION(feeder_control, p){
             feeder_mode = FEEDER_STOP;
         }
 
-        feeder_func(barrel_info);
+        feeder_func();
         chThdSleepMilliseconds(1);
     }
 }
@@ -423,7 +443,9 @@ static THD_FUNCTION(feeder_control, p){
 static const FEEDER_VEL  = "FEEDER_VEL";
 static const FEEDER_POS  = "FEEDER_POS";
 static const FEEDER_rest_name = "FEEDER_REST";
+static const FEEDER_offset_name = "feeder brakepos offset";
 static const char subname_feeder_PID[] = "KP KI KD Imax";
+static const char subname_offset[] = "offset";
 void feeder_init(void){
 
     feeder_encode = can_getFeederMotor();
@@ -433,6 +455,7 @@ void feeder_init(void){
     params_set(&vel_pid, 14,4,FEEDER_VEL,subname_feeder_PID,PARAM_PUBLIC);
     params_set(&pos_pid, 15,4,FEEDER_POS,subname_feeder_PID,PARAM_PUBLIC);
     params_set(&rest_pid, 16,4,FEEDER_rest_name,subname_feeder_PID,PARAM_PUBLIC);
+    params_set(&brakepos_offset, 17,1,FEEDER_offset_name,subname_offset,PARAM_PUBLIC);
 
     lpfilter_init(&lp_spd_feeder, 1000, 30);
     feeder_brakePos = (float)feeder_encode->total_ecd;

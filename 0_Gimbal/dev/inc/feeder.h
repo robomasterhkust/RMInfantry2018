@@ -18,6 +18,8 @@
 #define FEEDER_OUTPUT_MAX_BACK  12000U  //output limit for stuck-bullet turning back
 #define FEEDER_ERROR_COUNT        800U
 
+#define FEEDER_MINIGUN_RPS        18U
+
 #define FEEDER_BOOST_POWER  16383U
 
 typedef enum{
@@ -54,6 +56,7 @@ void feeder_singleShot(void); //Rune shooting function
 
 void feeder_init(void);
 void feeder_start(void);
+int16_t feeder_getSpeed(void);
 
 feeder_mode_t* get_feeder(void);
 uint8_t* get_feeder_fire_mode(void);
