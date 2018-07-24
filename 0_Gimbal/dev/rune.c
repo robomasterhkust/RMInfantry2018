@@ -34,7 +34,7 @@ void rune_cmd(uint8_t cmd) {
   gimbal_setRune(cmd);
 }
 
-void rune_fire(const float yaw, const float pitch) {
+void rune_fire(const float yaw, const float pitch, bool fire) {
   gimbal->pitch_atti_cmd = pitch;
   gimbal->yaw_atti_cmd = yaw + (pIMU->euler_angle[Yaw] - gimbal->d_yaw);
 
@@ -52,8 +52,9 @@ void rune_fire(const float yaw, const float pitch) {
 
     chThdSleepMilliseconds(5);
   }
-
-  feeder_singleShot();
+  if (fire){
+    feeder_singleShot();
+  }
   gimbal_Follow();
 }
 
@@ -65,10 +66,11 @@ static THD_FUNCTION(rune_thread, p) {
     if(bitmap[KEY_G]){
       if(!G_press){
         if(rune_remote_control_enable){
-          rune_fire(0.0f, 0.0f);
+          rune_fire(0.0f, 0.0f, false);
           rune_remote_control_enable = false;
         }
         else{
+          rune_fire(0.0f, 0.0f, true);
           rune_remote_control_enable = true;
         }
 
@@ -89,7 +91,7 @@ static THD_FUNCTION(rune_thread, p) {
 
     if(rune_remote_control_enable && rune_can->updated){
       rune_cmd(ENABLE);
-      rune_fire(rune_can->pz, rune_can->py);
+      rune_fire(rune_can->pz, rune_can->py, true);
       rune_cmd(DISABLE);
       rune_can->updated = false;
     }

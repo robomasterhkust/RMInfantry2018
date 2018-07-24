@@ -112,7 +112,7 @@ void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
 void cmd_rune(BaseSequentialStream * chp, int argc, char *argv[])
 {
   rune_cmd(ENABLE);
-  rune_fire(0.0f, 0.0f);
+  rune_fire(0.0f, 0.0f, true);
   rune_cmd(DISABLE);
 }
 
