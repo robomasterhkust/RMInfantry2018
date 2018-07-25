@@ -7,10 +7,10 @@
 #include "shell.h"
 #include <string.h>
 
-#define SERIAL_CMD       &SDU1
-#define SERIAL_DATA      &SDU1
+#define SERIAL_CMD &SD3
+#define SERIAL_DATA &SD3
 
-static thread_t* matlab_thread_handler = NULL;
+static thread_t *matlab_thread_handler = NULL;
 /**
  * @brief Transmit uint32_t and float through serial port to host machine
  * @require Initialization of ChibiOS serial driver before using this function
@@ -23,29 +23,28 @@ static thread_t* matlab_thread_handler = NULL;
  *
  * @TODO improve the transmission protocol to enable easier setup for the host machine
  */
-#define SYNC_SEQ  0xaabbccdd
-static void transmit_matlab
-  (BaseSequentialStream* chp,
-    uint32_t* const txbuf_d, float* const txbuf_f,
-    const uint8_t num_int, const uint8_t num_float)
+#define SYNC_SEQ 0xaabbccdd
+static void transmit_matlab(BaseSequentialStream *chp,
+                            uint32_t *const txbuf_d, float *const txbuf_f,
+                            const uint8_t num_int, const uint8_t num_float)
 {
   uint32_t sync = SYNC_SEQ;
-  char* byte = (char*)&sync;
+  char *byte = (char *)&sync;
 
   uint8_t i;
   for (i = 0; i < 4; i++)
     chSequentialStreamPut(chp, *byte++);
 
-  byte = (char*)txbuf_d;
-  for (i = 0; i < 4*num_int; i++)
+  byte = (char *)txbuf_d;
+  for (i = 0; i < 4 * num_int; i++)
     chSequentialStreamPut(chp, *byte++);
 
-  byte = (char*)txbuf_f;
-  for (i = 0; i < 4*num_float; i++)
+  byte = (char *)txbuf_f;
+  for (i = 0; i < 4 * num_float; i++)
     chSequentialStreamPut(chp, *byte++);
 }
 
-#define HOST_TRANSMIT_FREQ  100U
+#define HOST_TRANSMIT_FREQ 100U
 static THD_WORKING_AREA(matlab_thread_wa, 512);
 static THD_FUNCTION(matlab_thread, p)
 {
@@ -54,17 +53,17 @@ static THD_FUNCTION(matlab_thread, p)
 
   int32_t txbuf_d[16];
   float txbuf_f[16];
-  BaseSequentialStream* chp = (BaseSequentialStream*)SERIAL_DATA;
+  BaseSequentialStream *chp = (BaseSequentialStream *)SERIAL_DATA;
 
   PIMUStruct pIMU = imu_get();
-  GimbalStruct* gimbal = gimbal_get();
+  GimbalStruct *gimbal = gimbal_get();
 
   uint32_t tick = chVTGetSystemTimeX();
-  const uint16_t period = US2ST(1000000/HOST_TRANSMIT_FREQ);
+  const uint16_t period = US2ST(1000000 / HOST_TRANSMIT_FREQ);
   while (!chThdShouldTerminateX())
   {
     tick += period;
-    if(tick > chVTGetSystemTimeX())
+    if (tick > chVTGetSystemTimeX())
       chThdSleepUntil(tick);
     else
     {
@@ -83,130 +82,98 @@ static THD_FUNCTION(matlab_thread, p)
 /* Definitions of shell command functions                                    */
 /*===========================================================================*/
 static THD_WORKING_AREA(Shell_thread_wa, 1024);
-void cmd_test(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_test(BaseSequentialStream *chp, int argc, char *argv[])
 {
-  (void) argc,argv;
+  (void)argc, argv;
   PIMUStruct PIMU = imu_get();
   PGyroStruct PGyro = gyro_get();
-  GimbalStruct* gimbal = gimbal_get();
+  GimbalStruct *gimbal = gimbal_get();
 
-  chprintf(chp,"accelFiltered[X]: %f\r\n",PIMU->accelFiltered[X]);
-  chprintf(chp,"accelFiltered[Y]: %f\r\n",PIMU->accelFiltered[Y]);
-  chprintf(chp,"accelFiltered[Z]: %f\r\n",PIMU->accelFiltered[Z]);
-  chprintf(chp,"Gyro: %f\r\n",PGyro->angle);
+  chprintf(chp, "accelFiltered[X]: %f\r\n", PIMU->accelFiltered[X]);
+  chprintf(chp, "accelFiltered[Y]: %f\r\n", PIMU->accelFiltered[Y]);
+  chprintf(chp, "accelFiltered[Z]: %f\r\n", PIMU->accelFiltered[Z]);
+  chprintf(chp, "Gyro: %f\r\n", PGyro->angle);
 
-  chprintf(chp,"Roll:  %f\r\n",PIMU->euler_angle[Roll]);
-  chprintf(chp,"Pitch: %f\r\n",PIMU->euler_angle[Pitch]);
-  chprintf(chp,"Yaw:   %f\r\n",PIMU->euler_angle[Yaw]);
+  chprintf(chp, "Roll:  %f\r\n", PIMU->euler_angle[Roll]);
+  chprintf(chp, "Pitch: %f\r\n", PIMU->euler_angle[Pitch]);
+  chprintf(chp, "Yaw:   %f\r\n", PIMU->euler_angle[Yaw]);
 
-  chprintf(chp,"gimbalPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._angle);
-  chprintf(chp,"gimbalYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._angle);
+  chprintf(chp, "gimbalPitch: %f\r\n", gimbal->motor[GIMBAL_PITCH]._angle);
+  chprintf(chp, "gimbalYaw:   %f\r\n", gimbal->motor[GIMBAL_YAW]._angle);
 
-
-  chprintf(chp,"VelEncPitch: %f\r\n",gimbal->motor[GIMBAL_PITCH]._speed_enc);
-  chprintf(chp,"VelEncYaw:   %f\r\n",gimbal->motor[GIMBAL_YAW]._speed_enc);
-}
-
-void cmd_mavlink(BaseSequentialStream * chp, int argc, char *argv[])
-{
-  (void) argc,argv;
-
-  mavlink_attitude_t* attitude = mavlinkComm_attitude_subscribe();
-
-  float pitchSpeed = 0.0f, yawSpeed = 0.0f;
-
-  uint8_t i;
-  for (i = 0; i < 100; i++)
-  {
-    if(mavlinkComm_attitude_check())
-    {
-      chSysLock();
-      pitchSpeed = attitude->pitchspeed;
-      yawSpeed = attitude->yawspeed;
-      chSysUnlock();
-
-      chprintf(chp,"MAVpitchCmd: %f\r\n",pitchSpeed);
-      chprintf(chp,"MAVyawCmd: %f\r\n",yawSpeed);
-    }
-    else
-    {
-      pitchSpeed = 0.0f;
-      yawSpeed = 0.0f;
-    }
-
-    chThdSleepMilliseconds(100);
-  }
+  chprintf(chp, "VelEncPitch: %f\r\n", gimbal->motor[GIMBAL_PITCH]._speed_enc);
+  chprintf(chp, "VelEncYaw:   %f\r\n", gimbal->motor[GIMBAL_YAW]._speed_enc);
 }
 
 #ifdef SHOOTER_SETUP
-  /**
+/**
    * @brief Start the data tramsmission to matlab
    * @note caution of data flooding to the serial port
    */
-  void cmd_shooter_setup(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_shooter_setup(BaseSequentialStream *chp, int argc, char *argv[])
+{
+  if (argc)
   {
-    if(argc)
+    if (!strcmp(argv[0], "set1"))
     {
-      if(!strcmp(argv[0], "set1"))
-      {
-        pwm12_setWidth(900);
-        chprintf(chp,"Set pwm to max\r\n");
-      }
-      else if(!strcmp(argv[0], "set2"))
-      {
-        pwm12_setWidth(100);
-        chprintf(chp,"Set pwm to min\r\n");
-      }
+      pwm12_setWidth(900);
+      chprintf(chp, "Set pwm to max\r\n");
     }
-    else
-      chprintf(chp,"cmd: set1, set2\r\n");
+    else if (!strcmp(argv[0], "set2"))
+    {
+      pwm12_setWidth(100);
+      chprintf(chp, "Set pwm to min\r\n");
+    }
   }
+  else
+    chprintf(chp, "cmd: set1, set2\r\n");
+}
 #endif
 
 /**
  * @brief Start the data tramsmission to matlab
  * @note caution of data flooding to the serial port
  */
-void cmd_data(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_data(BaseSequentialStream *chp, int argc, char *argv[])
 {
   uint8_t sec = 10;
 
-  if(argc && matlab_thread_handler == NULL)
+  if (argc && matlab_thread_handler == NULL)
   {
     char *toNumber = argv[0];
-    uint32_t finalNum=0;
-    while(*toNumber>='0' && *toNumber<='9')
-      finalNum=finalNum*10+*(toNumber++)-'0';
+    uint32_t finalNum = 0;
+    while (*toNumber >= '0' && *toNumber <= '9')
+      finalNum = finalNum * 10 + *(toNumber++) - '0';
 
-    if(finalNum == 0)
+    if (finalNum == 0)
       finalNum = 10;
 
     sec = (finalNum < 60 ? finalNum : 60);
 
-    chprintf(chp,"Data transmission start in %d seconds...\r\n", sec);
+    chprintf(chp, "Data transmission start in %d seconds...\r\n", sec);
     chThdSleepSeconds(sec);
 
     matlab_thread_handler = chThdCreateStatic(matlab_thread_wa, sizeof(matlab_thread_wa),
-        NORMALPRIO - 3,
-        matlab_thread, NULL);
+                                              NORMALPRIO - 3,
+                                              matlab_thread, NULL);
   }
-  else if(matlab_thread_handler != NULL)
+  else if (matlab_thread_handler != NULL)
   {
     chThdTerminate(matlab_thread_handler);
     matlab_thread_handler = NULL;
   }
 }
 
-void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_calibrate(BaseSequentialStream *chp, int argc, char *argv[])
 {
   PIMUStruct pIMU = imu_get();
   PGyroStruct pGyro = gyro_get();
 
-  if(argc)
+  if (argc)
   {
-    if(!strcmp(argv[0], "accl"))
+    if (!strcmp(argv[0], "accl"))
     {
-      if(pIMU->state == IMU_STATE_READY)
+      if (pIMU->state == IMU_STATE_READY)
       {
         pIMU->accelerometer_not_calibrated = true;
 
@@ -221,9 +188,9 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
       else
         chprintf(chp, "IMU initialization not complete\r\n");
     }
-    else if(!strcmp(argv[0], "gyro"))
+    else if (!strcmp(argv[0], "gyro"))
     {
-      if(pIMU->state == IMU_STATE_READY)
+      if (pIMU->state == IMU_STATE_READY)
       {
         pIMU->gyroscope_not_calibrated = true;
 
@@ -237,40 +204,39 @@ void cmd_calibrate(BaseSequentialStream * chp, int argc, char *argv[])
       }
       else
         chprintf(chp, "IMU initialization not complete\r\n");
-
     }
-    else if(!strcmp(argv[0], "adi"))
+    else if (!strcmp(argv[0], "adi"))
     {
       pGyro->adis_gyroscope_not_calibrated = true;
       chThdSleepMilliseconds(10);
-      calibrate_adi(pGyro,false); //fast calibration ~30s
+      calibrate_adi(pGyro, false); //fast calibration ~30s
       chThdResume(&(pGyro->adis_Thd), MSG_OK);
     }
-    else if(!strcmp(argv[0], "adi-full"))
+    else if (!strcmp(argv[0], "adi-full"))
     {
       pGyro->adis_gyroscope_not_calibrated = true;
       chThdSleepMilliseconds(10);
-      calibrate_adi(pGyro,true); //full calibration ~5min
+      calibrate_adi(pGyro, true); //full calibration ~5min
       chThdResume(&(pGyro->adis_Thd), MSG_OK);
     }
     param_save_flash();
   }
   else
-    chprintf(chp,"Calibration: gyro, accl, adi, adi-full\r\n");
+    chprintf(chp, "Calibration: gyro, accl, adi, adi-full\r\n");
 }
 
-void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
+void cmd_temp(BaseSequentialStream *chp, int argc, char *argv[])
 {
-  (void) argc,argv;
+  (void)argc, argv;
 
   //while(1){ // you can uncomment this so that it continuously send the data out.
   //            // this is useful in tuning the Temperature PID
-      PIMUStruct _pimu = imu_get();
-      TPIDStruct* _tempPID = TPID_get();
-      chprintf(chp,"Temperature: %f\r\n", _pimu->temperature);
-      chprintf(chp,"PID_value: %d\r\n", _tempPID->PID_Value);
+  PIMUStruct _pimu = imu_get();
+  TPIDStruct *_tempPID = TPID_get();
+  chprintf(chp, "Temperature: %f\r\n", _pimu->temperature);
+  chprintf(chp, "PID_value: %d\r\n", _tempPID->PID_Value);
 
-      chThdSleepMilliseconds(500);
+  chThdSleepMilliseconds(500);
   //}
 }
 
@@ -279,29 +245,26 @@ void cmd_temp(BaseSequentialStream * chp, int argc, char *argv[])
  * {"command", callback_function}
  */
 static const ShellCommand commands[] =
-{
-  {"test", cmd_test},
-  {"mavlink", cmd_mavlink},
-  {"cal", cmd_calibrate},
-  {"temp", cmd_temp},
-  {"\xEE", cmd_data},
-  #ifdef PARAMS_USE_USB
-    {"\xFD",cmd_param_scale},
-    {"\xFB",cmd_param_update},
-    {"\xFA",cmd_param_tx},
-    {"\xF9",cmd_param_rx},
-  #endif
-  #ifdef SHOOTER_SETUP
-    {"shoot", cmd_shooter_setup},
-  #endif
-  {NULL, NULL}
-};
+    {
+        {"test", cmd_test},
+        {"cal", cmd_calibrate},
+        {"temp", cmd_temp},
+        {"\xEE", cmd_data},
+#ifdef PARAMS_USE_USB
+        {"\xFD", cmd_param_scale},
+        {"\xFB", cmd_param_update},
+        {"\xFA", cmd_param_tx},
+        {"\xF9", cmd_param_rx},
+#endif
+#ifdef SHOOTER_SETUP
+        {"shoot", cmd_shooter_setup},
+#endif
+        {NULL, NULL}};
 
 static const ShellConfig shell_cfg1 =
-{
-  (BaseSequentialStream *)SERIAL_CMD,
-  commands
-};
+    {
+        (BaseSequentialStream *)&SD3,
+        commands};
 
 /**
  * @brief start the shell service
@@ -316,25 +279,26 @@ void shellStart(void)
   /*
    * Initializes a serial-over-USB CDC driver.
    */
-  sduObjectInit(&SDU1);
-  sduStart(&SDU1, &serusbcfg);
-
+  // sduObjectInit(&SDU1);
+  // sduStart(&SDU1, &serusbcfg);
+  const SerialConfig sdconfig = {
+      115200u, //Baud Rate
+  };
+  sdStart(&SD3, &sdconfig);
   /*
    * Activates the USB driver and then the USB bus pull-up on D+.
    * Note, a delay is inserted in order to not have to disconnect the cable
    * after a reset.
    */
 
+  // usbDisconnectBus(serusbcfg.usbp);
+  // chThdSleepMilliseconds(1500);
 
-  usbDisconnectBus(serusbcfg.usbp);
-  chThdSleepMilliseconds(1500);
-
-  usbStart(serusbcfg.usbp, &usbcfg);
-  usbConnectBus(serusbcfg.usbp);
+  // usbStart(serusbcfg.usbp, &usbcfg);
+  // usbConnectBus(serusbcfg.usbp);
 
   shellInit();
 
   shellCreateStatic(&shell_cfg1, Shell_thread_wa,
-      sizeof(Shell_thread_wa), NORMALPRIO);
-
+                    sizeof(Shell_thread_wa), NORMALPRIO);
 }

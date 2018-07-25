@@ -8,7 +8,6 @@
 
 #include "shoot.h"
 #include "dbus.h"
-#include "mavlink_comm.h"
 #include "canBusProcess.h"
 
 #define MIN_SHOOT_SPEED 100U
@@ -51,8 +50,6 @@ static const PWMConfig pwm12cfg = {
      {PWM_OUTPUT_DISABLED, NULL}},
     0,
     0};
-
-static mavlinkComm_t *mav;
 
 static THD_WORKING_AREA(pwm_thd_wa, 512);
 static THD_FUNCTION(pwm_thd, arg)
@@ -161,7 +158,6 @@ static void pwm12_start(void)
 void shooter_init(void)
 {
   rc = RC_get();
-  mav = mavlinkComm_get();
   pwm12_start();
 
 #ifndef SHOOTER_SETUP

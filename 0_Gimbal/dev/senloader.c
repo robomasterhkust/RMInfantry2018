@@ -118,8 +118,6 @@ void sen_loader_init (void) {
 
 	control = RC_get();
 
-	mavv = mavlinkComm_attitude_subscribe();
-
 	judge_fb = can_getChassisdata();
 
 	memset(&senloader, 0, sizeof(sen_motorStruct));

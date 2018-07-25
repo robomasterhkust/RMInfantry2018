@@ -216,7 +216,7 @@ void can_processInit(void)
   canSTM32SetFilters(14, CAN_FILTER_NUM, canfilter);
 
   canStart(&CAND1, &cancfg);
-  //canStart(&CAND2, &cancfg);
+  canStart(&CAND2, &cancfg);
 
   /*
    * Starting the transmitter and receiver threads.

@@ -68,8 +68,6 @@ void gimbal_kill(void)
   gimbal.state = GIMBAL_STATE_UNINIT;
 }
 
-sentryControl_t *gimbalControl;
-
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
@@ -372,7 +370,7 @@ static THD_FUNCTION(gimbal_thread, p)
 
   loaderMotor = returnLoader();
 
-  gimbalControl = returnSentryControl();
+  //  gimbalControl = returnSentryControl();
 
   _yaw_vel.error_int_max = 2000.0f;
   _pitch_vel.error_int_max = 2500.0f;
