@@ -14,8 +14,7 @@
 #define MIN_SHOOT_SPEED 100U
 #define MAX_SHOOT_SPEED 900U
 
-RC_Ctl_t* rc;
-sentryControl_t* sentryControl;
+RC_Ctl_t *rc;
 
 static uint16_t speed_sp = 0;
 static bool safe = false;
@@ -33,79 +32,82 @@ void pwm12_setWidth(uint16_t width)
  */
 void shooter_control(uint16_t setpoint)
 {
-  if(setpoint > MAX_SHOOT_SPEED)
+  if (setpoint > MAX_SHOOT_SPEED)
     setpoint = MAX_SHOOT_SPEED;
-  else if(setpoint < MIN_SHOOT_SPEED)
+  else if (setpoint < MIN_SHOOT_SPEED)
     setpoint = MIN_SHOOT_SPEED;
 
-  if(safe || setpoint <= MIN_SHOOT_SPEED)
+  if (safe || setpoint <= MIN_SHOOT_SPEED)
     speed_sp = setpoint;
 }
 
 static const PWMConfig pwm12cfg = {
-        100000,   /* 1MHz PWM clock frequency.   */
-        1000,      /* Initial PWM period 1ms.    width   */
-        NULL,
-        {
-          {PWM_OUTPUT_ACTIVE_HIGH, NULL},
-          {PWM_OUTPUT_ACTIVE_HIGH, NULL},
-          {PWM_OUTPUT_DISABLED, NULL},
-          {PWM_OUTPUT_DISABLED, NULL}
-        },
-        0,
-        0
-};
+    100000, /* 1MHz PWM clock frequency.   */
+    1000,   /* Initial PWM period 1ms.    width   */
+    NULL,
+    {{PWM_OUTPUT_ACTIVE_HIGH, NULL},
+     {PWM_OUTPUT_ACTIVE_HIGH, NULL},
+     {PWM_OUTPUT_DISABLED, NULL},
+     {PWM_OUTPUT_DISABLED, NULL}},
+    0,
+    0};
 
-static mavlinkComm_t* mav;
+static mavlinkComm_t *mav;
 
 static THD_WORKING_AREA(pwm_thd_wa, 512);
-static THD_FUNCTION(pwm_thd, arg) {
-    (void)arg;
+static THD_FUNCTION(pwm_thd, arg)
+{
+  (void)arg;
 
-    const float alpha = 0.004f;
-    float speed = 0;
+  const float alpha = 0.004f;
+  float speed = 0;
 
-    safe = true;
+  safe = true;
 
-    while (!chThdShouldTerminateX())
+  while (!chThdShouldTerminateX())
+  {
+    if (rc->rc.s2 == 0)
     {
-		if (rc->rc.s2 == 0) {
-			//shooter_control(SHOOT_SAFE_PWM_VAL);
-			switch (sentryControl->fireBullet) {
-			case 1:
-				safe = true;
-			  shooter_control(SHOOT_SAFE_PWM_VAL);
-			  break;
-			case 2:
-				safe = true;
-			  shooter_control(SHOOT_SAFE_PWM_VAL);
-			  break;
-			default:
-				safe = true;
-				shooter_control(100);
-				break;
-			}
-		} else {
-			switch (rc->rc.s2) {
-				case RC_S_UP:
-					safe = true;
-				  shooter_control(175);   //min 100 max 900
-				  break;
-				case RC_S_MIDDLE:
-					safe = true;
-				  shooter_control(SHOOT_SAFE_PWM_VAL);
-				  break;
-				case RC_S_DOWN:
-				  safe = true;
-				  shooter_control(100);
-				  break;
-			  }
-		}
-
-      speed = alpha * (float)speed_sp + (1-alpha) * speed;
-      pwm12_setWidth((uint16_t)speed);
-      chThdSleepMilliseconds(5);
+      //shooter_control(SHOOT_SAFE_PWM_VAL);
+      switch (sentryControl.fireBullet)
+      {
+      case 1:
+        safe = true;
+        shooter_control(SHOOT_SAFE_PWM_VAL);
+        break;
+      case 2:
+        safe = true;
+        shooter_control(SHOOT_SAFE_PWM_VAL);
+        break;
+      default:
+        safe = true;
+        shooter_control(100);
+        break;
+      }
     }
+    else
+    {
+      switch (rc->rc.s2)
+      {
+      case RC_S_UP:
+        safe = true;
+        shooter_control(175); //min 100 max 900
+        break;
+      case RC_S_MIDDLE:
+        safe = true;
+        shooter_control(SHOOT_SAFE_PWM_VAL);
+        break;
+      case RC_S_DOWN:
+        safe = true;
+        shooter_control(100);
+        break;
+      }
+    }
+
+    speed = alpha * (float)speed_sp + (1 - alpha) * speed;
+    pwm12_setWidth((uint16_t)speed);
+    chThdSleepMilliseconds(5);
+  }
 }
 
 static void pwm12_start(void)
@@ -121,56 +123,54 @@ static void pwm12_start(void)
   PWMD12.clock = STM32_TIMCLK1;
 
   PWMD12.tim->CCMR1 = STM32_TIM_CCMR1_OC1M(6) | STM32_TIM_CCMR1_OC1PE |
-                     STM32_TIM_CCMR1_OC2M(6) | STM32_TIM_CCMR1_OC2PE;
+                      STM32_TIM_CCMR1_OC2M(6) | STM32_TIM_CCMR1_OC2PE;
 
   psc = (PWMD12.clock / pwm12cfg.frequency) - 1;
 
-  PWMD12.tim->PSC  = psc;
-  PWMD12.tim->ARR  = pwm12cfg.period - 1;
-  PWMD12.tim->CR2  = pwm12cfg.cr2;
+  PWMD12.tim->PSC = psc;
+  PWMD12.tim->ARR = pwm12cfg.period - 1;
+  PWMD12.tim->CR2 = pwm12cfg.cr2;
   PWMD12.period = pwm12cfg.period;
 
   ccer = 0;
-  switch (pwm12cfg.channels[0].mode & PWM_OUTPUT_MASK) {
+  switch (pwm12cfg.channels[0].mode & PWM_OUTPUT_MASK)
+  {
   case PWM_OUTPUT_ACTIVE_LOW:
     ccer |= STM32_TIM_CCER_CC1P;
   case PWM_OUTPUT_ACTIVE_HIGH:
     ccer |= STM32_TIM_CCER_CC1E;
-  default:
-    ;
+  default:;
   }
-  switch (pwm12cfg.channels[1].mode & PWM_OUTPUT_MASK) {
+  switch (pwm12cfg.channels[1].mode & PWM_OUTPUT_MASK)
+  {
   case PWM_OUTPUT_ACTIVE_LOW:
     ccer |= STM32_TIM_CCER_CC2P;
   case PWM_OUTPUT_ACTIVE_HIGH:
     ccer |= STM32_TIM_CCER_CC2E;
-  default:
-    ;
+  default:;
   }
 
-  PWMD12.tim->CCER  = ccer;
-  PWMD12.tim->SR    = 0;
+  PWMD12.tim->CCER = ccer;
+  PWMD12.tim->SR = 0;
 
-  PWMD12.tim->CR1   = STM32_TIM_CR1_ARPE | STM32_TIM_CR1_CEN;
+  PWMD12.tim->CR1 = STM32_TIM_CR1_ARPE | STM32_TIM_CR1_CEN;
 
   PWMD12.state = PWM_READY;
 }
 
 void shooter_init(void)
 {
-    rc = RC_get();
-    mav = mavlinkComm_get();
-    pwm12_start();
+  rc = RC_get();
+  mav = mavlinkComm_get();
+  pwm12_start();
 
-    sentryControl = returnSentryControl();
+#ifndef SHOOTER_SETUP
+  pwm12_setWidth(900);
+  chThdSleepSeconds(3);
 
-    #ifndef SHOOTER_SETUP
-      pwm12_setWidth(900);
-      chThdSleepSeconds(3);
+  pwm12_setWidth(100);
+  chThdSleepSeconds(3);
 
-      pwm12_setWidth(100);
-      chThdSleepSeconds(3);
-
-      chThdCreateStatic(pwm_thd_wa, sizeof(pwm_thd_wa), NORMALPRIO + 1, pwm_thd, NULL);
-    #endif
+  chThdCreateStatic(pwm_thd_wa, sizeof(pwm_thd_wa), NORMALPRIO + 1, pwm_thd, NULL);
+#endif
 }

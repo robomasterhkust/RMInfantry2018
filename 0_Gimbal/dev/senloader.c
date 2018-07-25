@@ -19,7 +19,7 @@ static sen_motorStruct senloader;
 static GameData_rx* judge_fb;
 static RC_Ctl_t* control;
 static mavlink_attitude_t* mavv;
-static sentryControl_t* sentryControl;
+//static sentryControl_t* sentryControl;
 
 sen_motorStruct* returnLoader(void) {
 
@@ -86,7 +86,7 @@ static THD_FUNCTION(senloader_control, p) {
 
 	while (!chThdShouldTerminateX()) {
 
-		if(control->rc.s1 == 2 || sentryControl->fireBullet == 2 || DEBUG) {
+		if(control->rc.s1 == 2 || sentryControl.fireBullet == 2 || DEBUG) {
 
 			for (i = 0; i < 100; i++) {
 				senloader.speed_sp = senloader_pos_pid(&senloader.setting, &senloader.pidcontroller,
@@ -125,7 +125,6 @@ void sen_loader_init (void) {
 	memset(&senloader, 0, sizeof(sen_motorStruct));
 
 	senloader._encoder = can_getLoaderMotor();
-	sentryControl = returnSentryControl();
 	SP = 3000;
 	STUCK = 100;
 	DEBUG = 0;

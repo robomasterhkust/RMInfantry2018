@@ -105,6 +105,7 @@ typedef struct sentryControl_t{
 	float pitchVelocity;
 
 }sentryControl_t;
+extern sentryControl_t sentryControl;
 
 typedef struct{
     uint16_t channel0;

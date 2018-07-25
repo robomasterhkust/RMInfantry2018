@@ -14,6 +14,7 @@
 #include "adis16265.h"
 #include "feeder.h"
 #include "senloader.h"
+#include "canBusProcess.h"
 
 #define GIMBAL_IQ_MAX 7000
 
@@ -67,7 +68,7 @@ void gimbal_kill(void)
   gimbal.state = GIMBAL_STATE_UNINIT;
 }
 
-sentryControl_t* gimbalControl;
+sentryControl_t *gimbalControl;
 
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
@@ -76,8 +77,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float rc_input_z = 0.0f, rc_input_y = 0.0f;        //RC input
   static float cv_input_z = 0.0f, cv_input_y = 0.0f; //CV input
 
-  //  cv_input_y = (float)ros_msg->vy;
-  //  cv_input_z = (float)ros_msg->vz;
+  cv_input_y = sentryControl.yawVelocity;
+  cv_input_z = sentryControl.pitchVelocity;
 
   rc_input_z = -mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
                          -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW) -

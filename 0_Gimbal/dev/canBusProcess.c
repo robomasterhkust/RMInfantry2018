@@ -9,12 +9,12 @@
 
 #include "canBusProcess.h"
 
-static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
+static volatile GimbalEncoder_canStruct gimbal_encoder[GIMBAL_MOTOR_NUM];
 static volatile ChassisEncoder_canStruct chassis_encoder[CHASSIS_MOTOR_NUM];
 static volatile Loader_canStruct loader_encoder[1];
 static volatile GameData_rx chassis_data[1];
 
-static sentryControl_t sentryControl;
+sentryControl_t sentryControl;
 
 /*
  * 500KBaud, automatic wakeup, automatic recover
@@ -23,41 +23,40 @@ static sentryControl_t sentryControl;
  * TODO
  */
 static const CANConfig cancfg = {
-  CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, //HAL LIB, hcan1.Init.ABOM = DISABLE;hcan1.Init.AWUM = DISABLE;
-  CAN_BTR_SJW(0) | CAN_BTR_TS2(3) |
-  CAN_BTR_TS1(8) | CAN_BTR_BRP(2)
-};
+    CAN_MCR_ABOM | CAN_MCR_AWUM | CAN_MCR_TXFP, //HAL LIB, hcan1.Init.ABOM = DISABLE;hcan1.Init.AWUM = DISABLE;
+    CAN_BTR_SJW(0) | CAN_BTR_TS2(3) |
+        CAN_BTR_TS1(8) | CAN_BTR_BRP(2)};
 
 #define CAN_FILTER_NUM 28U
 /* TODO */
 static CANFilter canfilter[CAN_FILTER_NUM];
 
-volatile Loader_canStruct* can_getLoaderMotor(void) {
-	return loader_encoder;
+volatile Loader_canStruct *can_getLoaderMotor(void)
+{
+  return loader_encoder;
 }
 
-volatile GimbalEncoder_canStruct* can_getGimbalMotor(void)
+volatile GimbalEncoder_canStruct *can_getGimbalMotor(void)
 {
   return gimbal_encoder;
 }
 
-volatile ChassisEncoder_canStruct* can_getChassisMotor(void)
+volatile ChassisEncoder_canStruct *can_getChassisMotor(void)
 {
   return chassis_encoder;
 }
-volatile GameData_rx* can_getChassisdata(void) {
-	return chassis_data;
+volatile GameData_rx *can_getChassisdata(void)
+{
+  return chassis_data;
 }
 
-sentryControl_t* returnSentryControl(void) {
+sentryControl_t *returnSentryControl(void)
+{
 
-	return &sentryControl;
-
+  return &sentryControl;
 }
 
-
-static inline void can_processChassisData
-  (volatile GameData_rx* cm, const CANRxFrame* const rxmsg)
+static inline void can_processChassisData(volatile GameData_rx *cm, const CANRxFrame *const rxmsg)
 {
   chSysLock();
   cm->chassis_pos = (int16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
@@ -67,8 +66,7 @@ static inline void can_processChassisData
   chSysUnlock();
 }
 
-static inline void can_processLoaderEncoder
-  (volatile Loader_canStruct* cm, const CANRxFrame* const rxmsg)
+static inline void can_processLoaderEncoder(volatile Loader_canStruct *cm, const CANRxFrame *const rxmsg)
 {
   chSysLock();
   uint16_t prev_angle = cm->raw_angle;
@@ -77,17 +75,18 @@ static inline void can_processLoaderEncoder
   cm->raw_speed = (int16_t)(rxmsg->data8[2]) << 8 | rxmsg->data8[3];
   cm->raw_torque = (int16_t)(rxmsg->data8[4]) << 8 | rxmsg->data8[5];
 
-  if      (cm->raw_angle - prev_angle >  CAN_ENCODER_RANGE / 2) cm->round_count--;
-  else if (cm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2) cm->round_count++;
+  if (cm->raw_angle - prev_angle > CAN_ENCODER_RANGE / 2)
+    cm->round_count--;
+  else if (cm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2)
+    cm->round_count++;
 
   cm->total_ecd = cm->round_count * CAN_ENCODER_RANGE + cm->raw_angle;
 
   chSysUnlock();
 }
 
-#define CAN_ENCODER_RADIAN_RATIO    7.669904e-4f    // 2*M_PI / 0x2000
-static inline void can_processChassisEncoder
-  (volatile ChassisEncoder_canStruct* cm, const CANRxFrame* const rxmsg)
+#define CAN_ENCODER_RADIAN_RATIO 7.669904e-4f // 2*M_PI / 0x2000
+static inline void can_processChassisEncoder(volatile ChassisEncoder_canStruct *cm, const CANRxFrame *const rxmsg)
 {
   uint16_t prev_angle = cm->raw_angle;
 
@@ -98,8 +97,10 @@ static inline void can_processChassisEncoder
   cm->act_current = (int16_t)(rxmsg->data8[4]) << 8 | rxmsg->data8[5];
   cm->temperature = (uint8_t)rxmsg->data8[6];
 
-  if      (cm->raw_angle - prev_angle >  CAN_ENCODER_RANGE / 2) cm->round_count--;
-  else if (cm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2) cm->round_count++;
+  if (cm->raw_angle - prev_angle > CAN_ENCODER_RANGE / 2)
+    cm->round_count--;
+  else if (cm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2)
+    cm->round_count++;
 
   cm->total_ecd = cm->round_count * CAN_ENCODER_RANGE + cm->raw_angle;
   cm->radian_angle = cm->total_ecd * CAN_ENCODER_RADIAN_RATIO;
@@ -107,66 +108,64 @@ static inline void can_processChassisEncoder
   chSysUnlock();
 }
 
-static inline void can_processGimbalEncoder
-  (volatile GimbalEncoder_canStruct* gm, const CANRxFrame* const rxmsg)
+static inline void can_processGimbalEncoder(volatile GimbalEncoder_canStruct *gm, const CANRxFrame *const rxmsg)
 {
   uint16_t prev_angle = gm->raw_angle;
 
   chSysLock();
   gm->updated = true;
-  gm->raw_angle        = (uint16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
-  gm->raw_current      = (int16_t)((rxmsg->data8[2]) << 8 | rxmsg->data8[3]);
+  gm->raw_angle = (uint16_t)(rxmsg->data8[0]) << 8 | rxmsg->data8[1];
+  gm->raw_current = (int16_t)((rxmsg->data8[2]) << 8 | rxmsg->data8[3]);
   gm->current_setpoint = (int16_t)((rxmsg->data8[4]) << 8 | rxmsg->data8[5]);
 
-  if      (gm->raw_angle - prev_angle >  CAN_ENCODER_RANGE / 2) gm->round_count--;
-  else if (gm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2) gm->round_count++;
+  if (gm->raw_angle - prev_angle > CAN_ENCODER_RANGE / 2)
+    gm->round_count--;
+  else if (gm->raw_angle - prev_angle < -CAN_ENCODER_RANGE / 2)
+    gm->round_count++;
 
-  gm->radian_angle = ((float)gm->round_count * CAN_ENCODER_RANGE + gm->raw_angle)
-                      * CAN_ENCODER_RADIAN_RATIO;
+  gm->radian_angle = ((float)gm->round_count * CAN_ENCODER_RANGE + gm->raw_angle) * CAN_ENCODER_RADIAN_RATIO;
 
   chSysUnlock();
 }
 
-static void processGimbalControl(const CANRxFrame* const rxmsg) {
-
-	memcpy(&sentryControl.yawVelocity, &rxmsg->data8[0], sizeof(float));
-	memcpy(&sentryControl.pitchVelocity, &rxmsg->data8[4], sizeof(float));
-
-}
-
-static void processSentryControl(const CANRxFrame* const rxmsg) {
-
-	sentryControl.fireBullet = rxmsg->data8[0];
-	memcpy(&sentryControl.chassisVelocity, &rxmsg->data8[1], sizeof(float));
-
-}
-
-
-static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
+static void processGimbalControl(const CANRxFrame *const rxmsg)
 {
-  switch(rxmsg->SID)
+
+  memcpy(&sentryControl.yawVelocity, &rxmsg->data8[0], sizeof(float));
+  memcpy(&sentryControl.pitchVelocity, &rxmsg->data8[4], sizeof(float));
+}
+
+static void processSentryControl(const CANRxFrame *const rxmsg)
+{
+
+  sentryControl.fireBullet = rxmsg->data8[0];
+  memcpy(&sentryControl.chassisVelocity, &rxmsg->data8[1], sizeof(float));
+}
+
+static void can_processEncoderMessage(const CANRxFrame *const rxmsg)
+{
+  switch (rxmsg->SID)
   {
-      case CAN_FEEDER_FEEDBACK_MSG_ID:
-    	  can_processLoaderEncoder(&loader_encoder[0] ,rxmsg);
-        break;
-      case CAN_GIMBAL_YAW_FEEDBACK_MSG_ID:
-        can_processGimbalEncoder(&gimbal_encoder[GIMBAL_YAW] ,rxmsg);
-        break;
-      case CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID:
-        can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH] ,rxmsg);
-        break;
-      case CAN_GIMBAL_RX_GAMEDATA_ID:
-    	can_processChassisData(&chassis_data[0], rxmsg);
-    	break;
+  case CAN_FEEDER_FEEDBACK_MSG_ID:
+    can_processLoaderEncoder(&loader_encoder[0], rxmsg);
+    break;
+  case CAN_GIMBAL_YAW_FEEDBACK_MSG_ID:
+    can_processGimbalEncoder(&gimbal_encoder[GIMBAL_YAW], rxmsg);
+    break;
+  case CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID:
+    can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH], rxmsg);
+    break;
+  case CAN_GIMBAL_RX_GAMEDATA_ID:
+    can_processChassisData(&chassis_data[0], rxmsg);
+    break;
 
-      case CAN_NUC_GIMBAL_CONTROL_RXID:
-      	processGimbalControl(rxmsg);
-      	break;
+  case CAN_NUC_GIMBAL_CONTROL_RXID:
+    processGimbalControl(rxmsg);
+    break;
 
-      case CAN_NUC_CHASSIS_CONTROL_RXID:
-      	processSentryControl(rxmsg);
-      	break;
-
+  case CAN_NUC_CHASSIS_CONTROL_RXID:
+    processSentryControl(rxmsg);
+    break;
   }
 }
 
@@ -175,16 +174,17 @@ static void can_processEncoderMessage(const CANRxFrame* const rxmsg)
  */
 static THD_WORKING_AREA(can_rx1_wa, 256);
 static THD_WORKING_AREA(can_rx2_wa, 256);
-static THD_FUNCTION(can_rx, p) {
+static THD_FUNCTION(can_rx, p)
+{
 
-  CANDriver* canp = (CANDriver*)p;
+  CANDriver *canp = (CANDriver *)p;
   event_listener_t el;
   CANRxFrame rxmsg;
 
   (void)p;
   chRegSetThreadName("can receiver");
   chEvtRegister(&canp->rxfull_event, &el, 0);
-  while(!chThdShouldTerminateX())
+  while (!chThdShouldTerminateX())
   {
     if (chEvtWaitAnyTimeout(ALL_EVENTS, MS2ST(100)) == 0)
       continue;
@@ -197,17 +197,16 @@ static THD_FUNCTION(can_rx, p) {
   chEvtUnregister(&canp->rxfull_event, &el);
 }
 
-
 void can_processInit(void)
 {
-  memset((void *)gimbal_encoder,  0, sizeof(GimbalEncoder_canStruct) *GIMBAL_MOTOR_NUM);
-  memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct)*CHASSIS_MOTOR_NUM);
+  memset((void *)gimbal_encoder, 0, sizeof(GimbalEncoder_canStruct) * GIMBAL_MOTOR_NUM);
+  memset((void *)chassis_encoder, 0, sizeof(ChassisEncoder_canStruct) * CHASSIS_MOTOR_NUM);
 
   uint8_t i;
   for (i = 0; i < CAN_FILTER_NUM; i++)
   {
     canfilter[i].filter = i;
-    canfilter[i].mode = 0; //CAN_FilterMode_IdMask
+    canfilter[i].mode = 0;  //CAN_FilterMode_IdMask
     canfilter[i].scale = 1; //CAN_FilterScale_32bit
     canfilter[i].assignment = 0;
     canfilter[i].register1 = 0;
@@ -238,34 +237,32 @@ void can_processInit(void)
  * @notapi
  */
 void can_motorSetCurrent(CANDriver *const CANx,
-  const uint16_t EID,
-  const int16_t cm1_iq,
-  const int16_t cm2_iq,
-  const int16_t cm3_iq,
-  const int16_t cm4_iq)
+                         const uint16_t EID,
+                         const int16_t cm1_iq,
+                         const int16_t cm2_iq,
+                         const int16_t cm3_iq,
+                         const int16_t cm4_iq)
 {
-    CANTxFrame txmsg;
+  CANTxFrame txmsg;
 
-    txmsg.IDE = CAN_IDE_STD;
-    txmsg.EID = EID;
-    txmsg.RTR = CAN_RTR_DATA;
-    txmsg.DLC = 0x08;
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.EID = EID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x08;
 
-    chSysLock();
-    txmsg.data8[0] = (uint8_t)(cm1_iq >> 8);
-    txmsg.data8[1] = (uint8_t)cm1_iq;
+  chSysLock();
+  txmsg.data8[0] = (uint8_t)(cm1_iq >> 8);
+  txmsg.data8[1] = (uint8_t)cm1_iq;
 
-    txmsg.data8[2] = (uint8_t)(cm2_iq >> 8);
-    txmsg.data8[3] = (uint8_t)cm2_iq;
+  txmsg.data8[2] = (uint8_t)(cm2_iq >> 8);
+  txmsg.data8[3] = (uint8_t)cm2_iq;
 
-    txmsg.data8[4] = (uint8_t)(cm3_iq >> 8);
-    txmsg.data8[5] = (uint8_t)cm3_iq;
+  txmsg.data8[4] = (uint8_t)(cm3_iq >> 8);
+  txmsg.data8[5] = (uint8_t)cm3_iq;
 
-    txmsg.data8[6] = (uint8_t)(cm4_iq >> 8);
-    txmsg.data8[7] = (uint8_t)cm4_iq;
-    chSysUnlock();
+  txmsg.data8[6] = (uint8_t)(cm4_iq >> 8);
+  txmsg.data8[7] = (uint8_t)cm4_iq;
+  chSysUnlock();
 
-    canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
 }
-
-
