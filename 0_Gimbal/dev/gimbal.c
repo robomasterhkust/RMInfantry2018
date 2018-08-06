@@ -35,6 +35,7 @@ static bool rune_state = false;
     gimbal.yaw_iq_output, gimbal.pitch_iq_output, 0, 0))
 
 static lpfilterStruct lp_angle[2];
+static lpfilterStruct lp_angular_vel[2];
 static GimbalStruct gimbal;
 static RC_Ctl_t* rc;
 static volatile Ros_msg_canStruct *ros_msg;
@@ -72,8 +73,8 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
   float           rc_input_z = 0.0f, rc_input_y = 0.0f;     //RC input
   static float    cv_input_z = 0.0f, cv_input_y = 0.0f;     //CV input
 
-  cv_input_y = (float)ros_msg->vy;
-  cv_input_z = (float)ros_msg->vz;
+  cv_input_y = (float)ros_msg->vy - 0.3 * lpfilter_apply(&lp_angular_vel[GIMBAL_PITCH], gimbal.motor[1]._speed);
+  cv_input_z = (float)ros_msg->vz - 0.5 * lpfilter_apply(&lp_angular_vel[GIMBAL_YAW], gimbal.motor[0]._speed);
 
   rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
                               -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
@@ -528,7 +529,7 @@ static THD_FUNCTION(gimbal_thread, p)
 
     //Stop the thread while calibrating IMU
     if(gimbal._pIMU->accelerometer_not_calibrated ||
-       gimbal._pIMU->gyroscope_not_calibrated || 
+       gimbal._pIMU->gyroscope_not_calibrated ||
        pGyro->adis_gyroscope_not_calibrated)
     {
       gimbal_kill();
@@ -773,6 +774,10 @@ void gimbal_init(void)
 
   lpfilter_init(&lp_angle[GIMBAL_YAW], GIMBAL_CONTROL_FREQ, GIMBAL_CUTOFF_FREQ);
   lpfilter_init(&lp_angle[GIMBAL_PITCH], GIMBAL_CONTROL_FREQ, GIMBAL_CUTOFF_FREQ);
+
+  // For computer vision feedforward
+  lpfilter_init(&lp_angular_vel[GIMBAL_YAW], GIMBAL_CONTROL_FREQ, 5);
+  lpfilter_init(&lp_angular_vel[GIMBAL_PITCH], GIMBAL_CONTROL_FREQ, 5);
 
   #ifdef GIMBAL_ENCODER_USE_SPEED
     lpfilter_init(&lp_axis_ff[GIMBAL_YAW], GIMBAL_CONTROL_FREQ, 10);
