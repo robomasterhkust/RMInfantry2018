@@ -16,6 +16,7 @@
 
 #define CAN_DBUS_ID                                 0x001
 #define CAN_CHASSIS_SEND_BARREL_ID                  0x002
+#define CAN_GIMBAL_SEND_ATTITUDE_ID                 0x010
 #define CAN_NVIDIA_TX2_BOARD_ID                     0x103
 #define CAN_RUNE                                    0x104
 
@@ -64,6 +65,12 @@ typedef struct{
   uint16_t currentHeatValue;
 } BarrelStatus_canStruct;
 
+typedef struct {
+    int16_t a;
+    int16_t b;
+    int16_t c;
+    int16_t d;
+} Attitude_canStruct;
 
 typedef struct {
     double py;

@@ -17,6 +17,61 @@
 
 static BaseSequentialStream* chp = (BaseSequentialStream*)&SD3;
 
+static inline void attitude_txcan(PIMUStruct const pIMU, CANDriver *const CANx, const uint16_t SID){
+  CANTxFrame txmsg;
+  Attitude_canStruct txCan;
+
+  txmsg.IDE = CAN_IDE_STD;
+  txmsg.SID = SID;
+  txmsg.RTR = CAN_RTR_DATA;
+  txmsg.DLC = 0x08;
+
+  txCan.a = (int16_t) (pIMU->qIMU[0] * 1000);
+  txCan.b = (int16_t) (pIMU->qIMU[1] * 1000);
+  txCan.c = (int16_t) (pIMU->qIMU[2] * 1000);
+  txCan.d = (int16_t) (pIMU->qIMU[3] * 1000);
+
+  chSysLock();
+  memcpy(&(txmsg.data8),&txCan,8);
+  chSysUnlock();
+  canTransmit(CANx, CAN_ANY_MAILBOX, &txmsg, MS2ST(100));
+}
+
+#define ATTITUDE_CAN_UPDATE_FREQ       100
+#define ATTITUDE_CAN_UPDATE_PERIOD_US  1000000U/MPU6500_UPDATE_FREQ
+static THD_WORKING_AREA(Attitude_can_tx_thread_wa, 1024);
+static THD_FUNCTION(Attitude_can_tx_thread, p)
+{
+  (void)p;
+  PIMUStruct pIMU = imu_get();
+  uint32_t tick = chVTGetSystemTimeX();
+
+  while(!chThdShouldTerminateX())
+  {
+    tick += US2ST(ATTITUDE_CAN_UPDATE_PERIOD_US);
+    if(chVTGetSystemTimeX() < tick)
+      chThdSleepUntil(tick);
+    else
+    {
+      tick = chVTGetSystemTimeX();
+    }
+
+    if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
+    {
+      chSysLock();
+      chThdSuspendS(&(pIMU->imu_Thd));
+      chSysUnlock();
+    }
+    else
+    {
+      attitude_txcan(pIMU, &CAND2, CAN_GIMBAL_SEND_ATTITUDE_ID);
+    }
+  }
+}
+#define attitude_can_init() (chThdCreateStatic(Attitude_can_tx_thread_wa, sizeof(Attitude_can_tx_thread_wa), \
+                          NORMALPRIO, \
+                          Attitude_can_tx_thread, NULL))
+
 #define MPU6500_UPDATE_PERIOD_US 1000000U/MPU6500_UPDATE_FREQ
 static THD_WORKING_AREA(Attitude_thread_wa, 4096);
 static THD_FUNCTION(Attitude_thread, p)
@@ -42,7 +97,7 @@ static THD_FUNCTION(Attitude_thread, p)
 
   uint32_t tick = chVTGetSystemTimeX();
 
-  while(true)
+  while(!chThdShouldTerminateX())
   {
     tick += US2ST(MPU6500_UPDATE_PERIOD_US);
     if(chVTGetSystemTimeX() < tick)
@@ -61,12 +116,12 @@ static THD_FUNCTION(Attitude_thread, p)
     imuGetData(pIMU);
     attitude_update(pIMU, pGyro);
 
-    if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
-    {
-      chSysLock();
-      chThdSuspendS(&(pIMU->imu_Thd));
-      chSysUnlock();
-    }
+    // if(pIMU->accelerometer_not_calibrated || pIMU->gyroscope_not_calibrated)
+    // {
+    //   chSysLock();
+    //   chThdSuspendS(&(pIMU->imu_Thd));
+    //   chSysUnlock();
+    // }
   }
 }
 
@@ -112,6 +167,7 @@ int main(void)
   can_processInit();
   RC_init();
   barrelHeatLimitControl_init();
+  attitude_can_init();
 
   gimbal_init();
   feeder_init();
