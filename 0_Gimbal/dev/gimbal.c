@@ -164,6 +164,72 @@ static void gimbal_attitude_cmd()
 
 }
 
+/**
+ * gimbal attitude commander for pitch and velocity commander for yaw
+ */
+static void gimbal_atti_pitch_vel_yaw_cmd(float dt, float pitch_diff)
+{
+  float cv_input_y = (float) ros_msg->vy;
+  gimbal.pitch_atti_cmd = cv_input_y;
+
+  //Avoid gimbal-lock point at pitch = M_PI_2
+  bound(&gimbal.pitch_atti_cmd, 1.20f);
+
+  /**
+   * Velocity update
+   */
+  float cv_input_z = 0.0f;
+  cv_input_z = (float) ros_msg->vz;
+
+
+  float rc_input_z = -mapInput((float) rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
+                               -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
+                     - mapInput((float) rc->mouse.x, -25, 25, -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW);
+  float input_z = rc_input_z + cv_input_z;
+
+  bound(&input_z, GIMBAL_MAX_SPEED_YAW);
+
+  float yaw_speed_limit = gimbal.motor[GIMBAL_YAW]._speed - gimbal.motor[GIMBAL_YAW]._speed_enc;
+  //Need to check signs here
+  if ((gimbal.state & GIMBAL_YAW_AT_UP_LIMIT && input_z > yaw_speed_limit) ||
+      (gimbal.state & GIMBAL_YAW_AT_LOW_LIMIT && input_z < yaw_speed_limit))
+    input_z = yaw_speed_limit;
+
+
+  float euler_cmd[3] = {pIMU->euler_angle[Roll], gimbal.pitch_atti_cmd, gimbal.yaw_atti_cmd};
+  float q[4];
+  euler2quarternion(euler_cmd, q);
+
+  float angle_vel[3] = {0, 0, 0};
+  // angle_vel[Z] = input_z * cosf(pitch_diff);
+  angle_vel[Z] = input_z;
+
+  float dq[4];
+  q_derivative(q, angle_vel, dq);
+
+  int i;
+  for (i = 0; i < 4; ++i) {
+    q[i] += dq[i] * dt;
+  }
+
+  vector_normalize(q, 4);
+
+  float yaw_atti_cmd;
+
+  if ((isfinite(q[0]) && isfinite(q[1]) && isfinite(q[2]) && isfinite(q[3]))) {
+    yaw_atti_cmd = atan2f(2.0f * (q[0] * q[3] + q[1] * q[2]),
+                          1.0f - 2.0f * (q[2] * q[2] + q[3] * q[3]));
+    if (yaw_atti_cmd < -2.0f && gimbal.prev_yaw_cmd > 2.0f)
+      gimbal.rev++;
+    else if (yaw_atti_cmd > 2.0f && gimbal.prev_yaw_cmd < -2.0f)
+      gimbal.rev--;
+
+    gimbal.yaw_atti_cmd = yaw_atti_cmd + gimbal.rev * 2 * (float) M_PI;
+    gimbal.prev_yaw_cmd = yaw_atti_cmd;
+  }
+}
+
+
 #define AXIS_LIMIT_TH2 0.1f //Dual stability threshold to prevent state oscillation
 static void gimbal_checkLimit(void)
 {
@@ -434,7 +500,10 @@ static THD_FUNCTION(gimbal_thread, p)
     //   ctrl_state = GIMBAL_CTRL_VEL;
     //   gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
     // #endif
-    gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+
+    // gimbal_attiCmd(1.0f/GIMBAL_CONTROL_FREQ, yaw_theta1);
+    gimbal_atti_pitch_vel_yaw_cmd(1.0f / GIMBAL_CONTROL_FREQ, yaw_theta1);
+
     yaw_atti_out = gimbal_controlAttitude(&_yaw_atti,
                                       gimbal.yaw_atti_cmd,
                                       gimbal._pIMU->euler_angle[Yaw],
