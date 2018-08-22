@@ -26,10 +26,10 @@ static inline void attitude_txcan(PIMUStruct const pIMU, CANDriver *const CANx, 
   txmsg.RTR = CAN_RTR_DATA;
   txmsg.DLC = 0x08;
 
-  txCan.a = (int16_t) (pIMU->qIMU[0] * 1000);
-  txCan.b = (int16_t) (pIMU->qIMU[1] * 1000);
-  txCan.c = (int16_t) (pIMU->qIMU[2] * 1000);
-  txCan.d = (int16_t) (pIMU->qIMU[3] * 1000);
+  txCan.a = (int16_t) (pIMU->qIMU[0] * 1000.0f);
+  txCan.b = (int16_t) (pIMU->qIMU[1] * 1000.0f);
+  txCan.c = (int16_t) (pIMU->qIMU[2] * 1000.0f);
+  txCan.d = (int16_t) (pIMU->qIMU[3] * 1000.0f);
 
   chSysLock();
   memcpy(&(txmsg.data8),&txCan,8);
@@ -38,7 +38,7 @@ static inline void attitude_txcan(PIMUStruct const pIMU, CANDriver *const CANx, 
 }
 
 #define ATTITUDE_CAN_UPDATE_FREQ       100
-#define ATTITUDE_CAN_UPDATE_PERIOD_US  1000000U/MPU6500_UPDATE_FREQ
+#define ATTITUDE_CAN_UPDATE_PERIOD_US  1000000U/ATTITUDE_CAN_UPDATE_FREQ
 static THD_WORKING_AREA(Attitude_can_tx_thread_wa, 1024);
 static THD_FUNCTION(Attitude_can_tx_thread, p)
 {

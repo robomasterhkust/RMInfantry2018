@@ -169,7 +169,7 @@ static void gimbal_attitude_cmd()
  */
 static void gimbal_atti_pitch_vel_yaw_cmd(float dt, float pitch_diff)
 {
-  float cv_input_y = (float) ros_msg->vy;
+  float cv_input_y = (float) ros_msg->py;
   gimbal.pitch_atti_cmd = cv_input_y;
 
   //Avoid gimbal-lock point at pitch = M_PI_2
