@@ -34,6 +34,10 @@ static bool rune_state = false;
 static thread_t* gimbal_thread_p = NULL;
 static thread_t* gimbal_init_thread_p = NULL;
 
+/*
+  @brief      Send the yaw pitch output via can
+  @params     yaw_iq_output & pitch_iq_output -- to motors
+*/
 #define gimbal_canUpdate()   \
   (can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
     gimbal.yaw_iq_output, gimbal.pitch_iq_output, 0, 0))
@@ -67,6 +71,10 @@ void gimbal_setRune(uint8_t cmd)
 {
   rune_state = cmd == DISABLE ? false : true;
 }
+
+/*
+  @brief      Kill the gimbal immediately
+*/
 
 void gimbal_kill(void)
 {
@@ -434,8 +442,7 @@ static THD_FUNCTION(gimbal_thread, p)
     gimbal.d_yaw = gimbal.motor[GIMBAL_YAW]._angle - yaw_init_pos;
 
     /* Variables:
-     * yaw_theta1: angle between yaw encoder current value and yaw encoder value at init position
-     * yaw_theta2: angle between yaw encoder current value and yaw encoder value at max moment of inertia point
+     * yaw_theta1: angle between yaw encoder current value and pitch encoder value at init position
      */
     float yaw_theta1 = gimbal.motor[GIMBAL_PITCH]._angle - pitch_init_pos;
 
@@ -543,7 +550,9 @@ static THD_FUNCTION(gimbal_thread, p)
     gimbal.yaw_iq_cmd -=
       (sinf(yaw_theta2) * sinf(yaw_theta2) * gimbal.axis_ff_ext[2]) * gimbal.yaw_iq_cmd;
 
-    /*output limit*/
+    /*output limit
+    boundOutput(input, max) is the function in math_misc.h
+    */
     gimbal.yaw_iq_output = boundOutput(gimbal.yaw_iq_cmd, GIMBAL_IQ_MAX);
     gimbal.pitch_iq_output = boundOutput(gimbal.pitch_iq_cmd, GIMBAL_IQ_MAX);
 
@@ -558,6 +567,8 @@ static THD_FUNCTION(gimbal_thread, p)
       chSysUnlock();
     #endif
 
+    // iq_output range [-8192, 8192]
+    // destination torque 
     can_motorSetCurrent(GIMBAL_CAN, GIMBAL_CAN_EID, \
       gimbal.yaw_iq_output, gimbal.pitch_iq_output, feeder_output, 0);
 
