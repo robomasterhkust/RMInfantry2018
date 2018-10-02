@@ -784,6 +784,7 @@ static THD_FUNCTION(gimbal_init_thread, p)
         /*exit this thread and start attitude control*/
         chSysLock();
 
+        gimbal.state = GIMBAL_STATE_READY;
         yaw_init_pos = gimbal.motor[GIMBAL_YAW]._angle;
         pitch_init_pos = gimbal.motor[GIMBAL_PITCH]._angle;
         gimbal_Follow();

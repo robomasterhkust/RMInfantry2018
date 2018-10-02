@@ -75,15 +75,15 @@ static THD_FUNCTION(filter_thread, p){
         }
 
 
-        if( pGyro->state == INITED && \
-            p_gimbal->state != GIMBAL_STATE_UNINIT &&\
-            p_gimbal->state != GIMBAL_STATE_INITING &&\
+        if (pGyro->state == INITED && \
+            p_gimbal->state != GIMBAL_STATE_UNINIT && \
+            p_gimbal->state != GIMBAL_STATE_INITING && \
             p_gimbal->motor[GIMBAL_YAW]._wait_count <= GIMBAL_CONNECTION_ERROR_COUNT)
-
+        {
             filter_should_start = 1;
-
-        else{
             encoder_radian_init = get_yaw_init_pos();
+        }
+        else{
             filter_should_start = 0;
             filter_inited = 0;
         }
@@ -92,20 +92,20 @@ static THD_FUNCTION(filter_thread, p){
         if(filter_should_start == 1){
             if(filter_inited == 0)
             {
-                output = p_received_gimbal[GIMBAL_YAW].radian_angle - encoder_radian_init;
+                output = p_received_gimbal[GIMBAL_YAW].radian_angle * 0.533f - encoder_radian_init;
                 filter_inited = 1;
-                can_send_yaw_diff(COMPLEMENTARY_FILTER_CAN, 1);
+              //  can_send_yaw_diff(COMPLEMENTARY_FILTER_CAN, 1);
             }
             else{
                 angular_velocity = pGyro->angle_vel;
-                encoder_radian = p_received_gimbal[GIMBAL_YAW].radian_angle - encoder_radian_init;
+                encoder_radian = p_received_gimbal[GIMBAL_YAW].radian_angle * 0.533f - encoder_radian_init;
                 output = coefficient * (output + angular_velocity * angular_velocity_dt)\
                         + (1.0f - coefficient) * encoder_radian;
-                can_send_yaw_diff(COMPLEMENTARY_FILTER_CAN, 0);
+                //can_send_yaw_diff(COMPLEMENTARY_FILTER_CAN, 0);
             }
         }
         else{
-            can_send_yaw_diff(COMPLEMENTARY_FILTER_CAN, 1);
+            //can_send_yaw_diff(COMPLEMENTARY_FILTER_CAN, 1);
             continue;
         }
 
