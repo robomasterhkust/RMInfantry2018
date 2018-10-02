@@ -25,6 +25,10 @@ static pid_controller_t _pitch_pos;
 
 static uint8_t ctrl_state;
 static float yaw_init_pos = 0.0f, pitch_init_pos = 0.0f;
+float get_yaw_init_pos(void)
+{
+  return yaw_init_pos;
+}
 
 static PGyroStruct pGyro;
 static PIMUStruct pIMU;

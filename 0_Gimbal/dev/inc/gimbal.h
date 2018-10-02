@@ -24,6 +24,8 @@
 
 #define GIMBAL_YAW_GEAR 0.533f
 
+#define GIMBAL_CONNECTION_ERROR_COUNT 50U
+
 typedef enum {
   GIMBAL_STATE_UNINIT = 0,
   GIMBAL_STATE_INITING,
@@ -124,4 +126,5 @@ void gimbal_init(void);
 void gimbal_start(void);
 void gimbal_kill(void);
 void gimbal_Follow(void);
+float get_yaw_init_pos(void);
 #endif

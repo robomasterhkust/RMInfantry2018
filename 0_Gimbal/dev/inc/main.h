@@ -28,6 +28,8 @@
 #include "feeder.h"
 #include "barrelStatus.h"
 
+#include "complementary_filter.h"
+
 #include "rune.h"
 #include "keyboard.h"
 void shellStart(void);
