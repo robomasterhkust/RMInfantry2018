@@ -29,6 +29,7 @@
 #include "barrelStatus.h"
 
 #include "complementary_filter.h"
+#include "can_comm.h"
 
 #include "rune.h"
 #include "keyboard.h"

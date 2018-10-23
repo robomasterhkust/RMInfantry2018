@@ -169,7 +169,8 @@ int main(void)
   barrelHeatLimitControl_init();
   attitude_can_init();
 
-  filter_init();
+  // filter_init();
+  can_comm_init();
 
   gimbal_init();
   feeder_init();
