@@ -58,9 +58,9 @@ THD_FUNCTION(can_comm_function, p)
         }
 
         can_transmit(CAN_COMM_PORT, CAN_END_EFFECTOR_OMEGA_SID,
-                (int16_t) estimator->gyroData[X] * 1000,
-                (int16_t) estimator->gyroData[Y] * 1000,
-                (int16_t) estimator->gyroData[Z] * 1000,
+                (int16_t) (estimator->gyroData[X] * 64.0f),
+                (int16_t) (estimator->gyroData[Y] * 64.0f),
+                (int16_t) (estimator->gyroData[Z] * 64.0f),
                 0 );
     }
 }
