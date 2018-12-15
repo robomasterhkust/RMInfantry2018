@@ -1,25 +1,29 @@
 #ifndef _HOST_COMM_H_
 #define _HOST_COMM_H_
 
+#include "host_comm_id.h"
+
 #define HOST_CAN    &CAND2
 
-#define CAN_HOST_HEARTBEAT_FREQ     1
-#define CAN_HOST_GIMBALINFO_FREQ    5
+#define CAN_HOST_HEARTBEAT_FREQ       1U
+#define CAN_HOST_GIMBALINFO_FREQ    500U
 
 typedef struct{
-    uint8_t   ctrl_mode;    //data8[0]
-    uint8_t   shoot_cmd;    //data8[1]
-    systime_t timeStamp;    //data16[1]
-    float     cmd_yaw;      //data16[2]
-    float     cmd_pitch;    //data16[3]
-} host_gimbal_cmd_t;
+    systime_t cv_rx_timer; //Disable self-aiming control if the communication is dead
+    systime_t timeStamp;
 
-int32_t hostComm_getSync(void);
-void    hostComm_sync(const CANRxFrame *const rxmsg);
-void    hostComm_processGimbalCmd
-    (   host_gimbal_cmd_t* const gimbal_cmd,
-        const CANRxFrame *const  rxmsg);
-void    hostComm_txGimbalInfo(void);
-void    hostComm_init(void);
+    uint8_t   ctrl_mode;
+    uint8_t   shoot_cmd;
+    float     yaw;
+    float     pitch;
+} gimbal_cmd_t;
+
+int32_t                hostComm_getSync(void);
+void                   hostComm_sync(const CANRxFrame *const rxmsg);
+void                   hostComm_processGimbalCmd(const CANRxFrame *const  rxmsg);
+volatile gimbal_cmd_t* hostComm_getGimbalCmd(void);
+void                   hostComm_txGimbalInfo(void);
+systime_t              hostComm_restoreChVT(const uint32_t rx_time);
+void                   hostComm_init(void);
 
 #endif

@@ -9,6 +9,7 @@
 #include "gimbal.h"
 #include "attitude.h"
 #include "math_misc.h"
+#include "host_comm.h"
 
 #include "dbus.h"
 #include "adis16265.h"
@@ -37,7 +38,7 @@ static bool rune_state = false;
 static lpfilterStruct lp_angle[2];
 static GimbalStruct gimbal;
 static RC_Ctl_t* rc;
-static volatile Ros_msg_canStruct *ros_msg;
+static volatile gimbal_cmd_t *gimbal_cmd;
 
 static thread_reference_t gimbal_thread_handler = NULL;
 static thread_reference_t gimbal_init_thread_handler = NULL;
@@ -68,27 +69,22 @@ void gimbal_kill(void)
 #define GIMBAL_CV_CMD_TIMEOUT 0.05f
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
-  static uint16_t cv_wait_count = 0;
-  float           rc_input_z = 0.0f, rc_input_y = 0.0f;     //RC input
-  static float    cv_input_z = 0.0f, cv_input_y = 0.0f;     //CV input
-
-  cv_input_y = (float)ros_msg->vy;
-  cv_input_z = (float)ros_msg->vz;
-
-  rc_input_z = -  mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
-                              -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
-               -  mapInput((float)rc->mouse.x, -150, 150, -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW);
-  rc_input_y = -  mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
-                              -GIMBAL_MAX_SPEED_PITCH, GIMBAL_MAX_SPEED_PITCH)
-               +  mapInput((float)rc->mouse.y, -100, 100, -GIMBAL_MAX_SPEED_PITCH, GIMBAL_MAX_SPEED_PITCH);
-
   float input_z, input_y;
-  if(cosf(yaw_theta1) > 0.1f)
-    input_z = rc_input_z + cv_input_z/cosf(yaw_theta1);
+  if(gimbal_cmd->ctrl_mode > CTRL_MODE_IDLE) //Self-aiming off
+  {
+      input_z = gimbal_cmd->yaw;
+      input_y = gimbal_cmd->pitch;
+  }
   else
-    input_z = rc_input_z;
+  {
+      input_z =  -mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
+                                  -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
+                 -mapInput((float)rc->mouse.x, -150, 150, -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW);
+      input_y =  -mapInput((float)rc->rc.channel3, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
+                                  -GIMBAL_MAX_SPEED_PITCH, GIMBAL_MAX_SPEED_PITCH)
+                 +mapInput((float)rc->mouse.y, -100, 100, -GIMBAL_MAX_SPEED_PITCH, GIMBAL_MAX_SPEED_PITCH);
+  }
 
-  input_y = rc_input_y + cv_input_y;
   bound(&input_z, GIMBAL_MAX_SPEED_YAW);
   bound(&input_y, GIMBAL_MAX_SPEED_PITCH);
 
@@ -146,18 +142,6 @@ static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 
   //Avoid gimbal-lock point at pitch = M_PI_2
   bound(&gimbal.pitch_atti_cmd, 1.20f);
-}
-
-static void gimbal_attitude_cmd()
-{
-    float cv_input_z = (float) ros_msg->vz;
-    float cv_input_y = (float) ros_msg->vy;
-    gimbal.pitch_atti_cmd = cv_input_y;
-    gimbal.yaw_atti_cmd = cv_input_z + (pIMU->euler_angle[Yaw] - gimbal.d_yaw); //need filter
-
-    //Avoid gimbal-lock point at pitch = M_PI_2
-    bound(&gimbal.pitch_atti_cmd, 1.20f);
-
 }
 
 #define AXIS_LIMIT_TH2 0.1f //Dual stability threshold to prevent state oscillation
@@ -529,7 +513,7 @@ static THD_FUNCTION(gimbal_thread, p)
 
     //Stop the thread while calibrating IMU
     if(gimbal._pIMU->accelerometer_not_calibrated ||
-       gimbal._pIMU->gyroscope_not_calibrated || 
+       gimbal._pIMU->gyroscope_not_calibrated ||
        pGyro->adis_gyroscope_not_calibrated)
     {
       gimbal_kill();
@@ -768,7 +752,7 @@ void gimbal_init(void)
 
   pGyro = gyro_get();
   rc = RC_get();
-  ros_msg = can_get_ros_msg();
+  gimbal_cmd = hostComm_getGimbalCmd();
   gimbal._encoder = can_getGimbalMotor();
   chThdSleepMilliseconds(100);
 

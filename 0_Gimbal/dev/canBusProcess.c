@@ -10,10 +10,9 @@
 #include "barrelStatus.h"
 #include "canBusProcess.h"
 #include "host_comm.h"
-#include "host_comm_id.h"
 
-static volatile GimbalEncoder_canStruct gimbal_encoder[GIMBAL_MOTOR_NUM];
-static volatile BarrelStatus_canStruct chassis_send_barrel;
+static volatile GimbalEncoder_canStruct  gimbal_encoder[GIMBAL_MOTOR_NUM];
+static volatile BarrelStatus_canStruct   chassis_send_barrel;
 static volatile ChassisEncoder_canStruct feeder_encoder;
 
 /*
@@ -104,60 +103,36 @@ can_processGimbalEncoder(volatile GimbalEncoder_canStruct *gm,
 static inline void
 can_processSendBarrelStatus(volatile BarrelStatus_canStruct *db,
                             const CANRxFrame *const rxmsg) {
-  chSysLock();
-  db->heatLimit = (uint16_t)(rxmsg->data16[0]);
-  // db->heatLimit           = 1600;
-  db->currentHeatValue = (uint16_t)(rxmsg->data16[1]);
-  chSysUnlock();
+    chSysLock();
+    db->heatLimit = (uint16_t)(rxmsg->data16[0]);
+    // db->heatLimit           = 1600;
+    db->currentHeatValue = (uint16_t)(rxmsg->data16[1]);
+    chSysUnlock();
 }
 
-static inline void can_process_ros_command(volatile Ros_msg_canStruct *msg,
-                                           const CANRxFrame *const rxmsg) {
-  chSysLock();
-  int16_t msg_py = (int16_t)rxmsg->data16[0];
-  int16_t msg_pz = (int16_t)rxmsg->data16[1];
-  int16_t msg_vy = (int16_t)rxmsg->data16[2];
-  int16_t msg_vz = (int16_t)rxmsg->data16[3];
-  msg->py = msg_py * 0.001;
-  msg->pz = msg_pz * 0.001;
-  msg->vy = msg_vy * 0.001;
-  msg->vz = msg_vz * 0.001;
-  chSysUnlock();
-}
-
-static inline void can_process_rune(volatile Rune_canStruct *rune_can,
-                                    const CANRxFrame *const rxmsg) {
-  chSysLock();
-  int16_t msg_py = (int16_t)rxmsg->data16[0];
-  int16_t msg_pz = (int16_t)rxmsg->data16[1];
-
-  rune_can->py = msg_py * 0.001;
-  rune_can->pz = msg_pz * 0.001;
-  rune_can->updated = true;
-  chSysUnlock();
-}
-
-static void can_processEncoderMessage(const CANRxFrame *const rxmsg) {
-  switch (rxmsg->SID) {
-  case CAN_FEEDER_FEEDBACK_MSG_ID:
-    can_processChassisEncoder(&feeder_encoder, rxmsg);
-    break;
-  case CAN_GIMBAL_YAW_FEEDBACK_MSG_ID:
-    can_processGimbalEncoder(&gimbal_encoder[GIMBAL_YAW], rxmsg);
-    break;
-  case CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID:
-    can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH], rxmsg);
-    break;
-  case CAN_CHASSIS_SEND_BARREL_ID:
-    can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
-    break;
-  case CAN_HOST_SYNC_H2G_ID:
-    hostComm_sync(rxmsg);
-    break;
-  case CAN_RUNE:
-    can_process_rune(&rune_can, rxmsg);
-    break;
-  }
+static void can_processEncoderMessage(const CANRxFrame *const rxmsg)
+{
+    switch (rxmsg->SID)
+    {
+        case CAN_FEEDER_FEEDBACK_MSG_ID:
+            can_processChassisEncoder(&feeder_encoder, rxmsg);
+            break;
+        case CAN_GIMBAL_YAW_FEEDBACK_MSG_ID:
+            can_processGimbalEncoder(&gimbal_encoder[GIMBAL_YAW], rxmsg);
+            break;
+        case CAN_GIMBAL_PITCH_FEEDBACK_MSG_ID:
+            can_processGimbalEncoder(&gimbal_encoder[GIMBAL_PITCH], rxmsg);
+            break;
+        case CAN_CHASSIS_SEND_BARREL_ID:
+            can_processSendBarrelStatus(&chassis_send_barrel, rxmsg);
+            break;
+        case CAN_SYNC_H2G_ID:
+            hostComm_sync(rxmsg);
+            break;
+        case CAN_GIMBAL_CMD_ID:
+            hostComm_processGimbalCmd(rxmsg);
+            break;
+    }
 }
 
 /*
