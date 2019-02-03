@@ -7,8 +7,8 @@
 #include "shell.h"
 #include <string.h>
 
-#define SERIAL_CMD       &SD3
-#define SERIAL_DATA      &SD3
+#define SERIAL_CMD       &SDU1
+#define SERIAL_DATA      &SDU1
 
 static thread_t* matlab_thread_handler = NULL;
 /**
@@ -290,12 +290,12 @@ static const ShellConfig shell_cfg1 =
  */
 void shellStart(void)
 {
-  sdStart(SERIAL_CMD, NULL);
+  //sdStart(SERIAL_CMD, NULL);
   /*
    * Initializes a serial-over-USB CDC driver.
    */
-  //sduObjectInit(&SDU1);
-  //sduStart(&SDU1, &serusbcfg);
+  sduObjectInit(&SDU1);
+  sduStart(&SDU1, &serusbcfg);
 
   /*
    * Activates the USB driver and then the USB bus pull-up on D+.
@@ -304,11 +304,11 @@ void shellStart(void)
    */
 
 
-  //usbDisconnectBus(serusbcfg.usbp);
-  //chThdSleepMilliseconds(1500);
+  usbDisconnectBus(serusbcfg.usbp);
+  chThdSleepMilliseconds(1500);
 
-  //usbStart(serusbcfg.usbp, &usbcfg);
-  //usbConnectBus(serusbcfg.usbp);
+  usbStart(serusbcfg.usbp, &usbcfg);
+  usbConnectBus(serusbcfg.usbp);
 
   shellInit();
 

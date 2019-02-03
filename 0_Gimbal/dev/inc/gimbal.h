@@ -64,6 +64,16 @@ static const char gimbal_warning_messages[][GIMBAL_WARNING_COUNT] =
 };
 
 typedef struct{
+    systime_t cv_rx_timer; //Disable self-aiming control if the communication is dead
+    systime_t timeStamp;
+
+    uint8_t   ctrl_mode;
+    uint8_t   shoot_cmd;
+    float     yaw;
+    float     pitch;
+} gimbal_cmd_t;
+
+typedef struct{
   uint8_t _wait_count;
   float _angle;
   float _current;
@@ -94,7 +104,7 @@ typedef struct{
   float pitch_atti_cmd;
 
   float pitch_angle_enc;
-  
+
   float chassis_yaw;
   float d_yaw;
 
@@ -119,6 +129,7 @@ typedef struct{
 }  GimbalStruct;
 
 GimbalStruct* gimbal_get(void);
+volatile gimbal_cmd_t* gimbal_getCVCmd(void);
 void gimbal_setRune(uint8_t cmd);
 GimbalStruct* gimbal_get_sys_iden(void);
 uint32_t gimbal_get_error(void);

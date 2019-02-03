@@ -9,7 +9,6 @@
 #include "gimbal.h"
 #include "attitude.h"
 #include "math_misc.h"
-#include "host_comm.h"
 
 #include "dbus.h"
 #include "adis16265.h"
@@ -38,7 +37,7 @@ static bool rune_state = false;
 static lpfilterStruct lp_angle[2];
 static GimbalStruct gimbal;
 static RC_Ctl_t* rc;
-static volatile gimbal_cmd_t *gimbal_cmd;
+static volatile gimbal_cmd_t gimbal_cmd;
 
 static thread_reference_t gimbal_thread_handler = NULL;
 static thread_reference_t gimbal_init_thread_handler = NULL;
@@ -46,6 +45,11 @@ static thread_reference_t gimbal_init_thread_handler = NULL;
 GimbalStruct* gimbal_get(void)
 {
   return &gimbal;
+}
+
+volatile gimbal_cmd_t* gimbal_getCVCmd(void)
+{
+    return &gimbal_cmd;
 }
 
 uint32_t gimbal_get_error(void)
@@ -66,16 +70,23 @@ void gimbal_kill(void)
   gimbal.state = GIMBAL_STATE_UNINIT;
 }
 
-#define GIMBAL_CV_CMD_TIMEOUT 0.05f
+#define ST2MS_DIV (CH_CFG_ST_FREQUENCY/1000U)
+static bool gimbal_toggleCVmode(void)
+{
+    return rc->rc.s1 == RC_S_UP && //Operator control
+           gimbal_cmd.ctrl_mode && //CV input is active
+           (chVTGetSystemTimeX() - gimbal_cmd.cv_rx_timer)/ST2MS_DIV < 100; //No timeout
+}
+
 static void gimbal_attiCmd(const float dt, const float yaw_theta1)
 {
   float input_z, input_y;
-  if(gimbal_cmd->ctrl_mode > CTRL_MODE_IDLE) //Self-aiming off
+  if(gimbal_toggleCVmode()) //Self-aiming on
   {
-      input_z = gimbal_cmd->yaw;
-      input_y = gimbal_cmd->pitch;
+      input_z = gimbal_cmd.yaw;
+      input_y = gimbal_cmd.pitch;
   }
-  else
+  else //manual control
   {
       input_z =  -mapInput((float)rc->rc.channel2, RC_CH_VALUE_MIN, RC_CH_VALUE_MAX,
                                   -GIMBAL_MAX_SPEED_YAW, GIMBAL_MAX_SPEED_YAW)
@@ -752,7 +763,6 @@ void gimbal_init(void)
 
   pGyro = gyro_get();
   rc = RC_get();
-  gimbal_cmd = hostComm_getGimbalCmd();
   gimbal._encoder = can_getGimbalMotor();
   chThdSleepMilliseconds(100);
 

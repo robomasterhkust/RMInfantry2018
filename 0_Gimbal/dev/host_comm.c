@@ -8,10 +8,10 @@
 
 static bool                     sync_ok = false;
 static int32_t                  timeStamp_sync;
-static volatile gimbal_cmd_t    gimbal_cmd;
+static volatile gimbal_cmd_t*   gimbal_cmd;
 
-PIMUStruct      pIMU;
-GimbalStruct* gimbal;
+static PIMUStruct      pIMU;
+static GimbalStruct* gimbal;
 
 #define ST2MS_DIV (CH_CFG_ST_FREQUENCY/1000U)
 
@@ -70,23 +70,18 @@ systime_t hostComm_restoreChVT(const uint32_t rx_time)
     return (rx_time_32 + timeStamp_sync)*ST2MS_DIV;
 }
 
-volatile gimbal_cmd_t* hostComm_getGimbalCmd(void)
-{
-    return &gimbal_cmd;
-}
-
 void hostComm_processGimbalCmd(const CANRxFrame *const  rxmsg)
 {
     can_gimbal_cmd_t can_gimbal_cmd;
-    memcpy(&can_gimbal_cmd, rxmsg, 8);
+    memcpy(&can_gimbal_cmd, rxmsg->data8, 8);
 
     chSysLock();
-    gimbal_cmd.cv_rx_timer = chVTGetSystemTimeX();
+    gimbal_cmd->cv_rx_timer = chVTGetSystemTimeX();
 
-    gimbal_cmd.timeStamp = hostComm_restoreChVT(can_gimbal_cmd.timeStamp_16);
-    gimbal_cmd.ctrl_mode = can_gimbal_cmd.ctrl_mode;
-    gimbal_cmd.yaw       = (float)(can_gimbal_cmd.yaw)/GIMBAL_CMD_ANGVEL_PSC;
-    gimbal_cmd.pitch     = (float)(can_gimbal_cmd.pitch)/GIMBAL_CMD_ANGVEL_PSC;
+    gimbal_cmd->timeStamp = hostComm_restoreChVT(can_gimbal_cmd.timeStamp_16);
+    gimbal_cmd->ctrl_mode = can_gimbal_cmd.ctrl_mode;
+    gimbal_cmd->yaw       = (float)(can_gimbal_cmd.yaw)/GIMBAL_CMD_ANGVEL_PSC;
+    gimbal_cmd->pitch     = (float)(can_gimbal_cmd.pitch)/GIMBAL_CMD_ANGVEL_PSC;
     chSysUnlock();
 }
 
@@ -148,9 +143,6 @@ static THD_FUNCTION(host_thread, p){
         if(sync_ok && !(tick % CAN_HOST_GIMBALINFO_MS))
             hostComm_txGimbalInfo();
 
-        if(ST2MS(chVTGetSystemTimeX() - gimbal_cmd.cv_rx_timer) > 100)
-            gimbal_cmd.ctrl_mode = CTRL_MODE_IDLE;
-
         tick++;
         chThdSleepMilliseconds(1);
     }
@@ -160,6 +152,7 @@ void hostComm_init(void)
 {
     pIMU   = imu_get();
     gimbal = gimbal_get();
+    gimbal_cmd = gimbal_getCVCmd();
 
     chThdCreateStatic(host_thread_wa, sizeof(host_thread_wa),
                    NORMALPRIO, host_thread, NULL);
